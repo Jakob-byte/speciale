@@ -171,19 +171,12 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 		} else {
 			sum = sha256.Sum256(append(hashList[i][:], sum[:]...))
 		}
-
 	}
 	return sum == tree.Root.ownHash
 
 }
 
 func main() {
-	//l := []string{"gedshsfhdfghfghd", "jfdghfghfdghfghens", "dortfghfdghfdghfdgjhe", "fledfhfgjfdjdfgjdfghmming"}
-	//merkTree := BuildTree(l, 2)
-	//fmt.Println(merkTree)
-	//fmt.Println(verifyTree(l, *merkTree))
-	//fmt.Println("Certificate is in tree: ", verifyNode("gedshsfhsdfghfghd", *merkTree))
-
 	certArray := loadCertificates("testCerts/")
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
