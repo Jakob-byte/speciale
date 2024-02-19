@@ -8,7 +8,8 @@ import (
 	"fmt"
 	//"hash"
 	//"math/big"
-	"reflect"
+	"log"
+	"os"
 )
 
 type node struct {
@@ -19,6 +20,7 @@ type node struct {
 	leaf        bool
 	certificate []byte
 	duplicate   bool
+	id          int
 }
 
 type merkleTree struct {
@@ -27,21 +29,45 @@ type merkleTree struct {
 	fanOut int
 }
 
-func BuildTree(certs []string, fanOut int) *merkleTree {
+//Hello There Hello Hallo We are in
+
+func check(err error) {
+	if err != nil {
+		log.Fatal(err)
+	}
+	return
+}
+
+func loadCertificates(input string) [][]byte {
+	files, err := os.ReadDir(input)
+	check(err)
+	fileArray := make([][]byte, len(files))
+	for i, v := range files {
+		f, err := os.ReadFile("testCerts/" + v.Name())
+		check(err)
+		fileArray[i] = f
+
+	}
+	return fileArray
+
+}
+
+func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 	var merk merkleTree
 
 	//var leafs []*node
 
 	uneven := false
 	if len(certs)%2 == 1 {
-		certs = append(certs, certs[len(certs)])
+		fmt.Println("SHOULD NOT BE PRINTED, unless uneven input leafs")
+		certs = append(certs, certs[len(certs)-1])
 		uneven = true
 	}
 
 	leafs := make([]*node, len(certs))
 
 	for i := 0; i < len(certs); i++ {
-		byteCet := []byte(certs[i])
+		byteCet := certs[i]
 		testHash := sha256.Sum256(byteCet)
 		leafs[i] = &node{
 			certificate: byteCet,
@@ -49,20 +75,19 @@ func BuildTree(certs []string, fanOut int) *merkleTree {
 			ownHash:     testHash,
 			leaf:        true,
 			duplicate:   false,
+			id:          i,
 		}
 	}
 
 	if uneven {
-		leafs[len(leafs)].duplicate = true
+		leafs[len(leafs)-1].duplicate = true
+		leafs[len(leafs)-1].childNumb = 1
+
 	}
 
-	fmt.Println(reflect.TypeOf(leafs))
-
 	nextLayer := makeLayer(leafs)
-	fmt.Println(len(nextLayer))
 	for len(nextLayer) > 1 {
 		nextLayer = makeLayer(nextLayer)
-		fmt.Println(len(nextLayer))
 	}
 
 	merk = merkleTree{
@@ -76,38 +101,52 @@ func BuildTree(certs []string, fanOut int) *merkleTree {
 
 func makeLayer(nodes []*node) []*node {
 
+	if len(nodes)%2 == 1 {
+		appendNode := &node{
+			certificate: nodes[len(nodes)-1].certificate,
+			childNumb:   1 - nodes[len(nodes)-1].childNumb,
+			ownHash:     nodes[len(nodes)-1].ownHash,
+			children:    nodes[len(nodes)-1].children,
+			leaf:        false,
+			duplicate:   true,
+			id:          nodes[len(nodes)-1].id + 1,
+		}
+		nodes = append(nodes, appendNode)
+
+	}
+
 	nextLayer := make([]*node, len(nodes)/2) // divided with fanout which is 2 in this case
 
 	for i := 0; i < len(nodes); {
 		n1 := nodes[i]
 		n2 := nodes[i+1]
-		fmt.Println(n2.ownHash[:])
 		sum := sha256.Sum256(append(n1.ownHash[:], n2.ownHash[:]...))
 		nextLayer[i/2] = &node{
 			ownHash:   sum,
 			childNumb: i % 2,
 			leaf:      false,
 			children:  []*node{n1, n2},
+			id:        i / 2,
 		}
 		n1.parent = nextLayer[i/2]
 		n2.parent = nextLayer[i/2]
 		i = i + 2
 	}
-
 	return nextLayer
 }
 
-func verifyTree(certs []string, tree merkleTree) bool {
+func verifyTree(certs [][]byte, tree merkleTree) bool {
 	testTree := BuildTree(certs, tree.fanOut)
+
 	return testTree.Root.ownHash == tree.Root.ownHash
 
 }
 
-func verifyNode(cert string, tree merkleTree) bool {
+func verifyNode(cert []byte, tree merkleTree) bool {
 	var nod *node
 	notInList := true
 	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, []byte(cert)) {
+		if bytes.Equal(v.certificate, cert) {
 			nod = v
 			notInList = false
 		}
@@ -119,16 +158,13 @@ func verifyNode(cert string, tree merkleTree) bool {
 	var hashList [][32]byte
 	var childNumberList []int
 	i := 0
-	fmt.Println(nod)
 	for nod.parent != nil {
-		fmt.Println("We made it here1")
-		hashList = append(hashList, nod.parent.children[1-nod.childNumb].ownHash)
-		childNumberList = append(childNumberList, nod.childNumb)
+		hashList = append(hashList, nod.parent.children[1-(nod.id%2)].ownHash)
+		childNumberList = append(childNumberList, nod.id%2)
 		nod = nod.parent
 		i++
 	}
-	fmt.Println("We made it here2")
-	sum := sha256.Sum256([]byte(cert))
+	sum := sha256.Sum256(cert)
 	for i := 0; i < len(hashList); i++ {
 		if childNumberList[i]%2 == 0 {
 			sum = sha256.Sum256(append(sum[:], hashList[i][:]...))
@@ -142,10 +178,16 @@ func verifyNode(cert string, tree merkleTree) bool {
 }
 
 func main() {
-	l := []string{"gedshsfhdfghfghd", "jfdghfghfdghfghens", "dortfghfdghfdghfdgjhe", "fledfhfgjfdjdfgjdfghmming"}
-	merkTree := BuildTree(l, 2)
-	fmt.Println(merkTree)
-	fmt.Println(verifyTree(l, *merkTree))
+	//l := []string{"gedshsfhdfghfghd", "jfdghfghfdghfghens", "dortfghfdghfdghfdgjhe", "fledfhfgjfdjdfgjdfghmming"}
+	//merkTree := BuildTree(l, 2)
+	//fmt.Println(merkTree)
+	//fmt.Println(verifyTree(l, *merkTree))
+	//fmt.Println("Certificate is in tree: ", verifyNode("gedshsfhsdfghfghd", *merkTree))
+
+	certArray := loadCertificates("testCerts/")
+	merkTree := BuildTree(certArray, 2)
+	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
+	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
 	fmt.Println("Succes")
-	fmt.Println("Certificate is in tree: ", verifyNode("gedshsfhsdfghfghd", *merkTree))
+
 }
