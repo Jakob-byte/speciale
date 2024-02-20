@@ -252,13 +252,13 @@ func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
 func insertLeaf(cert []byte, tree merkleTree) *merkleTree {
 	//TODO: Insert a node or delete a node?
 	//HOw to do this, what is required??
-	return tree
+	return &tree
 }
 
-func deleteLeaf() int {
+func deleteLeaf(cert []byte, tree merkleTree) *merkleTree {
 	//TODO: Insert a node or delete a node?
 	//HOw to do this, what is required??
-	return 0
+	return &tree
 }
 
 func loadOneCert(filePath string) []byte {
@@ -268,13 +268,13 @@ func loadOneCert(filePath string) []byte {
 }
 func main() {
 	certArray := loadCertificates("testCerts/")
-	insertLeaf()
-	deleteLeaf()
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
 	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
 	updatedTree := updateLeaf(certArray[5], *merkTree, certArray[3])
 	fmt.Println("We managed to overwrite a certificate", !verifyNode(certArray[5], *updatedTree))
+	insertLeaf(certArray[5], *merkTree)
+	deleteLeaf(certArray[5], *merkTree)
 
 	fmt.Println("Succes")
 
