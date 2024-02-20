@@ -186,6 +186,7 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 }
 func updateTree() int {
 	//TODO: Insert a node or delete a node?
+	//HOw to do this, what is required??
 	return 0
 }
 
