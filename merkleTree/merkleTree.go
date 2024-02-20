@@ -157,8 +157,9 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 
 }
 
-func verifyNode(cert []byte, tree merkleTree, fanOut int) bool {
+func verifyNode(cert []byte, tree merkleTree) bool {
 	var nod *node
+	fanOut := tree.fanOut
 	notInList := true
 	for _, v := range tree.leafs {
 		if bytes.Equal(v.certificate, cert) {
@@ -202,18 +203,79 @@ func verifyNode(cert []byte, tree merkleTree, fanOut int) bool {
 	return sum == tree.Root.ownHash
 }
 
-func updateTree() int {
+func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
+	//TODO: Insert a node or delete a node?
+	//HOw to do this, what is required??
+	var nod *node
+	notInList := true
+	for _, v := range tree.leafs {
+		if bytes.Equal(v.certificate, oldCert) {
+			nod = v
+			notInList = false
+		}
+	}
+	if notInList {
+		return &tree
+	}
+
+	var childNumber int
+	nod.certificate = newCert
+	sum := sha256.Sum256(newCert)
+
+	for nod.parent != nil {
+		childNumber = nod.id % tree.fanOut
+		var hashList [][32]byte
+		for _, v := range nod.parent.children {
+			if nod.id != v.id {
+				hashList = append(hashList, v.ownHash)
+			}
+		}
+
+		// Bla bla
+		var byteToHash []byte
+		for j, v := range hashList {
+			if childNumber == j {
+				byteToHash = append(byteToHash, sum[:]...)
+			}
+			byteToHash = append(byteToHash, v[:]...)
+		}
+		if childNumber == tree.fanOut-1 {
+			byteToHash = append(byteToHash, sum[:]...)
+		}
+		sum = sha256.Sum256(byteToHash)
+		nod.parent.ownHash = sum
+		nod = nod.parent
+	}
+	return &tree
+}
+
+func insertLeaf(cert []byte, tree merkleTree) *merkleTree {
+	//TODO: Insert a node or delete a node?
+	//HOw to do this, what is required??
+	return tree
+}
+
+func deleteLeaf() int {
 	//TODO: Insert a node or delete a node?
 	//HOw to do this, what is required??
 	return 0
 }
 
+func loadOneCert(filePath string) []byte {
+	f, err := os.ReadFile(filePath)
+	check(err)
+	return f
+}
 func main() {
 	certArray := loadCertificates("testCerts/")
-	updateTree()
+	insertLeaf()
+	deleteLeaf()
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
-	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree, 2))
+	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
+	updatedTree := updateLeaf(certArray[5], *merkTree, certArray[3])
+	fmt.Println("We managed to overwrite a certificate", !verifyNode(certArray[5], *updatedTree))
+
 	fmt.Println("Succes")
 
 }
