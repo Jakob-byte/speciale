@@ -29,8 +29,6 @@ type merkleTree struct {
 	fanOut int
 }
 
-//Hello There Hello Hallo We are in
-
 func check(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -68,7 +66,9 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 	//var leafs []*node
 
 	uneven := false
-	if len(certs)%2 == 1 {
+	duplicates := fanOut - len(certs)%fanOut
+
+	for len(certs)%fanOut > 0 {
 		certs = append(certs, certs[len(certs)-1])
 		uneven = true
 	}
@@ -80,23 +80,23 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 		testHash := sha256.Sum256(byteCet)
 		leafs[i] = &node{
 			certificate: byteCet,
-			childNumb:   i % 2,
+			childNumb:   i % fanOut,
 			ownHash:     testHash,
 			leaf:        true,
 			duplicate:   false,
 			id:          i,
 		}
 	}
-
 	if uneven {
-		leafs[len(leafs)-1].duplicate = true
-		leafs[len(leafs)-1].childNumb = 1
-
+		for i := 1; i < duplicates+1; i++ {
+			leafs[len(leafs)-i].duplicate = true
+			leafs[len(leafs)-i].childNumb = leafs[len(leafs)-i].id % fanOut
+		}
 	}
 
-	nextLayer := makeLayer(leafs)
+	nextLayer := makeLayer(leafs, fanOut)
 	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer)
+		nextLayer = makeLayer(nextLayer, fanOut)
 	}
 
 	merk = merkleTree{
@@ -108,12 +108,12 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 	return &merk
 }
 
-func makeLayer(nodes []*node) []*node {
+func makeLayer(nodes []*node, fanOut int) []*node {
 
-	if len(nodes)%2 == 1 {
+	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
-			childNumb:   1 - nodes[len(nodes)-1].childNumb,
+			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
 			ownHash:     nodes[len(nodes)-1].ownHash,
 			children:    nodes[len(nodes)-1].children,
 			leaf:        false,
@@ -121,25 +121,31 @@ func makeLayer(nodes []*node) []*node {
 			id:          nodes[len(nodes)-1].id + 1,
 		}
 		nodes = append(nodes, appendNode)
-
 	}
 
-	nextLayer := make([]*node, len(nodes)/2) // divided with fanout which is 2 in this case
+	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
 
 	for i := 0; i < len(nodes); {
-		n1 := nodes[i]
-		n2 := nodes[i+1]
-		sum := sha256.Sum256(append(n1.ownHash[:], n2.ownHash[:]...))
-		nextLayer[i/2] = &node{
-			ownHash:   sum,
-			childNumb: i % 2,
-			leaf:      false,
-			children:  []*node{n1, n2},
-			id:        i / 2,
+		var childrenList []*node
+		var allChildrenHashes []byte
+		for k := 0; k < fanOut; k++ {
+			childrenList = append(childrenList, nodes[i+k])
+			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownHash[:]...)
 		}
-		n1.parent = nextLayer[i/2]
-		n2.parent = nextLayer[i/2]
-		i = i + 2
+
+		sum := sha256.Sum256(allChildrenHashes)
+
+		nextLayer[i/fanOut] = &node{
+			ownHash:   sum,
+			childNumb: i % fanOut,
+			leaf:      false,
+			children:  childrenList,
+			id:        i / fanOut,
+		}
+		for _, v := range childrenList {
+			v.parent = nextLayer[i/fanOut]
+		}
+		i = i + fanOut
 	}
 	return nextLayer
 }
@@ -151,7 +157,7 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 
 }
 
-func verifyNode(cert []byte, tree merkleTree) bool {
+func verifyNode(cert []byte, tree merkleTree, fanOut int) bool {
 	var nod *node
 	notInList := true
 	for _, v := range tree.leafs {
@@ -164,26 +170,38 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 		return false
 	}
 
-	var hashList [][32]byte
+	var hashList [][][32]byte
 	var childNumberList []int
-	i := 0
 	for nod.parent != nil {
-		hashList = append(hashList, nod.parent.children[1-(nod.id%2)].ownHash)
-		childNumberList = append(childNumberList, nod.id%2)
+		childNumberList = append(childNumberList, nod.id%fanOut)
+		var hashList0 [][32]byte
+		for _, v := range nod.parent.children {
+			if nod.id != v.id {
+				hashList0 = append(hashList0, v.ownHash)
+			}
+		}
+		hashList = append(hashList, hashList0)
 		nod = nod.parent
-		i++
 	}
+
 	sum := sha256.Sum256(cert)
 	for i := 0; i < len(hashList); i++ {
-		if childNumberList[i]%2 == 0 {
-			sum = sha256.Sum256(append(sum[:], hashList[i][:]...))
-		} else {
-			sum = sha256.Sum256(append(hashList[i][:], sum[:]...))
+		var byteToHash []byte
+		for j, v := range hashList[i] {
+
+			if childNumberList[i] == j {
+				byteToHash = append(byteToHash, sum[:]...)
+			}
+			byteToHash = append(byteToHash, v[:]...)
 		}
+		if childNumberList[i] == fanOut-1 {
+			byteToHash = append(byteToHash, sum[:]...)
+		}
+		sum = sha256.Sum256(byteToHash)
 	}
 	return sum == tree.Root.ownHash
-
 }
+
 func updateTree() int {
 	//TODO: Insert a node or delete a node?
 	//HOw to do this, what is required??
@@ -195,7 +213,7 @@ func main() {
 	updateTree()
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
-	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
+	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree, 2))
 	fmt.Println("Succes")
 
 }
