@@ -38,18 +38,28 @@ func check(err error) {
 	return
 }
 
-func loadCertificates(input string) [][]byte {
+func loadCertificates(input string, amount ...int) [][]byte {
+
 	files, err := os.ReadDir(input)
 	check(err)
-	fileArray := make([][]byte, len(files))
+	var fileArray [][]byte
+	//To handle test cases, where we limit input size
+	if len(amount) == 0 {
+		fileArray = make([][]byte, len(files))
+	} else {
+		fileArray = make([][]byte, amount[0])
+	}
+	j := 0
 	for i, v := range files {
 		f, err := os.ReadFile("testCerts/" + v.Name())
 		check(err)
 		fileArray[i] = f
-
+		j++
+		if len(amount) > 0 && j == amount[0] {
+			return fileArray
+		}
 	}
 	return fileArray
-
 }
 
 func BuildTree(certs [][]byte, fanOut int) *merkleTree {
@@ -59,7 +69,6 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 
 	uneven := false
 	if len(certs)%2 == 1 {
-		fmt.Println("SHOULD NOT BE PRINTED, unless uneven input leafs")
 		certs = append(certs, certs[len(certs)-1])
 		uneven = true
 	}
@@ -175,9 +184,14 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 	return sum == tree.Root.ownHash
 
 }
+func updateTree() int {
+	//TODO: Insert a node or delete a node?
+	return 0
+}
 
 func main() {
 	certArray := loadCertificates("testCerts/")
+	updateTree()
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
 	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
