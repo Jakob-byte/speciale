@@ -257,6 +257,7 @@ func deleteLeaf(cert []byte, tree merkleTree) *merkleTree {
 	//TODO: Insert a node or delete a node?
 	//How to do this, what is required??
 	//Diego said this is not required and will be done when rebuilding or somewhere else by the CA
+	fmt.Println("Sike! We cannot delete stuff.")
 	return &tree
 }
 
@@ -265,6 +266,7 @@ func loadOneCert(filePath string) []byte {
 	check(err)
 	return f
 }
+
 func main() {
 	certArray := loadCertificates("testCerts/")
 	merkTree := BuildTree(certArray, 2)
@@ -276,5 +278,4 @@ func main() {
 	deleteLeaf(certArray[5], *merkTree)
 
 	fmt.Println("Succes")
-
 }
