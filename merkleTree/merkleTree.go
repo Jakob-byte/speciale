@@ -204,8 +204,6 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 }
 
 func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
-	//TODO: Insert a node or delete a node?
-	//HOw to do this, what is required??
 	var nod *node
 	notInList := true
 	for _, v := range tree.leafs {
@@ -257,7 +255,8 @@ func insertLeaf(cert []byte, tree merkleTree) *merkleTree {
 
 func deleteLeaf(cert []byte, tree merkleTree) *merkleTree {
 	//TODO: Insert a node or delete a node?
-	//HOw to do this, what is required??
+	//How to do this, what is required??
+	//Diego said this is not required and will be done when rebuilding or somewhere else by the CA
 	return &tree
 }
 
