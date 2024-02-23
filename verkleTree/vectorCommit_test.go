@@ -10,8 +10,8 @@ func TestSomethingIGuess2(t *testing.T) {
 	commit := commit(pk, inp)
 	verifyPoly(pk, commit, inp)
 
-	verifyEval()
-	createWitness()
+	verifyEval(pk, commit, 1, inp, commit)
+	createWitness(pk, inp, 1)
 
 	open()
 	setup(10, 10)
