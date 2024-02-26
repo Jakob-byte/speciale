@@ -1,11 +1,12 @@
 package verkletree
 
 import (
+	"bytes"
 	"crypto/rand"
 	"fmt"
-	"math/big"
 
 	//	"math/big"
+	"encoding/binary"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
@@ -15,6 +16,11 @@ type PK struct {
 	alphaG1s []e.G1
 	g2       e.G2
 	alphaG2  e.G2
+}
+
+type Point struct {
+	X float64
+	Y float64
 }
 
 // what bit security do we have or bls12381
@@ -31,7 +37,7 @@ func setup(security int, t int) PK {
 	at.Set(a)
 	for i := 0; i < t; i++ {
 		gList[i].ScalarMult(at, g1)
-		fmt.Println(gList[i].String())
+		//fmt.Println(gList[i].String())
 		at.Mul(at, a)
 	}
 
@@ -47,38 +53,50 @@ func setup(security int, t int) PK {
 }
 
 // TODO CHANGE VECTTOCOMMIT TO POLYNOMIAL!!!!!
-func commit(pk PK, vectToCommit [][]byte) e.G1 {
-	var commitment e.G1
-	polyCoefs := vectToPolySike(vectToCommit) //TODO make a poly before calling commit.
+func commit(pk PK, vectToCommit []int) e.G1 {
+	commitment := pk.g1
+
+	polyCoefs := vectToCommit //TODO make a poly before calling commit.
 	//	polyCoefs := vectToPoly(input)
 	phiScalar := new(e.Scalar)
 	var cToBe e.G1
 	for i, phi := range polyCoefs {
-		phiScalar.SetBytes(phi.Bytes())
+		buff := new(bytes.Buffer)
+		err := binary.Write(buff, binary.LittleEndian, uint16(phi))
+		if err != nil {
+			fmt.Println(err)
+		}
+
+		intByteArray := buff.Bytes()
+
+		phiScalar.SetBytes(intByteArray)
+
 		cToBe.ScalarMult(phiScalar, &pk.alphaG1s[i])
 		commitment.Add(&cToBe, &commitment) //TODO Should there be a "mult" here somehow, as that is what is described in the original KZG paper.
 	}
-
 	return commitment
 }
 
-func open() int { //TODO fiks den aka. lav den
-	return 0
-}
-
-func verifyPoly(pk PK, commitmentToVerify e.G1, vectToCommit [][]byte) bool {
+// func open() int { //TODO fiks den aka. lav den
+//
+//		return 0
+//	}
+func verifyPoly(pk PK, commitmentToVerify e.G1, vectToCommit []int) bool {
 	commitment := commit(pk, vectToCommit)
+	fmt.Println("first commit", commitment)
+	fmt.Println("second commit", commitmentToVerify)
+
 	return commitment.IsEqual(&commitmentToVerify)
 }
 
-func createWitness(pk PK, vectToCommit [][]byte, index int) (int, []byte, e.G1) {
+func createWitness(pk PK, vectToCommit []int, polynomial LagrangePolynomial, index int) (int, float64, e.G1) {
 
-	phiI := vectToCommit[index] //TODO to call to polynomial, when we get that to work
+	phiI := polynomial.evaluate(float64(index)) //TODO to call to polynomial, when we get that to work
 	w := commit(pk, vectToCommit)
 	return index, phiI, w
 }
 
-func verifyEval(pk PK, commitment e.G1, index int, vectToCommit [][]byte, witness e.G1) bool {
+func verifyEval(pk PK, commitment e.G1, index int, vectToCommit []int, witness e.G1) bool {
 	lSide := e.Pair(&commitment, &pk.g2)
 
 	// e(w, alpha * g2 - x0 * g2) * e(g1, g2) ^f(x_i)
@@ -91,40 +109,56 @@ func verifyEval(pk PK, commitment e.G1, index int, vectToCommit [][]byte, witnes
 	rSide1 := e.Pair(&witness, &alphaG2minusX0G2)
 	rSide2 := e.Pair(&pk.g1, &pk.g2)
 	fxi := new(e.Scalar)
-	fxi.SetBytes(vectToCommit[index])
+
+	buff := new(bytes.Buffer)
+	err := binary.Write(buff, binary.LittleEndian, uint16(vectToCommit[index]))
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	intByteArray := buff.Bytes()
+
+	fxi.SetBytes(intByteArray)
 	rSide2.Exp(rSide2, fxi)
 	rSide1.Mul(rSide1, rSide2)
 	return lSide.IsEqual(rSide1)
 }
 
-func vectToPolySike(input [][]byte) []big.Int {
-	var result []big.Int
-	for _, v := range input {
-		var intBig big.Int
-		result = append(result, *intBig.SetBytes(v))
-	}
-	return result
-}
-
-//func vectToPoly(input [][]byte) func(int) big.Int {
-//	n := len(input)
-//	fmt.Println("Yay:", n)
-//	lagrange := func(x int) big.Int {
-//		var result big.Int
-//		for j := 0; j < n; j++ {
-//			lagrangeRes := 1
-//			for m := 0; m < n; m++ {
-//				if m != j {
-//					lagrangeRes *= (x - m) / (j - m)
-//				}
-//			}
-//			bigstuff := big.NewInt(0)
-//			bigstuff.SetBytes(input[j])
-//			bigstuff2 := big.NewInt(int64(lagrangeRes))
-//			result = *result.Add(&result, bigstuff.Mul(bigstuff, bigstuff2))
+//	func vectToPolySike(input [][]byte) []big.Int {
+//		var result []big.Int
+//		for _, v := range input {
+//			var intBig big.Int
+//			result = append(result, *intBig.SetBytes(v))
 //		}
-//
 //		return result
 //	}
-//	return lagrange
-//}
+type LagrangePolynomial struct {
+	coefficients []float64
+	evaluate     func(float64) float64
+}
+
+// vectToPoly calculates the Lagrange polynomial and returns its coefficients and evaluation function
+func vectToPoly(points []int) *LagrangePolynomial {
+	n := len(points)
+	coefficients := make([]float64, n)
+	// Inner function for evaluating the polynomial
+	evaluate := func(x float64) float64 {
+		result := 0.0
+		for j := 0; j < n; j++ {
+			lagrangeRes := 1.0
+			//product := points[j].Y
+			for m := 0; m < n; m++ {
+				if m != j {
+					lagrangeRes *= (x - float64(m)) / (float64(j) - float64(m))
+				}
+			}
+			fmt.Println("lagrangeRes:", lagrangeRes)
+			coefficients[j] = float64(points[j]) * lagrangeRes // Calculate and store coefficients
+			result += coefficients[j]                          // Use coefficients for evaluation
+
+		}
+		return result
+	}
+
+	return &LagrangePolynomial{coefficients: coefficients, evaluate: evaluate}
+}
