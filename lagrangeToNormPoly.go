@@ -80,12 +80,9 @@ func realVectorToPoly(points []float64) poly {
 						for _, blabla := range comb {
 							divToBe *= float64(blabla)
 						}
-						if len(comb) == 0 {
-							divToBe *= math.Pow(float64(i), float64(j+1))
 
-						} else {
-							divToBe *= math.Pow(float64(i), float64(j+1))
-						}
+						divToBe *= math.Pow(float64(i), float64(j+1))
+
 						sumDiv += divToBe
 					}
 
@@ -174,6 +171,7 @@ func main() {
 		9,
 		27,
 	}
+
 	fmt.Println(points)
 	//poly := vectorToPoly(points)
 	//fmt.Println("coefficients", poly.coefficients)

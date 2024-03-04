@@ -2,8 +2,11 @@ package verkletree
 
 import (
 	"crypto/rand"
-	"fmt"
+	"math"
 	"math/big"
+	"slices"
+
+	combin "gonum.org/v1/gonum/stat/combin"
 
 	//	"math/big"
 
@@ -17,10 +20,122 @@ type PK struct {
 	alphaG2  e.G2
 }
 
+type poly struct {
+	coefficients []e.Scalar
+}
+
+func certToScalarVector(certs [][]byte) []e.Scalar {
+	vects := make([]e.Scalar, len(certs))
+	for i, v := range certs {
+		vects[i].SetBytes(v)
+	}
+	return vects
+}
+func calcPoly(x e.Scalar, poly poly) e.Scalar {
+	var answer e.Scalar
+	for i, v := range poly.coefficients {
+		ansToBe := x
+		for j := 0; j < i; j++ {
+			ansToBe.Mul(&ansToBe, &x)
+		}
+		ansToBe.Mul(&v, &ansToBe)
+		answer.Add(&answer, &ansToBe)
+		//answer.Add(answer, a*math.Pow(x, float64(i)))
+	}
+	return answer
+}
+
+func realVectorToPoly(points []e.Scalar) poly {
+	var answer poly
+	coefs := make([]e.Scalar, len(points))
+	coefs[0] = points[0] // first value in list of points, this is constant coefficient
+	divident := 1.0
+
+	//divident Finder loop
+	for i := range points {
+		if i != 0 {
+			divident = divident * float64(i)
+		}
+	}
+	var degreeComb [][][]int
+	for k := len(points) - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
+	}
+	//flipBool := true
+	var dividentMinusI float64
+	var divToBe float64
+	var sumDiv float64
+	for i, y := range points {
+		dividentMinusI = 0
+		if i == 0 {
+			dividentMinusI = divident
+		} else {
+
+			for j, combs := range degreeComb {
+				sumDiv = 0
+				for _, comb := range combs {
+					if !slices.Contains(comb, i) {
+						divToBe = 1.0
+						for _, c := range comb {
+							divToBe *= float64(c)
+						}
+						divToBe *= math.Pow(float64(i), float64(j+1))
+
+						sumDiv += divToBe
+					}
+
+				}
+
+				if ((j) % 2) == 0 {
+					sumDiv *= -1
+				}
+				dividentMinusI += sumDiv
+			}
+
+		}
+		//WE can reuse the math for what to divide with! Convert the float thingie to bytes!!!
+		var dividentScalar e.Scalar
+		if dividentMinusI < 0 {
+			dividentMinusI *= -1
+			dividentScalar.SetUint64(uint64(dividentMinusI))
+			dividentScalar.Neg()
+		} else {
+			dividentScalar.SetUint64(uint64(dividentMinusI))
+		}
+		var coefToBe e.Scalar
+		var combScalar e.Scalar
+		for j, combs := range degreeComb {
+
+			for _, comb := range combs {
+				if !slices.Contains(comb, i) {
+					coefToBe.SetOne()
+					for _, c := range comb {
+						combScalar.SetUint64(uint64(c))
+						coefToBe.Mul(&coefToBe, &combScalar)
+					}
+
+					if ((j) % 2) == 0 {
+						coefToBe.Neg()
+					}
+					coefToBe.Mul(&coefToBe, &y)
+
+					dividentScalar.Inv(&dividentScalar)
+					coefs[j+1].Mul(&coefToBe, &dividentScalar)
+					//coefs[j+i] += (coefToBe * y) / dividentMinusI
+				}
+			}
+		}
+
+	}
+	//fmt.Println("coefs", coefs)
+	answer.coefficients = coefs
+	return answer
+}
+
 // what bit security do we have or bls12381
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
 func setup(security int, t int) PK {
-	fmt.Println("42 is the answer")
+	//fmt.Println("42 is the answer")
 	g1 := e.G1Generator()
 	g2 := e.G2Generator()
 	a := new(e.Scalar) //secretkey a, is forgotten and destroyed.
@@ -31,7 +146,7 @@ func setup(security int, t int) PK {
 	at.Set(a)
 	for i := 0; i < t; i++ {
 		gList[i].ScalarMult(at, g1)
-		fmt.Println(gList[i].String())
+		//fmt.Println(gList[i].String())
 		at.Mul(at, a)
 	}
 
@@ -105,26 +220,3 @@ func vectToPolySike(input [][]byte) []big.Int {
 	}
 	return result
 }
-
-//func vectToPoly(input [][]byte) func(int) big.Int {
-//	n := len(input)
-//	fmt.Println("Yay:", n)
-//	lagrange := func(x int) big.Int {
-//		var result big.Int
-//		for j := 0; j < n; j++ {
-//			lagrangeRes := 1
-//			for m := 0; m < n; m++ {
-//				if m != j {
-//					lagrangeRes *= (x - m) / (j - m)
-//				}
-//			}
-//			bigstuff := big.NewInt(0)
-//			bigstuff.SetBytes(input[j])
-//			bigstuff2 := big.NewInt(int64(lagrangeRes))
-//			result = *result.Add(&result, bigstuff.Mul(bigstuff, bigstuff2))
-//		}
-//
-//		return result
-//	}
-//	return lagrange
-//}
