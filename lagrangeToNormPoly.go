@@ -12,12 +12,12 @@ type point struct {
 	y float64
 }
 
-type lagrangePoly struct {
+type poly struct {
 	coefficients []float64
 }
 
-func vectorToPoly(points []float64) lagrangePoly {
-	var answer lagrangePoly
+func vectorToPoly(points []float64) poly {
+	var answer poly
 	//now we do magic!!! :)
 
 	b1 := (points[0] * 1 * 2) / (1 * 2)
@@ -46,8 +46,8 @@ func vectorToPoly(points []float64) lagrangePoly {
 	return answer
 }
 
-func realVectorToPoly(points []float64) lagrangePoly {
-	var answer lagrangePoly
+func realVectorToPoly(points []float64) poly {
+	var answer poly
 	coefs := make([]float64, len(points))
 	coefs[0] = points[0] // first value in list of points, this is constant coefficient
 	divident := 1.0
@@ -139,7 +139,7 @@ func realVectorToPoly(points []float64) lagrangePoly {
 //	}
 //}
 
-func calcPoly(x float64, poly lagrangePoly) float64 {
+func calcPoly(x float64, poly poly) float64 {
 	var answer float64
 	for i, a := range poly.coefficients {
 		answer = answer + a*math.Pow(x, float64(i))
@@ -147,42 +147,51 @@ func calcPoly(x float64, poly lagrangePoly) float64 {
 	return answer
 }
 
-
-
-
+func quotientOfPoly(polynomial poly, x0 float64) poly {
+	var quotient poly
+	degree := len(polynomial.coefficients)
+	coefs := make([]float64, degree-1)
+	fmt.Println("coefficients len: ", len(polynomial.coefficients))
+	for i, _ := range polynomial.coefficients[1:] { //we ignore the forst coeff as it is divided out
+		fmt.Println("i:", i)
+		count := 0
+		for j := i; j < len(coefs); j++ {
+			fmt.Println("j:", j)
+			coefs[i] += polynomial.coefficients[j+1] * math.Pow(x0, float64(count))
+			count++
+			fmt.Println("OG coefs: ", polynomial.coefficients[j+1])
+			fmt.Println("coefs[i]=v", i, coefs[i])
+		}
+	}
+	quotient.coefficients = coefs
+	return quotient
+}
 
 func main() {
 	points := []float64{
 		5,
-		150,
+		15,
 		9,
-		21,
-		170000,
-		59,
-		10,
+		27,
 	}
 	fmt.Println(points)
-	poly := vectorToPoly(points)
-	fmt.Println("coefficients", poly.coefficients)
-	fmt.Println("results x=1", calcPoly(0, poly))
-	fmt.Println("results x=2", calcPoly(1, poly))
-	fmt.Println("results x=3", calcPoly(2, poly))
+	//poly := vectorToPoly(points)
+	//fmt.Println("coefficients", poly.coefficients)
+	//fmt.Println("results x=1", calcPoly(0, poly))
+	//fmt.Println("re sults x=2", calcPoly(1, poly))
+	//fmt.Println("results x=3", calcPoly(2, poly))
 	poly2 := realVectorToPoly(points)
 	fmt.Println(poly2.coefficients)
-	fmt.Println("results x=0", calcPoly(0, poly2))
-	fmt.Println("results x=1", calcPoly(1, poly2))
-	fmt.Println("results x=2", calcPoly(2, poly2))
-	fmt.Println("results x=3", calcPoly(3, poly2))
-	fmt.Println("results x=4", calcPoly(4, poly2))
-	fmt.Println("results x=5", calcPoly(5, poly2))
-	fmt.Println("results x=6", calcPoly(6, poly2))
+	//fmt.Println("results x=0", calcPoly(0, poly2))
+	//fmt.Println("results x=1", calcPoly(1, poly2))
+	//fmt.Println("results x=2", calcPoly(2, poly2))
+	//fmt.Println("results x=3", calcPoly(3, poly2))
+	//fmt.Println("results x=4", calcPoly(4, poly2))
+	//fmt.Println("results x=5", calcPoly(5, poly2))
+	//fmt.Println("results x=6", calcPoly(6, poly2))
 
+	quotientPoly := quotientOfPoly(poly2, 2)
+	fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
 	fmt.Println("Succes")
 
 }
-
-5 + 63644*x+ 1.40008+06*x^2 .... -f(x_0)
-/
-x - x_0
-
-
