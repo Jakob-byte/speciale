@@ -25,19 +25,16 @@ func vectorToPoly(points []float64) lagrangePoly {
 	b3 := points[0] / (1 * 2)
 	b4 := points[0] / (1 * 2)
 	v0Coefs := []float64{b1, -b2 - b3, b4}
-	c1 := (points[1] * 0 * 2) / (1*2 - 1)
-	c2 := (points[1] * 2) / (1*2 - 1)
-	c3 := (points[1] * 0) / (1*2 - 1)
-	c4 := points[1] / (1*2 - 1)
-	v1Coefs := []float64{c1, c2 + c3, -c4}
-	d1 := (points[2] * 0 * 1) / (1*2 - 4)
-	d2 := (points[2] * 1) / (1*2 - 4)
-	d3 := (points[2] * 0) / (1*2 - 4)
-	d4 := points[2] / (1*2 - 4)
-	v2Coefs := []float64{d1, d2 + d3, -d4}
-	fmt.Println("v0coefs", v0Coefs)
-	fmt.Println("v1coefs", v1Coefs)
-	fmt.Println("v2coefs", v2Coefs)
+	c1 := (points[1] * 0 * 2) / (-1*2 + 1)
+	c2 := (points[1] * 2) / (-1*2 + 1)
+	c3 := (points[1] * 0) / (-1*2 + 1)
+	c4 := points[1] / (-1*2 + 1)
+	v1Coefs := []float64{c1, -c2 - c3, c4}
+	d1 := (points[2] * 0 * 1) / (-1*2 + 4)
+	d2 := (points[2] * 1) / (-1*2 + 4)
+	d3 := (points[2] * 0) / (-1*2 + 4)
+	d4 := points[2] / (-1*2 + 4)
+	v2Coefs := []float64{d1, -d2 - d3, d4}
 
 	listlist := make([]float64, len(points))
 	for i := 0; i < len(points); i++ {
@@ -67,11 +64,43 @@ func realVectorToPoly(points []float64) lagrangePoly {
 	}
 	//flipBool := true
 	var dividentMinusI float64
+	var divToBe float64
+	var sumDiv float64
 	for i, y := range points {
-		fmt.Println(coefs, i, y)
-		dividentMinusI = divident - math.Pow(float64(i), 2)
+		dividentMinusI = 0
+		if i == 0 {
+			dividentMinusI = divident
+		} else {
+
+			for j, combs := range degreeComb {
+				sumDiv = 0
+				for _, comb := range combs {
+					if !slices.Contains(comb, i) {
+						divToBe = 1.0
+						for _, blabla := range comb {
+							divToBe *= float64(blabla)
+						}
+						if len(comb) == 0 {
+							divToBe *= math.Pow(float64(i), float64(j+1))
+
+						} else {
+							divToBe *= math.Pow(float64(i), float64(j+1))
+						}
+						sumDiv += divToBe
+					}
+
+				}
+
+				if ((j) % 2) == 0 {
+					sumDiv *= -1
+				}
+				dividentMinusI += sumDiv
+			}
+
+		}
 
 		for j, combs := range degreeComb {
+
 			for _, comb := range combs {
 				if !slices.Contains(comb, i) {
 					coefToBe := 1.0
@@ -79,22 +108,11 @@ func realVectorToPoly(points []float64) lagrangePoly {
 						coefToBe *= float64(blabla)
 					}
 
-					//if i == 0 && j == 0 {
-					////	coefToBe *= -1
-					////}
-					//if i%2 == 0 || j%2 == 0 {
-					//	coefToBe *= -1
-					//}
-					//if i%2 == 1 || j%2 == 1 {
-					//	coefToBe *= -1
-					//}
-					//if i > 1 {
-					//	coefToBe *= -1
-					//}
-					coefToBe *= -1
-					coefs[j+1] += (coefToBe * y) / dividentMinusI
-					fmt.Println("Hello", coefToBe, y)
+					if ((j) % 2) == 0 {
+						coefToBe *= -1
+					}
 
+					coefs[j+1] += (coefToBe * y) / dividentMinusI
 				}
 
 			}
@@ -129,11 +147,19 @@ func calcPoly(x float64, poly lagrangePoly) float64 {
 	return answer
 }
 
+
+
+
+
 func main() {
 	points := []float64{
 		5,
-		15,
+		150,
 		9,
+		21,
+		170000,
+		59,
+		10,
 	}
 	fmt.Println(points)
 	poly := vectorToPoly(points)
@@ -147,6 +173,16 @@ func main() {
 	fmt.Println("results x=1", calcPoly(1, poly2))
 	fmt.Println("results x=2", calcPoly(2, poly2))
 	fmt.Println("results x=3", calcPoly(3, poly2))
+	fmt.Println("results x=4", calcPoly(4, poly2))
+	fmt.Println("results x=5", calcPoly(5, poly2))
+	fmt.Println("results x=6", calcPoly(6, poly2))
+
 	fmt.Println("Succes")
 
 }
+
+5 + 63644*x+ 1.40008+06*x^2 .... -f(x_0)
+/
+x - x_0
+
+
