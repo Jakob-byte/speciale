@@ -101,8 +101,8 @@ func realVectorToPoly(points []float64) poly {
 			for _, comb := range combs {
 				if !slices.Contains(comb, i) {
 					coefToBe := 1.0
-					for _, blabla := range comb {
-						coefToBe *= float64(blabla)
+					for _, c := range comb {
+						coefToBe *= float64(c)
 					}
 
 					if ((j) % 2) == 0 {
@@ -110,11 +110,10 @@ func realVectorToPoly(points []float64) poly {
 					}
 
 					coefs[j+1] += (coefToBe * y) / dividentMinusI
+					fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
 
 			}
-
-			coefs[j+1] = (coefs[j+1])
 
 		}
 
@@ -140,6 +139,7 @@ func calcPoly(x float64, poly poly) float64 {
 	var answer float64
 	for i, a := range poly.coefficients {
 		answer = answer + a*math.Pow(x, float64(i))
+		fmt.Println("Answer in I ", i, answer)
 	}
 	return answer
 }
@@ -169,7 +169,7 @@ func main() {
 		5,
 		15,
 		9,
-		27,
+		//27,
 	}
 
 	fmt.Println(points)
@@ -180,6 +180,7 @@ func main() {
 	//fmt.Println("results x=3", calcPoly(2, poly))
 	poly2 := realVectorToPoly(points)
 	fmt.Println(poly2.coefficients)
+	fmt.Println(calcPoly(2, poly2))
 	//fmt.Println("results x=0", calcPoly(0, poly2))
 	//fmt.Println("results x=1", calcPoly(1, poly2))
 	//fmt.Println("results x=2", calcPoly(2, poly2))
@@ -188,8 +189,8 @@ func main() {
 	//fmt.Println("results x=5", calcPoly(5, poly2))
 	//fmt.Println("results x=6", calcPoly(6, poly2))
 
-	quotientPoly := quotientOfPoly(poly2, 2)
-	fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
+	//quotientPoly := quotientOfPoly(poly2, 2)
+	//fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
 	fmt.Println("Succes")
 
 }

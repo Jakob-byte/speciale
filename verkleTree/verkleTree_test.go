@@ -2,11 +2,9 @@ package verkletree
 
 import (
 	"fmt"
-	"math/rand"
 	"testing"
 )
 
 func TestSomethingIGuess(t *testing.T) {
-	fmt.Println(rand.Intn(45))
-
+	fmt.Println("Hello, I am the other test class. I do nothing atm :)")
 }
