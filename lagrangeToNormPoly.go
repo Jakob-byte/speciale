@@ -178,8 +178,8 @@ func main() {
 	//fmt.Println("re sults x=2", calcPoly(1, poly))
 	//fmt.Println("results x=3", calcPoly(2, poly))
 	poly2 := realVectorToPoly(points)
-	fmt.Println(poly2.coefficients)
-	fmt.Println(calcPoly(2, poly2))
+	//fmt.Println(poly2.coefficients)
+	//fmt.Println(calcPoly(2, poly2))
 	//fmt.Println("results x=0", calcPoly(0, poly2))
 	//fmt.Println("results x=1", calcPoly(1, poly2))
 	//fmt.Println("results x=2", calcPoly(2, poly2))
@@ -188,8 +188,8 @@ func main() {
 	//fmt.Println("results x=5", calcPoly(5, poly2))
 	//fmt.Println("results x=6", calcPoly(6, poly2))
 
-	//quotientPoly := quotientOfPoly(poly2, 2)
-	//fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
+	quotientPoly := quotientOfPoly(poly2, 2)
+	fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
 	fmt.Println("Succes")
 
 }
