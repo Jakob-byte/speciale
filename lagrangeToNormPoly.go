@@ -77,13 +77,14 @@ func realVectorToPoly(points []float64) poly {
 				for _, comb := range combs {
 					if !slices.Contains(comb, i) {
 						divToBe = 1.0
-						for _, blabla := range comb {
-							divToBe *= float64(blabla)
+						for _, c := range comb {
+							divToBe *= float64(c)
 						}
 
 						divToBe *= math.Pow(float64(i), float64(j+1))
 
 						sumDiv += divToBe
+
 					}
 
 				}
@@ -95,22 +96,20 @@ func realVectorToPoly(points []float64) poly {
 			}
 
 		}
-
 		for j, combs := range degreeComb {
-
 			for _, comb := range combs {
 				if !slices.Contains(comb, i) {
 					coefToBe := 1.0
 					for _, c := range comb {
 						coefToBe *= float64(c)
 					}
+					fmt.Println("i, coefToBe", i, coefToBe)
 
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
 					}
-
 					coefs[j+1] += (coefToBe * y) / dividentMinusI
-					fmt.Println("coef[j+1]: ", coefs[j+1])
+					//fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
 
 			}
@@ -119,7 +118,7 @@ func realVectorToPoly(points []float64) poly {
 
 		//c1 := y*9
 	}
-	fmt.Println("coefs", coefs)
+	//fmt.Println("coefs", coefs)
 	answer.coefficients = coefs
 	return answer
 }
@@ -139,7 +138,7 @@ func calcPoly(x float64, poly poly) float64 {
 	var answer float64
 	for i, a := range poly.coefficients {
 		answer = answer + a*math.Pow(x, float64(i))
-		fmt.Println("Answer in I ", i, answer)
+		//fmt.Println("Answer in I ", i, answer)
 	}
 	return answer
 }
@@ -148,16 +147,16 @@ func quotientOfPoly(polynomial poly, x0 float64) poly {
 	var quotient poly
 	degree := len(polynomial.coefficients)
 	coefs := make([]float64, degree-1)
-	fmt.Println("coefficients len: ", len(polynomial.coefficients))
+	//fmt.Println("coefficients len: ", len(polynomial.coefficients))
 	for i, _ := range polynomial.coefficients[1:] { //we ignore the forst coeff as it is divided out
-		fmt.Println("i:", i)
+		//fmt.Println("i:", i)
 		count := 0
 		for j := i; j < len(coefs); j++ {
-			fmt.Println("j:", j)
+			//fmt.Println("j:", j)
 			coefs[i] += polynomial.coefficients[j+1] * math.Pow(x0, float64(count))
 			count++
-			fmt.Println("OG coefs: ", polynomial.coefficients[j+1])
-			fmt.Println("coefs[i]=v", i, coefs[i])
+			//fmt.Println("OG coefs: ", polynomial.coefficients[j+1])
+			//fmt.Println("coefs[i]=v", i, coefs[i])
 		}
 	}
 	quotient.coefficients = coefs
@@ -169,10 +168,10 @@ func main() {
 		5,
 		15,
 		9,
-		//27,
+		27,
 	}
 
-	fmt.Println(points)
+	//fmt.Println(points)
 	//poly := vectorToPoly(points)
 	//fmt.Println("coefficients", poly.coefficients)
 	//fmt.Println("results x=1", calcPoly(0, poly))

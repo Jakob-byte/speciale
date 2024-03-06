@@ -2,8 +2,6 @@ package verkletree
 
 import (
 	"crypto/rand"
-	"fmt"
-	"math"
 	"slices"
 
 	combin "gonum.org/v1/gonum/stat/combin"
@@ -46,7 +44,7 @@ func calcPoly(x uint64, poly poly) e.Scalar {
 		ansToBe.Mul(&v, &ansToBe)
 		answer.Add(&answer, &ansToBe)
 		//answer.Add(answer, a*math.Pow(x, float64(i)))
-		fmt.Println("ANSWer IN I ", i, answer)
+		//fmt.Println("ANSWer IN I ", i, answer)
 	}
 	return answer
 }
@@ -55,61 +53,73 @@ func realVectorToPoly(points []e.Scalar) poly {
 	var answer poly
 	coefs := make([]e.Scalar, len(points))
 	coefs[0] = points[0] // first value in list of points, this is constant coefficient
-	divident := 1.0
+	var divident e.Scalar
+	divident.SetOne()
 
 	//divident Finder loop
+	var iScalar e.Scalar
 	for i := range points {
 		if i != 0 {
-			divident = divident * float64(i)
+			//divident = divident * float64(i)
+			iScalar.SetUint64(uint64(i))
+			divident.Mul(&divident, &iScalar)
 		}
 	}
 	var degreeComb [][][]int
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	var dividentMinusI float64
-	var divToBe float64
-	var sumDiv float64
+	var dividentMinusI e.Scalar
+	var divToBe e.Scalar
+	var sumDiv e.Scalar
+	var cScalar e.Scalar
+	var iInPowerOfJ e.Scalar
 	//var testScalar e.Scalar
 	for i, y := range points {
-		dividentMinusI = 0
+		dividentMinusI.SetUint64(0)
 		if i == 0 {
 			dividentMinusI = divident
 		} else {
 
 			for j, combs := range degreeComb {
-				sumDiv = 0
+				sumDiv.SetUint64(0)
 				for _, comb := range combs {
 					if !slices.Contains(comb, i) {
-						divToBe = 1.0
+						divToBe.SetOne()
 						for _, c := range comb {
-							divToBe *= float64(c)
+							//divToBe *= float64(c)
+							cScalar.SetUint64(uint64(c))
+							divToBe.Mul(&divToBe, &cScalar)
 						}
-						divToBe *= math.Pow(float64(i), float64(j+1))
+						iInPowerOfJ.SetOne()
+						iScalar.SetUint64(uint64(i))
+						for k := 1; k <= j+1; k++ {
+							iInPowerOfJ.Mul(&iInPowerOfJ, &iScalar)
+						}
+						//divToBe *= math.Pow(float64(i), float64(j+1))
+						divToBe.Mul(&divToBe, &iInPowerOfJ)
+						//sumDiv += divToBe
+						// j = 2
+						// k=1
+						// I*1
+						// K=2
+						// I*I
 
-						sumDiv += divToBe
+						sumDiv.Add(&sumDiv, &divToBe)
+
 					}
 				}
 				if ((j) % 2) == 0 {
-					sumDiv *= -1
+					//sumDiv *= -1
+					sumDiv.Neg()
 				}
-				dividentMinusI += sumDiv
+				//dividentMinusI += sumDiv
+				dividentMinusI.Add(&dividentMinusI, &sumDiv)
 			}
 		}
+		// inverse it so when we multiply with it, it will work as division!!!
+		dividentMinusI.Inv(&dividentMinusI)
 
-		//WE can reuse the math for what to divide with! Convert the float thingie to bytes!!!
-		var dividentScalar e.Scalar
-		if dividentMinusI < 0 {
-			dividentMinusI *= -1
-			fmt.Println("we set the divident Scalar!!! :", dividentMinusI)
-			dividentScalar.SetUint64(uint64(dividentMinusI))
-			fmt.Println("before we Neg() What does it look like :", dividentScalar)
-			dividentScalar.Neg() //Sub(&testScalar.SetOne(),&dividentScalar) // this Order - DividentScalar
-			fmt.Println("AFTER we Neg() What does it look like :", dividentScalar)
-
-		} else {
-			dividentScalar.SetUint64(uint64(dividentMinusI))
-		}
 		var coefToBe e.Scalar
 		var combScalar e.Scalar
 		for j, combs := range degreeComb {
@@ -120,17 +130,16 @@ func realVectorToPoly(points []e.Scalar) poly {
 						combScalar.SetUint64(uint64(c))
 						coefToBe.Mul(&coefToBe, &combScalar)
 					}
-
+					//fmt.Println("i, coefToBe: ", i, coefToBe)
 					if ((j) % 2) == 0 {
 						// Here order - coef
 						coefToBe.Neg()
 					}
 					coefToBe.Mul(&coefToBe, &y)
 
-					dividentScalar.Inv(&dividentScalar)
-					coefToBe.Mul(&coefToBe, &dividentScalar)
+					coefToBe.Mul(&coefToBe, &dividentMinusI)
 					coefs[j+1].Add(&coefs[j+1], &coefToBe)
-					fmt.Println("Coefs[j+1]: ", coefs[j+1])
+					//fmt.Println("Coefs[j+1]: ", coefs[j+1])
 					//coefs[j+i] += (coefToBe * y) / dividentMinusI
 				}
 			}
@@ -151,9 +160,8 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 	var mulSomething e.Scalar
 
 	xNul.SetUint64(x0)
-	fmt.Println("coefficients len: ", len(polynomial.coefficients))
+	//fmt.Println("coefficients len: ", len(polynomial.coefficients))
 	for i, _ := range polynomial.coefficients[1:] { //we ignore the forst coeff as it is divided out
-		fmt.Println("i:", i)
 		xPower.SetOne()
 		for j := i; j < len(coefs); j++ {
 			//fmt.Println("j:", j)
@@ -171,7 +179,7 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 
 // what bit security do we have or bls12381
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
-func setup(security int, t int) PK {
+func setup(security, t int) PK {
 	//fmt.Println("42 is the answer")
 	g1 := e.G1Generator()
 	g2 := e.G2Generator()
@@ -212,13 +220,13 @@ func commit(pk PK, polynomial poly) e.G1 {
 	var cToBe e.G1
 	for i, coef := range polynomial.coefficients {
 		cToBe.ScalarMult(&coef, &pk.alphaG1s[i])
-		fmt.Println("PK ALPHAG1S", pk.alphaG1s[i].IsOnG1())
-		fmt.Println("ctoBe", cToBe.IsOnG1())
+		//fmt.Println("PK ALPHAG1S", pk.alphaG1s[i].IsOnG1())
+		//fmt.Println("ctoBe", cToBe.IsOnG1())
 		tempVal.Add(&cToBe, &commitment)
-		fmt.Println("tempval", tempVal)
+		//fmt.Println("tempval", tempVal)
 		commitment = tempVal
 		//commitment.Add(&cToBe, commitment) //TODO Should there be a "mult" here somehow, as that is what is described in the original KZG paper.
-		fmt.Println("commitment", commitment.IsOnG1())
+		//fmt.Println("commitment", commitment.IsOnG1())
 
 	}
 	return commitment
@@ -230,8 +238,8 @@ func open() int { //TODO fiks den aka. lav den
 
 func verifyPoly(pk PK, commitmentToVerify e.G1, polynomial poly) bool {
 	commitment := commit(pk, polynomial)
-	fmt.Println("new commitment",commitment)
-	fmt.Println("old commitment",commitmentToVerify)
+	//fmt.Println("new commitment", commitment)
+	//fmt.Println("old commitment", commitmentToVerify)
 	return commitment.IsEqual(&commitmentToVerify)
 }
 
