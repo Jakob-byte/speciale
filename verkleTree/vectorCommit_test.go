@@ -8,6 +8,7 @@ import (
 )
 
 func TestCreatedPolyEvalsCorrectly(t *testing.T) {
+	fmt.Println("TestCreatedPolyEvalsCorrectly Running")
 	points := [][]byte{
 		{5},
 		{15},
@@ -28,10 +29,10 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 			fmt.Println("Was incorrect for ", i, "should have been", p, "but was", answer)
 			panic("The poly evals incorrectly")
 		}
-
 	}
 }
 func TestQuotientPoly(t *testing.T) {
+	fmt.Println("TestQuotientPoly Running")
 	points := [][]byte{
 		{5},
 		{15},
@@ -64,6 +65,7 @@ func TestQuotientPoly(t *testing.T) {
 }
 
 func TestCommit(t *testing.T) {
+	fmt.Println("TestCommit Running")
 	points := [][]byte{
 		{5},
 		{15},
@@ -74,12 +76,18 @@ func TestCommit(t *testing.T) {
 
 	polynomial := certVectorToPolynomial(points)
 	commit := commit(pk, polynomial)
-	fmt.Println("verify Poly Returns:", verifyPoly(pk, commit, polynomial))
+	verifyBool := verifyPoly(pk, commit, polynomial)
+	if !verifyBool{
+		panic("verify Poly was very incorrect")
+	}
 
-	index, fxo, witness := createWitness(pk, polynomial, uint64(1))
+	witness := createWitness(pk, polynomial, uint64(1))
+	verifyBool = verifyWitness(pk, commit, witness)
+	if !verifyBool{
+		panic("verify witness was very incorrect")
+	}
 
-	fmt.Println("Very eval returns: ", verifyWitness(pk, commit, index, fxo, witness))
 	open()
-	fmt.Println("Testen løb igennen")
 
 }
+

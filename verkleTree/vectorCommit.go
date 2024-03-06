@@ -2,7 +2,7 @@ package verkletree
 
 import (
 	"crypto/rand"
-	"fmt"
+	
 	"slices"
 
 	combin "gonum.org/v1/gonum/stat/combin"
@@ -21,6 +21,12 @@ type PK struct {
 
 type poly struct {
 	coefficients []e.Scalar
+}
+
+type witnessStruct struct{
+	index uint64
+	fx0 e.Scalar
+	w e.G1
 }
 
 // what bit security do we have or bls12381
@@ -221,13 +227,13 @@ func commit(pk PK, polynomial poly) e.G1 {
 	for i, coef := range polynomial.coefficients {
 		cToBe.ScalarMult(&coef, &pk.alphaG1s[i])
 		//fmt.Println("PK ALPHAG1S", pk.alphaG1s[i].IsOnG1())
-		fmt.Println("ctoBe", cToBe.IsOnG1())
+		//fmt.Println("ctoBe", cToBe.IsOnG1())
 		if i == 0 {
 			commitment = cToBe
 		} else {
 			commitment.Add(&cToBe, &commitment) //TODO Should there be a "mult" here somehow, as that is what is described in the original KZG paper.
 		}
-		fmt.Println("commitment", commitment.IsOnG1())
+		//fmt.Println("commitment", commitment.IsOnG1())
 	}
 	return commitment
 }
@@ -243,39 +249,44 @@ func verifyPoly(pk PK, commitmentToVerify e.G1, polynomial poly) bool {
 	return commitment.IsEqual(&commitmentToVerify)
 }
 
-func createWitness(pk PK, polynomial poly, index uint64) (uint64, e.Scalar, e.G1) {
+func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 	//HokusPokusDinKatErIFokus()
 	quotientPoly := quotientOfPoly(polynomial, index)
-	witness := commit(pk, quotientPoly)
-	fmt.Println("this is a witness", witness)
+	w := commit(pk, quotientPoly)
+	//fmt.Println("this is a witness", w)
 	fx0 := calcPoly(index, polynomial) //TODO to call to polynomial, when we get that to work
-	fmt.Println("this is fx0", fx0)
-	return index, fx0, witness
+	//fmt.Println("this is fx0", fx0)
+	witness := witnessStruct {
+		w: w,
+		index: index,
+		fx0: fx0,
+	}
+
+	return witness
 }
 
-func verifyWitness(pk PK, commitment e.G1, index uint64, fx0 e.Scalar, witness e.G1) bool {
+func verifyWitness(pk PK, commitment e.G1, witness witnessStruct) bool {
 	lSide := e.Pair(&commitment, &pk.g2)
 
 	// e(w, alpha * g2 - x0 * g2) * e(g1, g2) ^f(x_0)
 	var alphaG2minusX0G2 e.G2
 	var x0 e.Scalar
-	x0.SetUint64(uint64(index))
+	x0.SetUint64(uint64(witness.index))
 	var x0g2 e.G2
 	x0g2.ScalarMult(&x0, &pk.g2)
 	x0g2.Neg()
-	fmt.Println("x0g2 after neg", x0g2.IsOnG2())
+	//fmt.Println("x0g2 after neg", x0g2.IsOnG2())
 	alphaG2minusX0G2.Add(&pk.alphaG2, &x0g2) //
-	fmt.Println("alphaG2minusX0g2", alphaG2minusX0G2.IsOnG2())
-	rSide1 := e.Pair(&witness, &alphaG2minusX0G2)
+	//fmt.Println("alphaG2minusX0g2", alphaG2minusX0G2.IsOnG2())
+	rSide1 := e.Pair(&witness.w, &alphaG2minusX0G2)
 	rSide2 := e.Pair(&pk.g1, &pk.g2)
 
 	//fxi := new(e.Scalar)
 	//fxi.SetBytes(vectToCommit[index])
 	// try the other Pair Function pairPRod first make into list
-	rSide2.Exp(rSide2, &fx0)
+	rSide2.Exp(rSide2, &witness.fx0)
 
 	rSide1.Mul(rSide1, rSide2)
-	fmt.Println("THIS IS lSIdE :", lSide)
-	fmt.Println("THIS IS rrrSIdE :", rSide1)
+
 	return lSide.IsEqual(rSide1)
 }

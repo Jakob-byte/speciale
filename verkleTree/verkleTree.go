@@ -4,29 +4,32 @@ import (
 	"bytes"
 	"crypto/sha256"
 
-	//"errors"
+	e "github.com/cloudflare/circl/ecc/bls12381"
+
 	"fmt"
-	//"hash"
-	//"math/big"
+
 	"log"
 	"os"
 )
 
 type node struct {
-	parent          *node
-	childNumb       int
-	children        []*node
-	ownVectorCommit [32]byte
-	leaf            bool
-	certificate     []byte
-	duplicate       bool
-	id              int
+	parent                  *node
+	childNumb               int
+	children                []*node
+	ownCompressVectorCommit []byte
+	ownVectorCommit         e.G1
+	leaf                    bool
+	certificate             []byte
+	duplicate               bool
+	id                      int
+	witness witnessStruct
 }
 
 type verkleTree struct {
 	Root   *node
 	leafs  []*node
 	fanOut int
+	pk     PK
 }
 
 func check(err error) {
@@ -60,9 +63,8 @@ func loadCertificates(input string, amount ...int) [][]byte {
 	return fileArray
 }
 
-func BuildTree(certs [][]byte, fanOut int) *verkleTree {
-	var merk verkleTree
-
+func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
+	var verk verkleTree
 	//var leafs []*node
 
 	uneven := false
@@ -77,14 +79,13 @@ func BuildTree(certs [][]byte, fanOut int) *verkleTree {
 
 	for i := 0; i < len(certs); i++ {
 		byteCet := certs[i]
-		testHash := sha256.Sum256(byteCet)
+		//testHash := sha256.Sum256(byteCet)
 		leafs[i] = &node{
-			certificate:     byteCet,
-			childNumb:       i % fanOut,
-			ownVectorCommit: testHash,
-			leaf:            true,
-			duplicate:       false,
-			id:              i,
+			certificate: byteCet,
+			childNumb:   i % fanOut,
+			leaf:        true,
+			duplicate:   false,
+			id:          i,
 		}
 	}
 	if uneven {
@@ -94,21 +95,22 @@ func BuildTree(certs [][]byte, fanOut int) *verkleTree {
 		}
 	}
 
-	nextLayer := makeLayer(leafs, fanOut)
+	nextLayer := makeLayer(leafs, fanOut, true, pk)
 	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut)
+		nextLayer = makeLayer(nextLayer, fanOut, false, pk)
 	}
 
-	merk = verkleTree{
+	verk = verkleTree{
 		fanOut: fanOut,
 		Root:   nextLayer[0],
 		leafs:  leafs,
+		pk:     pk,
 	}
 
-	return &merk
+	return &verk
 }
 
-func makeLayer(nodes []*node, fanOut int) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK) []*node {
 
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
@@ -123,43 +125,53 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 		nodes = append(nodes, appendNode)
 	}
 
-	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
+	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is length of vectors
 
 	for i := 0; i < len(nodes); {
-		var childrenList []*node
-		var allChildrenHashes []byte
-		for k := 0; k < fanOut; k++ {
-			childrenList = append(childrenList, nodes[i+k])
-			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownVectorCommit[:]...)
+		childrenList := make([]*node, fanOut)
+		//var vectToCommit [][]byte
+		vectToCommit := make([][]byte, fanOut)
+		if firstLayer {
+			for k := 0; k < fanOut; k++ {
+				childrenList[k] = nodes[i+k]
+				vectToCommit[k] = nodes[i+k].certificate
+			}
+		} else {
+			for k := 0; k < fanOut; k++ {
+				childrenList[k] = nodes[i+k]
+				vectToCommit[k] = nodes[i+k].ownCompressVectorCommit // this does magic we might need to check it doesn't ruin the list
+			}
 		}
 
-		sum := sha256.Sum256(allChildrenHashes)
+		polynomial := certVectorToPolynomial(vectToCommit)
+		commitment := commit(pk, polynomial)
 
 		nextLayer[i/fanOut] = &node{
-			ownVectorCommit: sum,
-			childNumb:       i % fanOut,
-			leaf:            false,
-			children:        childrenList,
-			id:              i / fanOut,
+			ownVectorCommit:         commitment,
+			ownCompressVectorCommit: commitment.BytesCompressed(),
+			childNumb:               i % fanOut,
+			leaf:                    false,
+			children:                childrenList,
+			id:                      i / fanOut,
 		}
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
+			v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
 		}
 		i = i + fanOut
 	}
 	return nextLayer
 }
 
-func verifyTree(certs [][]byte, tree verkleTree) bool {
-	testTree := BuildTree(certs, tree.fanOut)
+func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
+	testTree := BuildTree(certs, tree.fanOut, pk)
 
 	return testTree.Root.ownVectorCommit == tree.Root.ownVectorCommit
 
 }
 
-func verifyNode(cert []byte, tree verkleTree) bool {
+func verifyNode(cert []byte, tree verkleTree, pk PK) bool {
 	var nod *node
-	fanOut := tree.fanOut
 	notInList := true
 	for _, v := range tree.leafs {
 		if bytes.Equal(v.certificate, cert) {
@@ -170,37 +182,17 @@ func verifyNode(cert []byte, tree verkleTree) bool {
 	if notInList {
 		return false
 	}
-
-	var hashList [][][32]byte
-	var childNumberList []int
+	
 	for nod.parent != nil {
-		childNumberList = append(childNumberList, nod.id%fanOut)
-		var hashList0 [][32]byte
-		for _, v := range nod.parent.children {
-			if nod.id != v.id {
-				hashList0 = append(hashList0, v.ownVectorCommit)
-			}
+		witnessIsTrue := verifyWitness(pk, nod.parent.ownVectorCommit ,nod.witness)
+		if !witnessIsTrue{
+			return false
 		}
-		hashList = append(hashList, hashList0)
 		nod = nod.parent
+
 	}
 
-	sum := sha256.Sum256(cert)
-	for i := 0; i < len(hashList); i++ {
-		var byteToHash []byte
-		for j, v := range hashList[i] {
-
-			if childNumberList[i] == j {
-				byteToHash = append(byteToHash, sum[:]...)
-			}
-			byteToHash = append(byteToHash, v[:]...)
-		}
-		if childNumberList[i] == fanOut-1 {
-			byteToHash = append(byteToHash, sum[:]...)
-		}
-		sum = sha256.Sum256(byteToHash)
-	}
-	return sum == tree.Root.ownVectorCommit
+	return true
 }
 
 func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
@@ -225,7 +217,7 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 		var hashList [][32]byte
 		for _, v := range nod.parent.children {
 			if nod.id != v.id {
-				hashList = append(hashList, v.ownVectorCommit)
+				//hashList = append(hashList, v.ownVectorCommit)
 			}
 		}
 
@@ -241,7 +233,7 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 			byteToHash = append(byteToHash, sum[:]...)
 		}
 		sum = sha256.Sum256(byteToHash)
-		nod.parent.ownVectorCommit = sum
+		//nod.parent.ownVectorCommit = sum
 		nod = nod.parent
 	}
 	return &tree
