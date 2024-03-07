@@ -37,7 +37,8 @@ func TestVerifyNode(t *testing.T) {
 	fanOut := 2
 	pk := setup(1, fanOut)
 	verk := BuildTree(points, fanOut, pk)
-	didNodeVerify := verifyNode(points[2], *verk, pk)
+	membershipProof := createMembershipProof(points[2], *verk)
+	didNodeVerify := verifyMembershipProof(membershipProof, pk)
 
 	if !didNodeVerify {
 		panic("Node did not verify as expected")
@@ -88,7 +89,7 @@ func TestRealCertificatesTime(t *testing.T) {
 	testAmount := 10
 	start := time.Now()
 	fmt.Println("TestRealCertificatesTime Running")
-	fanOut := 10
+	fanOut := 500
 	pk := setup(4, fanOut)
 	certArray := loadCertificates("testCerts/")
 	elapsed1 := time.Since(start)

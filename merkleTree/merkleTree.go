@@ -101,7 +101,7 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 
 func makeLayer(nodes []*node, fanOut int) []*node {
 
-	//makes the tree balanced according to the fanout, by duplicating the last
+	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
@@ -115,23 +115,28 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 	}
 
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
-
+	
+	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
+	//And adding the corresponding children to each of their parents in the tree.
 	for i := 0; i < len(nodes); {
+		//The loop starts by finding the children for the current node in the 'nextlayer'
 		var childrenList []*node
 		var allChildrenHashes []byte
 		for k := 0; k < fanOut; k++ {
 			childrenList = append(childrenList, nodes[i+k])
 			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownHash[:]...)
 		}
+		//Creates the hash of the children of the node.
 
 		sum := sha256.Sum256(allChildrenHashes)
-
+		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownHash:   sum,
 			childNumb: i % fanOut,
 			children:  childrenList,
 			id:        i / fanOut,
 		}
+		//Sets the parent for each of the nodes in the now previous layer.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
 		}

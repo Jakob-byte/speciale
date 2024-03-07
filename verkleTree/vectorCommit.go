@@ -2,16 +2,14 @@ package verkletree
 
 import (
 	"crypto/rand"
-	
+
 	"slices"
-
 	//combin "gonum.org/v1/gonum/stat/combin"
-
 	//	"math/big"
-
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
 
+//The public key struct which contains the g1's, alpha^i*g1. As well as g2 and alpha*g2
 type PK struct {
 	g1       e.G1
 	alphaG1s []e.G1
@@ -19,25 +17,29 @@ type PK struct {
 	alphaG2  e.G2
 }
 
+//The struct which contains the polynomial stored as a slice.
 type poly struct {
 	coefficients []e.Scalar
 }
 
+//The witness struct which contains the necessary info for a witness to prove it is contained in a commitment.
 type witnessStruct struct{
 	index uint64
 	fx0 e.Scalar
 	w e.G1
 }
 
-// what bit security do we have or bls12381
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
+//The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter . 
+//It returns the public key.
 func setup(security, t int) PK {
-	//fmt.Println("42 is the answer")
+	//Sets up the generator elements, as well as the secret key a.
 	g1 := e.G1Generator()
 	g2 := e.G2Generator()
 	a := new(e.Scalar) //secretkey a, is forgotten and destroyed.
 	a.Random(rand.Reader)
 
+	//Makes the list which containts g_i*alpha^i
 	gList := make([]e.G1, t)
 	at := new(e.Scalar)
 	at.SetString("1")
@@ -85,38 +87,27 @@ func calcPoly(x uint64, poly poly) e.Scalar {
 	return answer
 }
 
-func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
-	var answer poly
-	coefs := make([]e.Scalar, len(points))
-	coefs[0] = points[0] // first value in list of points, this is constant coefficient
+func dividentCalculator (fanOut int, degreeComb [][][]int) []e.Scalar{
+	dividentList := make([]e.Scalar,fanOut)
 	var divident e.Scalar
 	divident.SetOne()
-
-	//divident Finder loop
 	var iScalar e.Scalar
-	for i := range points {
+	for i := 0; i<fanOut; i++ {
 		if i != 0 {
-			//divident = divident * float64(i)
 			iScalar.SetUint64(uint64(i))
 			divident.Mul(&divident, &iScalar)
 		}
 	}
-	//var degreeComb [][][]int
-	//for k := len(points) - 1; k > 0; k-- {
-	//	degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
-	//}
+	divident.Inv(&divident)
+	dividentList[0] = divident
+	
 	var dividentMinusI e.Scalar
 	var divToBe e.Scalar
 	var sumDiv e.Scalar
 	var cScalar e.Scalar
 	var iInPowerOfJ e.Scalar
-	//var testScalar e.Scalar
-	for i, y := range points {
+	for i:=1; i<fanOut; i++ {
 		dividentMinusI.SetUint64(0)
-		if i == 0 {
-			dividentMinusI = divident
-		} else {
-
 			for j, combs := range degreeComb {
 				sumDiv.SetUint64(0)
 				for _, comb := range combs {
@@ -131,7 +122,6 @@ func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
 						for k := 1; k <= j+1; k++ {
 							iInPowerOfJ.Mul(&iInPowerOfJ, &iScalar)
 						}
-						//divToBe *= math.Pow(float64(i), float64(j+1))
 						divToBe.Mul(&divToBe, &iInPowerOfJ)
 
 						sumDiv.Add(&sumDiv, &divToBe)
@@ -145,11 +135,26 @@ func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
 				//dividentMinusI += sumDiv
 				dividentMinusI.Add(&dividentMinusI, &sumDiv)
 			}
-		}
 		// inverse it so when we multiply with it, it will work as division!!!
+
 		dividentMinusI.Inv(&dividentMinusI)
 
-		var coefToBe e.Scalar
+		dividentList[i] = dividentMinusI
+	}
+	return dividentList
+}
+
+
+func realVectorToPoly(points []e.Scalar, degreeComb [][][]int, dividentList []e.Scalar) poly {
+	var answer poly
+	coefs := make([]e.Scalar, len(points))
+	coefs[0] = points[0] // first value in list of points, this is constant coefficient
+
+	for i, y := range points {
+	
+		dividentMinusI := dividentList[i]
+		
+		var coefToBe e.Scalar	
 		var combScalar e.Scalar
 		for j, combs := range degreeComb {
 			for _, comb := range combs {
@@ -159,7 +164,6 @@ func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
 						combScalar.SetUint64(uint64(c))
 						coefToBe.Mul(&coefToBe, &combScalar)
 					}
-					//fmt.Println("i, coefToBe: ", i, coefToBe)
 					if ((j) % 2) == 0 {
 						// Here order - coef
 						coefToBe.Neg()
@@ -168,8 +172,6 @@ func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
 
 					coefToBe.Mul(&coefToBe, &dividentMinusI)
 					coefs[j+1].Add(&coefs[j+1], &coefToBe)
-					//fmt.Println("Coefs[j+1]: ", coefs[j+1])
-					//coefs[j+i] += (coefToBe * y) / dividentMinusI
 				}
 			}
 		}
@@ -206,26 +208,22 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 	return quotient
 }
 
-func certVectorToPolynomial(certVect [][]byte, degreeComb [][][]int) poly {
+func certVectorToPolynomial(certVect [][]byte, degreeComb [][][]int, dividentList []e.Scalar) poly {
 	scalarVector := certToScalarVector(certVect)
-	polynomial := realVectorToPoly(scalarVector, degreeComb)
+	polynomial := realVectorToPoly(scalarVector, degreeComb,dividentList)
 	return polynomial
 }
 
 func commit(pk PK, polynomial poly) e.G1 {
 	var commitment e.G1
-	//	polyCoefs := vectToPoly(input)
 	var cToBe e.G1
 	for i, coef := range polynomial.coefficients {
 		cToBe.ScalarMult(&coef, &pk.alphaG1s[i])
-		//fmt.Println("PK ALPHAG1S", pk.alphaG1s[i].IsOnG1())
-		//fmt.Println("ctoBe", cToBe.IsOnG1())
 		if i == 0 {
 			commitment = cToBe
 		} else {
-			commitment.Add(&cToBe, &commitment) //TODO Should there be a "mult" here somehow, as that is what is described in the original KZG paper.
+			commitment.Add(&cToBe, &commitment) //
 		}
-		//fmt.Println("commitment", commitment.IsOnG1())
 	}
 	return commitment
 }
@@ -236,8 +234,7 @@ func open() int { //TODO fiks den aka. lav den
 
 func verifyPoly(pk PK, commitmentToVerify e.G1, polynomial poly) bool {
 	commitment := commit(pk, polynomial)
-	//fmt.Println("new commitment", commitment)
-	//fmt.Println("old commitment", commitmentToVerify)
+
 	return commitment.IsEqual(&commitmentToVerify)
 }
 
@@ -245,9 +242,7 @@ func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 	//HokusPokusDinKatErIFokus()
 	quotientPoly := quotientOfPoly(polynomial, index)
 	w := commit(pk, quotientPoly)
-	//fmt.Println("this is a witness", w)
-	fx0 := calcPoly(index, polynomial) //TODO to call to polynomial, when we get that to work
-	//fmt.Println("this is fx0", fx0)
+	fx0 := calcPoly(index, polynomial) 
 	witness := witnessStruct {
 		w: w,
 		index: index,
@@ -267,14 +262,10 @@ func verifyWitness(pk PK, commitment e.G1, witness witnessStruct) bool {
 	var x0g2 e.G2
 	x0g2.ScalarMult(&x0, &pk.g2)
 	x0g2.Neg()
-	//fmt.Println("x0g2 after neg", x0g2.IsOnG2())
 	alphaG2minusX0G2.Add(&pk.alphaG2, &x0g2) //
-	//fmt.Println("alphaG2minusX0g2", alphaG2minusX0G2.IsOnG2())
 	rSide1 := e.Pair(&witness.w, &alphaG2minusX0G2)
 	rSide2 := e.Pair(&pk.g1, &pk.g2)
 
-	//fxi := new(e.Scalar)
-	//fxi.SetBytes(vectToCommit[index])
 	// try the other Pair Function pairPRod first make into list
 	rSide2.Exp(rSide2, &witness.fx0)
 

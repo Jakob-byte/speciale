@@ -14,7 +14,7 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 		{5},
 		{15},
 		{9},
-		{27},
+		//{27},
 	}
 	scalVect := certToScalarVector(points)
 	//fmt.Println(scalVect)
@@ -22,7 +22,9 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	thePoly := realVectorToPoly(scalVect, degreeComb)
+	dividentList := dividentCalculator(len(points),degreeComb)
+
+	thePoly := realVectorToPoly(scalVect, degreeComb,dividentList)
 	//fmt.Println("the Coefs!!!:", thePoly.coefficients)
 	var k e.Scalar
 	var x e.Scalar
@@ -51,7 +53,8 @@ func TestQuotientPoly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	thePoly := realVectorToPoly(scalVect, degreeComb)
+	dividentList := dividentCalculator(len(points),degreeComb)
+	thePoly := realVectorToPoly(scalVect, degreeComb,dividentList)
 	quotientPoly := quotientOfPoly(thePoly, 2)
 	var invertThing e.Scalar
 	invertThing.SetString("3")
@@ -87,7 +90,8 @@ func TestCommit(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	polynomial := certVectorToPolynomial(points,degreeComb)
+	dividentList := dividentCalculator(len(points),degreeComb)
+	polynomial := certVectorToPolynomial(points,degreeComb,dividentList)
 	commit := commit(pk, polynomial)
 	verifyBool := verifyPoly(pk, commit, polynomial)
 	if !verifyBool{

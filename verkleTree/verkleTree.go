@@ -8,7 +8,6 @@ import (
 	combin "gonum.org/v1/gonum/stat/combin"
 
 	"fmt"
-
 	"log"
 	"os"
 )
@@ -26,6 +25,7 @@ type node struct {
 	witness                 witnessStruct
 }
 
+// Membership proof struct containt the neccessary information to verify node belongs to tree.
 type membershipProof struct {
 	witnesses   []witnessStruct
 	commitments []e.G1
@@ -74,6 +74,16 @@ func loadCertificates(input string, amount ...int) [][]byte {
 	return fileArray
 }
 
+//Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0. 
+// Returns the combinations as [][][]int list.
+func combCalculater(fanOut int) [][][]int{
+	var degreeComb [][][]int
+	for k := fanOut - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
+	}
+	return degreeComb
+}
+
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
 func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
@@ -90,17 +100,18 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 		}
 	}
 
-	var degreeComb [][][]int
-	for k := fanOut - 1; k > 0; k-- {
-		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
-	}
+
+	//Makes the combinations of integers needed to calculate divident and polynomial. 
+	degreeComb := combCalculater(fanOut)
+	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
+	dividentList := dividentCalculator(fanOut, degreeComb)
 
 	
 	// call to makeLayer to create next layer in the tree
-	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb)
+	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb, dividentList)
 	// while loop that exits when we are in the root
 	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut, false, pk, degreeComb)
+		nextLayer = makeLayer(nextLayer, fanOut, false, pk, degreeComb, dividentList)
 	}
 	// Creates the final verkletree struct.
 	verk = verkleTree{
@@ -115,7 +126,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int, dividentList []e.Scalar ) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -150,7 +161,9 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		polynomial := certVectorToPolynomial(vectToCommit,degreeComb)
+		polynomial := certVectorToPolynomial(vectToCommit,degreeComb, dividentList)
+		
+
 		commitment := commit(pk, polynomial)
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
@@ -181,7 +194,6 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
 // This function verifies the certificate cert is commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
 //
 //	It returns true if the certificate is in the tree and wrong if it isn't.
-
 func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 	var nod *node
 
@@ -208,7 +220,8 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 
 	return membershipProof{witnesses: witnessList, commitments: commitList}
 }
-
+//Verifies the membership proof it receives as input with the public key.
+//Returns true if the proof is correct, false if it isn't. 
 func verifyMembershipProof(mp membershipProof, pk PK) bool {
 	for i := 0; i < len(mp.witnesses); i++ {
 		witnessIsTrue := verifyWitness(pk, mp.commitments[i], mp.witnesses[i])
@@ -218,34 +231,6 @@ func verifyMembershipProof(mp membershipProof, pk PK) bool {
 	}
 	return true
 
-}
-
-func verifyNode(cert []byte, tree verkleTree, pk PK) bool {
-	var nod *node
-	notInList := true
-	//Finds the node which has the certificate. If it doesn't exist we return false.
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, cert) {
-			nod = v
-			notInList = false
-		}
-	}
-
-	if notInList {
-		return false
-	}
-
-	//Verifies the witness for each node up till the parent.
-	for nod.parent != nil {
-		witnessIsTrue := verifyWitness(pk, nod.parent.ownVectorCommit, nod.witness)
-		if !witnessIsTrue {
-			return false
-		}
-		nod = nod.parent
-
-	}
-
-	return true
 }
 
 // This function is NOT finished
@@ -309,7 +294,7 @@ func deleteLeaf(cert []byte, tree verkleTree) *verkleTree {
 	return &tree
 }
 
-// This function loads a single certificate and resturns it.
+// This function loads a single certificate and returns it.
 func loadOneCert(filePath string) []byte {
 	f, err := os.ReadFile(filePath)
 	check(err)
