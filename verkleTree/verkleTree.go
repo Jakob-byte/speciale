@@ -5,6 +5,7 @@ import (
 	"crypto/sha256"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
+	combin "gonum.org/v1/gonum/stat/combin"
 
 	"fmt"
 
@@ -89,11 +90,17 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 		}
 	}
 
+	var degreeComb [][][]int
+	for k := fanOut - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
+	}
+
+	
 	// call to makeLayer to create next layer in the tree
-	nextLayer := makeLayer(leafs, fanOut, true, pk)
+	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb)
 	// while loop that exits when we are in the root
 	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut, false, pk)
+		nextLayer = makeLayer(nextLayer, fanOut, false, pk, degreeComb)
 	}
 	// Creates the final verkletree struct.
 	verk = verkleTree{
@@ -108,7 +115,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -143,7 +150,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK) []*node {
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		polynomial := certVectorToPolynomial(vectToCommit)
+		polynomial := certVectorToPolynomial(vectToCommit,degreeComb)
 		commitment := commit(pk, polynomial)
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{

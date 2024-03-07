@@ -3,6 +3,7 @@ package verkletree
 import (
 	"fmt"
 	"testing"
+	combin "gonum.org/v1/gonum/stat/combin"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
@@ -17,7 +18,11 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 	}
 	scalVect := certToScalarVector(points)
 	//fmt.Println(scalVect)
-	thePoly := realVectorToPoly(scalVect)
+	var degreeComb [][][]int
+	for k := len(points) - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
+	}
+	thePoly := realVectorToPoly(scalVect, degreeComb)
 	//fmt.Println("the Coefs!!!:", thePoly.coefficients)
 	var k e.Scalar
 	var x e.Scalar
@@ -42,7 +47,11 @@ func TestQuotientPoly(t *testing.T) {
 	scalVect := certToScalarVector(points)
 	//fmt.Println(scalVect)
 	var testScalar e.Scalar
-	thePoly := realVectorToPoly(scalVect)
+	var degreeComb [][][]int
+	for k := len(points) - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
+	}
+	thePoly := realVectorToPoly(scalVect, degreeComb)
 	quotientPoly := quotientOfPoly(thePoly, 2)
 	var invertThing e.Scalar
 	invertThing.SetString("3")
@@ -74,7 +83,11 @@ func TestCommit(t *testing.T) {
 	}
 	pk := setup(3, 3)
 
-	polynomial := certVectorToPolynomial(points)
+	var degreeComb [][][]int
+	for k := len(points) - 1; k > 0; k-- {
+		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
+	}
+	polynomial := certVectorToPolynomial(points,degreeComb)
 	commit := commit(pk, polynomial)
 	verifyBool := verifyPoly(pk, commit, polynomial)
 	if !verifyBool{

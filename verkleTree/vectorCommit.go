@@ -5,7 +5,7 @@ import (
 	
 	"slices"
 
-	combin "gonum.org/v1/gonum/stat/combin"
+	//combin "gonum.org/v1/gonum/stat/combin"
 
 	//	"math/big"
 
@@ -80,13 +80,12 @@ func calcPoly(x uint64, poly poly) e.Scalar {
 		}
 		ansToBe.Mul(&v, &ansToBe)
 		answer.Add(&answer, &ansToBe)
-		//answer.Add(answer, a*math.Pow(x, float64(i)))
-		//fmt.Println("ANSWer IN I ", i, answer)
+
 	}
 	return answer
 }
 
-func realVectorToPoly(points []e.Scalar) poly {
+func realVectorToPoly(points []e.Scalar, degreeComb [][][]int) poly {
 	var answer poly
 	coefs := make([]e.Scalar, len(points))
 	coefs[0] = points[0] // first value in list of points, this is constant coefficient
@@ -102,10 +101,10 @@ func realVectorToPoly(points []e.Scalar) poly {
 			divident.Mul(&divident, &iScalar)
 		}
 	}
-	var degreeComb [][][]int
-	for k := len(points) - 1; k > 0; k-- {
-		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
-	}
+	//var degreeComb [][][]int
+	//for k := len(points) - 1; k > 0; k-- {
+	//	degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
+	//}
 	var dividentMinusI e.Scalar
 	var divToBe e.Scalar
 	var sumDiv e.Scalar
@@ -124,7 +123,6 @@ func realVectorToPoly(points []e.Scalar) poly {
 					if  !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
 						divToBe.SetOne()
 						for _, c := range comb {
-							//divToBe *= float64(c)
 							cScalar.SetUint64(uint64(c))
 							divToBe.Mul(&divToBe, &cScalar)
 						}
@@ -135,12 +133,6 @@ func realVectorToPoly(points []e.Scalar) poly {
 						}
 						//divToBe *= math.Pow(float64(i), float64(j+1))
 						divToBe.Mul(&divToBe, &iInPowerOfJ)
-						//sumDiv += divToBe
-						// j = 2
-						// k=1
-						// I*1
-						// K=2
-						// I*I
 
 						sumDiv.Add(&sumDiv, &divToBe)
 
@@ -161,7 +153,7 @@ func realVectorToPoly(points []e.Scalar) poly {
 		var combScalar e.Scalar
 		for j, combs := range degreeComb {
 			for _, comb := range combs {
-				if !slices.Contains(comb, i) {
+				if !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
 					coefToBe.SetOne()
 					for _, c := range comb {
 						combScalar.SetUint64(uint64(c))
@@ -214,9 +206,9 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 	return quotient
 }
 
-func certVectorToPolynomial(certVect [][]byte) poly {
+func certVectorToPolynomial(certVect [][]byte, degreeComb [][][]int) poly {
 	scalarVector := certToScalarVector(certVect)
-	polynomial := realVectorToPoly(scalarVector)
+	polynomial := realVectorToPoly(scalarVector, degreeComb)
 	return polynomial
 }
 

@@ -93,7 +93,7 @@ func TestRealCertificatesTime(t *testing.T) {
 	certArray := loadCertificates("testCerts/")
 	elapsed1 := time.Since(start)
 	
-	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1)
+	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")
 
 	start = time.Now()
 	var verkTree *verkleTree
@@ -101,7 +101,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		verkTree = BuildTree(certArray, fanOut, pk)
 	}
 	elapsed2 := time.Since(start).Seconds() / float64(testAmount)
-	fmt.Println("Built tree time : ", elapsed2)
+	fmt.Println("Built tree time : ", elapsed2, "seconds")
 
 	start = time.Now()
 	var result bool
@@ -109,7 +109,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		result = verifyTree(certArray, *verkTree, pk)
 	}
 	elapsed3 := time.Since(start).Seconds() / float64(testAmount)
-	fmt.Println("VerifyTree time : ", elapsed3)
+	fmt.Println("VerifyTree time : ", elapsed3, "seconds")
 
 	if result != true {
 		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
