@@ -2,9 +2,9 @@ package verkletree
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 	"time"
-	"math/rand"
 )
 
 func TestBuildTreeAndVerifyTree(t *testing.T) {
@@ -59,19 +59,19 @@ func TestMembershipProof(t *testing.T) {
 	verk := BuildTree(points, fanOut, pk)
 	mp := createMembershipProof(points[2], *verk)
 	didPointVerify := verifyMembershipProof(mp, pk)
-	
+
 	if !didPointVerify {
 		panic("point did not verify as expected")
 	}
 }
 
-func TestMembershipProofRealCerts(t *testing.T){
+func TestMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
 	max := 300
 	fanOut := 10
 	pk := setup(10, fanOut)
 	certArray := loadCertificates("testCerts/", max)
-	verkTree := BuildTree(certArray, fanOut,pk)
+	verkTree := BuildTree(certArray, fanOut, pk)
 
 	for i := 0; i < 10; i++ {
 		randNumb := rand.Intn(max)
@@ -89,16 +89,16 @@ func TestRealCertificatesTime(t *testing.T) {
 	testAmount := 10
 	start := time.Now()
 	fmt.Println("TestRealCertificatesTime Running")
-	fanOut := 500
+	fanOut := 10
 	pk := setup(4, fanOut)
 	certArray := loadCertificates("testCerts/")
 	elapsed1 := time.Since(start)
-	
+
 	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")
 
 	start = time.Now()
 	var verkTree *verkleTree
-	for i:= 0; i<testAmount; i++{
+	for i := 0; i < testAmount; i++ {
 		verkTree = BuildTree(certArray, fanOut, pk)
 	}
 	elapsed2 := time.Since(start).Seconds() / float64(testAmount)
@@ -106,7 +106,7 @@ func TestRealCertificatesTime(t *testing.T) {
 
 	start = time.Now()
 	var result bool
-	for i:= 0; i<testAmount; i++{
+	for i := 0; i < testAmount; i++ {
 		result = verifyTree(certArray, *verkTree, pk)
 	}
 	elapsed3 := time.Since(start).Seconds() / float64(testAmount)

@@ -44,7 +44,6 @@ func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-
 }
 
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
@@ -74,9 +73,9 @@ func loadCertificates(input string, amount ...int) [][]byte {
 	return fileArray
 }
 
-//Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0. 
+// Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0.
 // Returns the combinations as [][][]int list.
-func combCalculater(fanOut int) [][][]int{
+func combCalculater(fanOut int) [][][]int {
 	var degreeComb [][][]int
 	for k := fanOut - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
@@ -100,13 +99,11 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 		}
 	}
 
-
-	//Makes the combinations of integers needed to calculate divident and polynomial. 
+	//Makes the combinations of integers needed to calculate divident and polynomial.
 	degreeComb := combCalculater(fanOut)
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
 
-	
 	// call to makeLayer to create next layer in the tree
 	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb, dividentList)
 	// while loop that exits when we are in the root
@@ -126,7 +123,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int, dividentList []e.Scalar ) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int, dividentList []e.Scalar) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -161,8 +158,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		polynomial := certVectorToPolynomial(vectToCommit,degreeComb, dividentList)
-		
+		polynomial := certVectorToPolynomial(vectToCommit, degreeComb, dividentList)
 
 		commitment := commit(pk, polynomial)
 		//Creates the node with children and vectorcommit.
@@ -220,8 +216,9 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 
 	return membershipProof{witnesses: witnessList, commitments: commitList}
 }
-//Verifies the membership proof it receives as input with the public key.
-//Returns true if the proof is correct, false if it isn't. 
+
+// Verifies the membership proof it receives as input with the public key.
+// Returns true if the proof is correct, false if it isn't.
 func verifyMembershipProof(mp membershipProof, pk PK) bool {
 	for i := 0; i < len(mp.witnesses); i++ {
 		witnessIsTrue := verifyWitness(pk, mp.commitments[i], mp.witnesses[i])
@@ -280,12 +277,14 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 	return &tree
 }
 
+// Not finished
 func insertLeaf(cert []byte, tree verkleTree) *verkleTree {
 	//TODO: Insert a node or delete a node?
 	//HOw to do this, what is required??
 	return &tree
 }
 
+// Not finished
 func deleteLeaf(cert []byte, tree verkleTree) *verkleTree {
 	//TODO: Insert a node or delete a node?
 	//How to do this, what is required??
