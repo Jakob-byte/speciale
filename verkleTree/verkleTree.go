@@ -25,6 +25,11 @@ type node struct {
 	witness                 witnessStruct
 }
 
+type membershipProof struct {
+	witnesses   []witnessStruct
+	commitments []e.G1
+}
+
 // Struct representing the verkle-tree
 type verkleTree struct {
 	Root   *node
@@ -169,6 +174,45 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
 // This function verifies the certificate cert is commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
 //
 //	It returns true if the certificate is in the tree and wrong if it isn't.
+
+func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
+	var nod *node
+
+	notInList := true
+	//Finds the node which has the certificate. If it doesn't exist we return false.
+	for _, v := range tree.leafs {
+		if bytes.Equal(v.certificate, cert) {
+			nod = v
+			notInList = false
+		}
+	}
+
+	var witnessList []witnessStruct
+	var commitList []e.G1
+	if notInList {
+		return membershipProof{}
+	}
+	//Creates the lists required for membership proof
+	for nod.parent != nil {
+		witnessList = append(witnessList, nod.witness)
+		commitList = append(commitList, nod.parent.ownVectorCommit)
+		nod = nod.parent
+	}
+
+	return membershipProof{witnesses: witnessList, commitments: commitList}
+}
+
+func verifyMembershipProof(mp membershipProof, pk PK) bool {
+	for i := 0; i < len(mp.witnesses); i++ {
+		witnessIsTrue := verifyWitness(pk, mp.commitments[i], mp.witnesses[i])
+		if !witnessIsTrue {
+			return false
+		}
+	}
+	return true
+
+}
+
 func verifyNode(cert []byte, tree verkleTree, pk PK) bool {
 	var nod *node
 	notInList := true

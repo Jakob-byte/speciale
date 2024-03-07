@@ -121,7 +121,7 @@ func realVectorToPoly(points []e.Scalar) poly {
 			for j, combs := range degreeComb {
 				sumDiv.SetUint64(0)
 				for _, comb := range combs {
-					if !slices.Contains(comb, i) {
+					if  !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
 						divToBe.SetOne()
 						for _, c := range comb {
 							//divToBe *= float64(c)
