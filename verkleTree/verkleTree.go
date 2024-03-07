@@ -172,16 +172,19 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
 func verifyNode(cert []byte, tree verkleTree, pk PK) bool {
 	var nod *node
 	notInList := true
+	//Finds the node which has the certificate. If it doesn't exist we return false.
 	for _, v := range tree.leafs {
 		if bytes.Equal(v.certificate, cert) {
 			nod = v
 			notInList = false
 		}
 	}
+
 	if notInList {
 		return false
 	}
 
+	//Verifies the witness for each node up till the parent.
 	for nod.parent != nil {
 		witnessIsTrue := verifyWitness(pk, nod.parent.ownVectorCommit, nod.witness)
 		if !witnessIsTrue {
