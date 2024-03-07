@@ -12,23 +12,25 @@ import (
 	"os"
 )
 
+// struct for representing a node in the tree
 type node struct {
 	parent      *node
 	childNumb   int
 	children    []*node
 	ownHash     [32]byte
-	leaf        bool
 	certificate []byte
 	duplicate   bool
 	id          int
 }
 
+// Struct representing the merkle-tree
 type merkleTree struct {
 	Root   *node
 	leafs  []*node
 	fanOut int
 }
 
+// Function to call with error to avoid overloading methdods with error if statements
 func check(err error) {
 	if err != nil {
 		log.Fatal(err)
@@ -36,6 +38,9 @@ func check(err error) {
 	return
 }
 
+// function to load certificates given, input which is the directory and amount represented as a list of ints,
+// where [0} is the amount of certificates to load from said directory.
+// returns a [][]byte list/array of files
 func loadCertificates(input string, amount ...int) [][]byte {
 
 	files, err := os.ReadDir(input)
@@ -63,42 +68,28 @@ func loadCertificates(input string, amount ...int) [][]byte {
 func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 	var merk merkleTree
 
-	//var leafs []*node
-
-	uneven := false
-	duplicates := fanOut - len(certs)%fanOut
-
-	for len(certs)%fanOut > 0 {
-		certs = append(certs, certs[len(certs)-1])
-		uneven = true
-	}
-
 	leafs := make([]*node, len(certs))
 
+	//build the leaf nodes of the tree
 	for i := 0; i < len(certs); i++ {
-		byteCet := certs[i]
-		testHash := sha256.Sum256(byteCet)
+		testHash := sha256.Sum256(certs[i])
 		leafs[i] = &node{
-			certificate: byteCet,
+			certificate: certs[i],
 			childNumb:   i % fanOut,
 			ownHash:     testHash,
-			leaf:        true,
 			duplicate:   false,
 			id:          i,
 		}
 	}
-	if uneven {
-		for i := 1; i < duplicates+1; i++ {
-			leafs[len(leafs)-i].duplicate = true
-			leafs[len(leafs)-i].childNumb = leafs[len(leafs)-i].id % fanOut
-		}
-	}
 
+	//function call to make the next layer
 	nextLayer := makeLayer(leafs, fanOut)
+	// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
 	for len(nextLayer) > 1 {
 		nextLayer = makeLayer(nextLayer, fanOut)
 	}
 
+	// define the merkletree struct
 	merk = merkleTree{
 		fanOut: fanOut,
 		Root:   nextLayer[0],
@@ -110,13 +101,13 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 
 func makeLayer(nodes []*node, fanOut int) []*node {
 
+	//makes the tree balanced according to the fanout, by duplicating the last
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
 			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
 			ownHash:     nodes[len(nodes)-1].ownHash,
 			children:    nodes[len(nodes)-1].children,
-			leaf:        false,
 			duplicate:   true,
 			id:          nodes[len(nodes)-1].id + 1,
 		}
@@ -138,7 +129,6 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 		nextLayer[i/fanOut] = &node{
 			ownHash:   sum,
 			childNumb: i % fanOut,
-			leaf:      false,
 			children:  childrenList,
 			id:        i / fanOut,
 		}
