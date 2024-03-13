@@ -2,8 +2,9 @@ package verkletree
 
 import (
 	"crypto/rand"
-
+	"fmt"
 	"slices"
+
 	//combin "gonum.org/v1/gonum/stat/combin"
 	//	"math/big"
 	e "github.com/cloudflare/circl/ecc/bls12381"
@@ -152,6 +153,44 @@ func dividentCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
 	return dividentList
 }
 
+func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar) [][]e.Scalar {
+	var lagrangeBasisList [][]e.Scalar
+	coefToBeList := make([]e.Scalar, fanOut-1)
+	for i := 0; i < fanOut; i++ {
+		var coefToBe e.Scalar
+		var combScalar e.Scalar
+		dividentMinusI := dividentList[i]
+
+		// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
+		for j, combs := range degreeComb {
+			coefToBeList[j].SetUint64(0)
+			// It then looks at one of these unique combinations e.g. 5,0,2,3,1,5
+			for _, comb := range combs {
+				// If the slice (unique combination) contains either 0 or the index we're looking at (from the input vector) we skip it.
+				if !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
+					//We then go through the slice, and multiply the values together as scalars.
+					coefToBe.SetOne()
+					for _, c := range comb {
+						combScalar.SetUint64(uint64(c))
+						coefToBe.Mul(&coefToBe, &combScalar)
+					}
+					//If the comb length (j) is even we negate coefToBe,
+					//before multiplying it with with the value from our input vector
+					if ((j) % 2) == 0 {
+						coefToBe.Neg()
+					}
+					coefToBe.Mul(&coefToBe, &dividentMinusI)
+
+					coefToBeList[j].Add(&coefToBe, &coefToBeList[j])
+				}
+
+			}
+		}
+		lagrangeBasisList = append(lagrangeBasisList, coefToBeList)
+	}
+	return lagrangeBasisList
+}
+
 // This translates the input vector into a polynomial which can be used for KZG commitment. It takes the scalar vector as input, unique combinations and dividentlist.
 // It returns the polynomial of the vector, f(i)=scalarVect[i].
 func realVectorToPoly(scalarVect []e.Scalar, degreeComb [][][]int, dividentList []e.Scalar) poly {
@@ -159,7 +198,20 @@ func realVectorToPoly(scalarVect []e.Scalar, degreeComb [][][]int, dividentList 
 	var answer poly
 	coefs := make([]e.Scalar, len(scalarVect))
 	coefs[0] = scalarVect[0] // first value in list of points, this is a constant coefficient in the polynomial (aka the first coefficient if a0 + a1x + a2x^2 + ...)
+	coefs2 := make([]e.Scalar, len(scalarVect))
+	coefs2[0] = scalarVect[0] // first value in list of points, this is a constant coefficient in the polynomial (aka the first coefficient if a0 + a1x + a2x^2 + ...)
+	var coefToBe2 e.Scalar
+	lagrangeBasisList := lagrangeBasisCalc(len(scalarVect), degreeComb, dividentList)
+	for i, y := range scalarVect {
+		for j, eScalar := range lagrangeBasisList[i] {
+			coefToBe2 = eScalar
 
+			coefToBe2.Mul(&coefToBe2, &y)
+			coefs2[j+1].Add(&coefs2[j+1], &coefToBe2)
+
+		}
+
+	}
 	//The for loop where the magic happens, goes over the input vector.
 	for i, y := range scalarVect {
 		//Gets the divident from the dividentlist.
@@ -184,10 +236,12 @@ func realVectorToPoly(scalarVect []e.Scalar, degreeComb [][][]int, dividentList 
 					if ((j) % 2) == 0 {
 						coefToBe.Neg()
 					}
+					coefToBe.Mul(&coefToBe, &dividentMinusI)
+
 					coefToBe.Mul(&coefToBe, &y)
 					//We then multiply it with the divident (which has been inversed in the original method)
 					//And add it to the corresponding coefficient, decided by the length of combinations we're looking at j.
-					coefToBe.Mul(&coefToBe, &dividentMinusI)
+					//coefToBe.Mul(&coefToBe, &dividentMinusI)
 					coefs[j+1].Add(&coefs[j+1], &coefToBe)
 				}
 			}
@@ -195,6 +249,9 @@ func realVectorToPoly(scalarVect []e.Scalar, degreeComb [][][]int, dividentList 
 
 	}
 	//DOne
+	fmt.Println("NEW COEFS!!!", coefs2)
+	fmt.Println("")
+	fmt.Println("OLD COEFSS!!! :) ", coefs)
 	answer.coefficients = coefs
 	return answer
 }
@@ -225,7 +282,9 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 }
 
 func certVectorToPolynomial(certVect [][]byte, degreeComb [][][]int, dividentList []e.Scalar) poly {
+
 	scalarVector := certToScalarVector(certVect)
+
 	polynomial := realVectorToPoly(scalarVector, degreeComb, dividentList)
 	return polynomial
 }
@@ -264,7 +323,6 @@ func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 		index: index,
 		fx0:   fx0,
 	}
-
 	return witness
 }
 

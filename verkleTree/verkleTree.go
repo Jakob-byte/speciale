@@ -3,6 +3,7 @@ package verkletree
 import (
 	"bytes"
 	"crypto/sha256"
+	"time"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 	combin "gonum.org/v1/gonum/stat/combin"
@@ -33,10 +34,12 @@ type membershipProof struct {
 
 // Struct representing the verkle-tree
 type verkleTree struct {
-	Root   *node
-	leafs  []*node
-	fanOut int
-	pk     PK
+	Root         *node
+	leafs        []*node
+	fanOut       int
+	pk           PK
+	degreeComb   [][][]int
+	dividentList []e.Scalar
 }
 
 // Function to call with error to avoid overloading methdods with error if statements
@@ -76,6 +79,7 @@ func loadCertificates(input string, amount ...int) [][]byte {
 // Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0.
 // Returns the combinations as [][][]int list.
 func combCalculater(fanOut int) [][][]int {
+
 	var degreeComb [][][]int
 	for k := fanOut - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
@@ -103,7 +107,6 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	degreeComb := combCalculater(fanOut)
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
-
 	// call to makeLayer to create next layer in the tree
 	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb, dividentList)
 	// while loop that exits when we are in the root
@@ -112,10 +115,12 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	}
 	// Creates the final verkletree struct.
 	verk = verkleTree{
-		fanOut: fanOut,
-		Root:   nextLayer[0],
-		leafs:  leafs,
-		pk:     pk,
+		fanOut:       fanOut,
+		Root:         nextLayer[0],
+		leafs:        leafs,
+		pk:           pk,
+		degreeComb:   degreeComb,
+		dividentList: dividentList,
 	}
 
 	return &verk
@@ -142,6 +147,9 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.
+	var sumTimer int64
+	var sumTimer2 int64
+
 	for i := 0; i < len(nodes); {
 		//The loop starts by finding the children for the current node in the 'nextlayer'
 		childrenList := make([]*node, fanOut)
@@ -158,9 +166,15 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
+		start := time.Now()
 		polynomial := certVectorToPolynomial(vectToCommit, degreeComb, dividentList)
+		elapsed := time.Since(start)
+		sumTimer += elapsed.Milliseconds()
 
+		start = time.Now()
 		commitment := commit(pk, polynomial)
+		elapsed = time.Since(start)
+		sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownVectorCommit:         commitment,
@@ -176,6 +190,9 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 		}
 		i = i + fanOut
 	}
+	fmt.Println("sumTimer for vector to poly", sumTimer)
+	fmt.Println("sumTimer for commit", sumTimer2)
+
 	return nextLayer
 }
 
@@ -230,6 +247,44 @@ func verifyMembershipProof(mp membershipProof, pk PK) bool {
 
 }
 
+func dumbUpdateLeaf(tree verkleTree, newCert []byte, oldCert []byte) (verkleTree, bool) {
+	var nod *node
+	notInList := true
+	for _, v := range tree.leafs {
+		if bytes.Equal(v.certificate, oldCert) {
+			nod = v
+			notInList = false
+		}
+	}
+	if notInList {
+		return tree, false
+	}
+	nod.certificate = newCert
+	listlist := make([][]byte, tree.fanOut)
+	dumbBool := true
+	for nod.parent != nil {
+		//childNumber = nod.id % tree.fanOut
+		if dumbBool {
+			for i, v := range nod.parent.children {
+				listlist[i] = v.certificate
+			}
+			dumbBool = false
+		} else {
+			for i, v := range nod.parent.children {
+				listlist[i] = v.ownCompressVectorCommit
+			}
+		}
+
+		polyVector := certVectorToPolynomial(listlist, tree.degreeComb, tree.dividentList) //TODO what do we do with degComb and divList
+		commitment := commit(tree.pk, polyVector)
+		nod = nod.parent
+		nod.ownVectorCommit = commitment
+		nod.ownCompressVectorCommit = commitment.BytesCompressed()
+	}
+
+	return tree, true
+}
+
 // This function is NOT finished
 // This function updates a leaf in the tree. It takes the old certificate it replaces, the tree and a new certificate to replace the old with as input.
 // Returns the updated tree if the old certificates was in the tree. If it wasn't it just returns the inputted tree.
@@ -277,11 +332,38 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 	return &tree
 }
 
-// Not finished
-func insertLeaf(cert []byte, tree verkleTree) *verkleTree {
-	//TODO: Insert a node or delete a node?
-	//HOw to do this, what is required??
-	return &tree
+// TODO Not finished, only works for certs%fanout != 0.
+func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
+	if len(tree.leafs)%tree.fanOut != 0 {
+		finalLeaf := tree.leafs[len(tree.leafs)-1]
+		nextSibling := finalLeaf.parent.children[len(tree.leafs)%tree.fanOut]
+		nextSibling.certificate = cert
+		nextSibling.duplicate = false
+		firstLayer := true
+		listlist := make([][]byte, tree.fanOut)
+		for nextSibling.parent != nil {
+			if firstLayer {
+				for i, v := range nextSibling.parent.children {
+					listlist[i] = v.certificate
+				}
+				firstLayer = false
+			} else {
+				for i, v := range nextSibling.parent.children {
+					listlist[i] = v.ownCompressVectorCommit
+				}
+			}
+
+			polyVector := certVectorToPolynomial(listlist, tree.degreeComb, tree.dividentList) //TODO what do we do with degComb and divList
+			commitment := commit(tree.pk, polyVector)
+			nextSibling = nextSibling.parent
+			nextSibling.ownVectorCommit = commitment
+			nextSibling.ownCompressVectorCommit = commitment.BytesCompressed()
+		}
+		return tree, true
+
+	}
+
+	return tree, false
 }
 
 // Not finished
