@@ -186,7 +186,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 		//Sets the witness in each of the nodes children.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
-			v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
+			//v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
 		}
 		i = i + fanOut
 	}
