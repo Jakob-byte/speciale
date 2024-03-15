@@ -30,7 +30,7 @@ type witnessStruct struct {
 }
 
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
-// The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter .
+// The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
 // It returns the public key.
 func setup(security, t int) PK {
 	//Sets up the generator elements, as well as the secret key a.

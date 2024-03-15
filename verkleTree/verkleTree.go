@@ -4,8 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 
-	"time"
-
+	//"time"
 	e "github.com/cloudflare/circl/ecc/bls12381"
 	combin "gonum.org/v1/gonum/stat/combin"
 
@@ -25,6 +24,7 @@ type node struct {
 	duplicate               bool
 	id                      int
 	witness                 witnessStruct
+	polynomial              poly
 }
 
 // Membership proof struct containt the neccessary information to verify node belongs to tree.
@@ -109,11 +109,11 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	degreeComb := combCalculater(fanOut)
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
-	start := time.Now()
+	//start := time.Now()
 
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
-	elapsed := time.Since(start)
-	fmt.Println("Time for langrangeBasis: ", elapsed)
+	//elapsed := time.Since(start)
+	//fmt.Println("Time for langrangeBasis: ", elapsed)
 
 	// call to makeLayer to create next layer in the tree
 	nextLayer := makeLayer(leafs, fanOut, true, pk, lagrangeBasisList)
@@ -154,8 +154,8 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.
-	var sumTimer int64
-	var sumTimer2 int64
+	//var sumTimer int64
+	//var sumTimer2 int64
 
 	for i := 0; i < len(nodes); {
 		//The loop starts by finding the children for the current node in the 'nextlayer'
@@ -173,15 +173,15 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		start := time.Now()
+		//start := time.Now()
 		polynomial := certVectorToPolynomial(vectToCommit, lagrangeBasisList)
-		elapsed := time.Since(start)
-		sumTimer += elapsed.Milliseconds()
+		//elapsed := time.Since(start)
+		//sumTimer += elapsed.Milliseconds()
 
-		start = time.Now()
+		//start = time.Now()
 		commitment := commit(pk, polynomial)
-		elapsed = time.Since(start)
-		sumTimer2 += elapsed.Milliseconds()
+		//elapsed = time.Since(start)
+		//sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownVectorCommit:         commitment,
@@ -189,16 +189,17 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 			childNumb:               i % fanOut,
 			children:                childrenList,
 			id:                      i / fanOut,
+			polynomial:              polynomial,
 		}
-		//Sets the witness in each of the nodes children.
+		//Sets the parent in each of the nodes children.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
 			//v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
 		}
 		i = i + fanOut
 	}
-	fmt.Println("sumTimer for vector to poly", sumTimer)
-	fmt.Println("sumTimer for commit", sumTimer2)
+	//fmt.Println("sumTimer for vector to poly", sumTimer)
+	//fmt.Println("sumTimer for commit", sumTimer2)
 
 	return nextLayer
 }
@@ -232,7 +233,11 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 		return membershipProof{}
 	}
 	//Creates the lists required for membership proof
+	witnessStructEmpty := witnessStruct{}
 	for nod.parent != nil {
+		if nod.witness == witnessStructEmpty {
+			nod.witness = createWitness(tree.pk, nod.parent.polynomial, uint64(nod.childNumb))
+		}
 		witnessList = append(witnessList, nod.witness)
 		commitList = append(commitList, nod.parent.ownVectorCommit)
 		nod = nod.parent
@@ -251,7 +256,6 @@ func verifyMembershipProof(mp membershipProof, pk PK) bool {
 		}
 	}
 	return true
-
 }
 
 func dumbUpdateLeaf(tree verkleTree, newCert []byte, oldCert []byte) (verkleTree, bool) {

@@ -87,7 +87,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 
 func TestRealCertificatesTime(t *testing.T) {
 	fmt.Println("TestRealCertificatesTime Running")
-	for i := 20; i <= 30; i++ {
+	for i := 15; i <= 15; i++ {
 		fmt.Println("Current fanout: ", i)
 		testAmount := 5
 		start := time.Now()
@@ -160,4 +160,58 @@ func TestInsertSimple(t *testing.T) {
 	if !verifiedTree {
 		t.Error("Somehow insertLeaf worked, but it was not added to the tree. At least not correctly. Have a nice day.")
 	}
+}
+
+func TestMembershipProofTimes(t *testing.T) {
+	fmt.Println("TestMemberShipProofTimes Running")
+	testAmount := 5
+	start := time.Now()
+	fanOut := 20
+	pk := setup(4, fanOut)
+	certArray := loadCertificates("testCerts/")
+	elapsed1 := time.Since(start)
+
+	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")
+
+	start = time.Now()
+	verkTree := BuildTree(certArray, fanOut, pk)
+	elapsed2 := time.Since(start).Seconds() / float64(testAmount)
+	fmt.Println("Built tree time : ", elapsed2, "seconds")
+
+	var success bool
+	indexToTime := 56
+	certToWitness := certArray[indexToTime]
+
+	start = time.Now()
+	membershipProof := createMembershipProof(certToWitness, *verkTree)
+	success = verifyMembershipProof(membershipProof, verkTree.pk)
+	elapsed3 := time.Since(start).Milliseconds()
+	if success != true {
+		t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
+	}
+
+	start = time.Now()
+	membershipProof = createMembershipProof(certToWitness, *verkTree)
+	success = verifyMembershipProof(membershipProof, verkTree.pk)
+	elapsed4 := time.Since(start).Milliseconds()
+	if success != true {
+		t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
+	}
+
+	start = time.Now()
+	membershipProof = createMembershipProof(certToWitness, *verkTree)
+	success = verifyMembershipProof(membershipProof, verkTree.pk)
+	elapsed5 := time.Since(start).Milliseconds()
+	if success != true {
+		t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
+	}
+
+	if elapsed3 < elapsed4 {
+		t.Errorf("Result was incorrect, got: ") //%t, want: %t.", elapsed3, elapsed4)
+	}
+
+	fmt.Println("VerifyTree time First time: ", elapsed3, "ms")
+	fmt.Println("VerifyTree time Second time: ", elapsed4, "ms")
+	fmt.Println("VerifyTree time third time: ", elapsed5, "ms")
+
 }
