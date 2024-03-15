@@ -2,7 +2,10 @@ package verkletree
 
 import (
 	"crypto/rand"
+	"fmt"
+	"runtime"
 	"slices"
+	"sync"
 
 	//combin "gonum.org/v1/gonum/stat/combin"
 	//	"math/big"
@@ -28,6 +31,8 @@ type witnessStruct struct {
 	fx0   e.Scalar
 	w     e.G1
 }
+
+var mutexBuddy sync.Mutex
 
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
 // The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
@@ -152,41 +157,59 @@ func dividentCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
 	return dividentList
 }
 
-func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar) [][]e.Scalar {
-	var lagrangeBasisList [][]e.Scalar
-	for i := 0; i < fanOut; i++ {
-		var coefToBe e.Scalar
-		var combScalar e.Scalar
-		dividentMinusI := dividentList[i]
-		coefToBeList := make([]e.Scalar, fanOut-1)
+func lagrangeBasisForGivenI(indexI int, fanOut int, dividentList []e.Scalar, degreeComb [][][]int, lagrangeBasisList *[][]e.Scalar) []e.Scalar {
+	var coefToBe e.Scalar
+	var combScalar e.Scalar
+	dividentMinusI := dividentList[indexI]
+	coefToBeList := make([]e.Scalar, fanOut-1)
 
-		// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
-		for j, combs := range degreeComb {
-			coefToBeList[j].SetUint64(0)
-			// It then looks at one of these unique combinations e.g. 5,0,2,3,1,5
-			for _, comb := range combs {
-				// If the slice (unique combination) contains either 0 or the index we're looking at (from the input vector) we skip it.
-				if !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
-					//We then go through the slice, and multiply the values together as scalars.
-					coefToBe.SetOne()
-					for _, c := range comb {
-						combScalar.SetUint64(uint64(c))
-						coefToBe.Mul(&coefToBe, &combScalar)
-					}
-					//If the comb length (j) is even we negate coefToBe,
-					//before multiplying it with with the value from our input vector
-					if ((j) % 2) == 0 {
-						coefToBe.Neg()
-					}
-					coefToBe.Mul(&coefToBe, &dividentMinusI)
-
-					coefToBeList[j].Add(&coefToBe, &coefToBeList[j])
+	// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
+	for j, combs := range degreeComb {
+		coefToBeList[j].SetUint64(0)
+		// It then looks at one of these unique combinations e.g. 5,0,2,3,1,5
+		for _, comb := range combs {
+			// If the slice (unique combination) contains either 0 or the index we're looking at (from the input vector) we skip it.
+			if !slices.Contains(comb, 0) && !slices.Contains(comb, indexI) {
+				//We then go through the slice, and multiply the values together as scalars.
+				coefToBe.SetOne()
+				for _, c := range comb {
+					combScalar.SetUint64(uint64(c))
+					coefToBe.Mul(&coefToBe, &combScalar)
 				}
+				//If the comb length (j) is even we negate coefToBe,
+				//before multiplying it with with the value from our input vector
+				if ((j) % 2) == 0 {
+					coefToBe.Neg()
+				}
+				coefToBe.Mul(&coefToBe, &dividentMinusI)
 
+				coefToBeList[j].Add(&coefToBe, &coefToBeList[j])
 			}
+
 		}
-		lagrangeBasisList = append(lagrangeBasisList, coefToBeList)
 	}
+	mutexBuddy.Lock()
+	defer mutexBuddy.Unlock()
+	(*lagrangeBasisList)[indexI] = coefToBeList
+	return coefToBeList
+}
+
+func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar) [][]e.Scalar {
+	// var lagrangeBasisList [][]e.Scalar
+	lagrangeBasisList := make([][]e.Scalar, fanOut)
+	var wg sync.WaitGroup
+	for i := 0; i < fanOut; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList)
+		}()
+		numGoroutines := runtime.NumGoroutine()
+		fmt.Println("Number of active goroutines:", numGoroutines)
+
+		//lagrangeBasisList = append(lagrangeBasisList, lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList))
+	}
+	wg.Wait()
 	//fmt.Println("LAGRANGEBASISLIST:", lagrangeBasisList)
 	return lagrangeBasisList
 }

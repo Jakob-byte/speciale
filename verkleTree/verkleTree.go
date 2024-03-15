@@ -5,6 +5,10 @@ import (
 	"crypto/sha256"
 
 	//"time"
+
+	"regexp"
+	"strings"
+
 	e "github.com/cloudflare/circl/ecc/bls12381"
 	combin "gonum.org/v1/gonum/stat/combin"
 
@@ -68,6 +72,7 @@ func loadCertificates(input string, amount ...int) [][]byte {
 	j := 0
 	for i, v := range files {
 		f, err := os.ReadFile("testCerts/" + v.Name())
+		//fmt.Println(v.Name())
 		check(err)
 		fileArray[i] = f
 		j++
@@ -75,7 +80,46 @@ func loadCertificates(input string, amount ...int) [][]byte {
 			return fileArray
 		}
 	}
+	//fmt.Println("0:", fileArray[0])
+	//fmt.Println("1:", fileArray[1])
 	return fileArray
+}
+
+func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
+
+	content, err := os.ReadFile("testCerts/AllCertsOneFile15000")
+	if err != nil {
+		panic(err)
+	}
+
+	// Convert byte slice to string
+	text := string(content)
+
+	// Define regular expression to extract certificates
+	certRegex := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----`)
+
+	// Find all matches of certificates
+	matches := certRegex.FindAllStringSubmatch(text, -1)
+
+	// Initialize slice to store certificates
+	var certificates [][]byte
+	if len(amount) == 0 {
+		certificates = make([][]byte, len(matches))
+	} else {
+		certificates = make([][]byte, amount[0])
+	}
+
+	// Extract certificates and store them in the slice
+	for i, match := range matches {
+		certificates[i] = []byte(strings.TrimSpace(match[0]))
+		if len(amount) != 0 && i == amount[0] {
+			return certificates
+		}
+	}
+	//for i, cert := range certificates {
+	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
+	//}
+	return certificates
 }
 
 // Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0.
@@ -95,7 +139,9 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	var verk verkleTree
 
 	//Creates a leaf-node for each certificate.
+	fmt.Println("About to create list for nodes")
 	leafs := make([]*node, len(certs))
+	fmt.Println("ABout to start for loop to fill leaves")
 	for i := 0; i < len(certs); i++ {
 		leafs[i] = &node{
 			certificate: certs[i],
@@ -106,11 +152,13 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	}
 
 	//Makes the combinations of integers needed to calculate divident and polynomial.
+	fmt.Println("before comb calc")
 	degreeComb := combCalculater(fanOut)
+	fmt.Println("After comb calc")
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
 	//start := time.Now()
-
+	fmt.Println("After div calc")
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
 	//elapsed := time.Since(start)
 	//fmt.Println("Time for langrangeBasis: ", elapsed)

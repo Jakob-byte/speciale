@@ -87,7 +87,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 
 func TestRealCertificatesTime(t *testing.T) {
 	fmt.Println("TestRealCertificatesTime Running")
-	for i := 15; i <= 15; i++ {
+	for i := 20; i <= 20; i++ {
 		fmt.Println("Current fanout: ", i)
 		testAmount := 5
 		start := time.Now()
@@ -214,4 +214,12 @@ func TestMembershipProofTimes(t *testing.T) {
 	fmt.Println("VerifyTree time Second time: ", elapsed4, "ms")
 	fmt.Println("VerifyTree time third time: ", elapsed5, "ms")
 
+}
+
+func TestNewReadCertFunc(t *testing.T) {
+	certArray := loadCertificatesFromOneFile("testCerts/")
+	//fmt.Println(certArray)
+	if false {
+		fmt.Println(certArray)
+	}
 }
