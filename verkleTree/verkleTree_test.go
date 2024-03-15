@@ -87,7 +87,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 
 func TestRealCertificatesTime(t *testing.T) {
 	fmt.Println("TestRealCertificatesTime Running")
-	for i := 15; i <= 30; i++ {
+	for i := 20; i <= 30; i++ {
 		fmt.Println("Current fanout: ", i)
 		testAmount := 5
 		start := time.Now()

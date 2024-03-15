@@ -3,6 +3,7 @@ package verkletree
 import (
 	"fmt"
 	"testing"
+
 	combin "gonum.org/v1/gonum/stat/combin"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
@@ -22,9 +23,9 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points),degreeComb)
-
-	thePoly := realVectorToPoly(scalVect, degreeComb,dividentList)
+	dividentList := dividentCalculator(len(points), degreeComb)
+	lagrangeBasisList := lagrangeBasisCalc(3, degreeComb, dividentList)
+	thePoly := realVectorToPoly(scalVect, lagrangeBasisList)
 	//fmt.Println("the Coefs!!!:", thePoly.coefficients)
 	var k e.Scalar
 	var x e.Scalar
@@ -53,8 +54,9 @@ func TestQuotientPoly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points),degreeComb)
-	thePoly := realVectorToPoly(scalVect, degreeComb,dividentList)
+	dividentList := dividentCalculator(len(points), degreeComb)
+	lagrangeBasisList := lagrangeBasisCalc(4, degreeComb, dividentList)
+	thePoly := realVectorToPoly(scalVect, lagrangeBasisList)
 	quotientPoly := quotientOfPoly(thePoly, 2)
 	var invertThing e.Scalar
 	invertThing.SetString("3")
@@ -90,21 +92,22 @@ func TestCommit(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points),degreeComb)
-	polynomial := certVectorToPolynomial(points,degreeComb,dividentList)
+	dividentList := dividentCalculator(len(points), degreeComb)
+	lagrangeBasisList := lagrangeBasisCalc(3, degreeComb, dividentList)
+
+	polynomial := certVectorToPolynomial(points, lagrangeBasisList)
 	commit := commit(pk, polynomial)
 	verifyBool := verifyPoly(pk, commit, polynomial)
-	if !verifyBool{
+	if !verifyBool {
 		panic("verify Poly was very incorrect")
 	}
 
 	witness := createWitness(pk, polynomial, uint64(1))
 	verifyBool = verifyWitness(pk, commit, witness)
-	if !verifyBool{
+	if !verifyBool {
 		panic("verify witness was very incorrect")
 	}
 
 	open()
 
 }
-

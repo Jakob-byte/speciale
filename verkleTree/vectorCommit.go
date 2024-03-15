@@ -2,7 +2,6 @@ package verkletree
 
 import (
 	"crypto/rand"
-	"fmt"
 	"slices"
 
 	//combin "gonum.org/v1/gonum/stat/combin"
@@ -155,11 +154,11 @@ func dividentCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
 
 func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar) [][]e.Scalar {
 	var lagrangeBasisList [][]e.Scalar
-	coefToBeList := make([]e.Scalar, fanOut-1)
 	for i := 0; i < fanOut; i++ {
 		var coefToBe e.Scalar
 		var combScalar e.Scalar
 		dividentMinusI := dividentList[i]
+		coefToBeList := make([]e.Scalar, fanOut-1)
 
 		// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
 		for j, combs := range degreeComb {
@@ -188,70 +187,27 @@ func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar
 		}
 		lagrangeBasisList = append(lagrangeBasisList, coefToBeList)
 	}
+	//fmt.Println("LAGRANGEBASISLIST:", lagrangeBasisList)
 	return lagrangeBasisList
 }
 
 // This translates the input vector into a polynomial which can be used for KZG commitment. It takes the scalar vector as input, unique combinations and dividentlist.
 // It returns the polynomial of the vector, f(i)=scalarVect[i].
-func realVectorToPoly(scalarVect []e.Scalar, degreeComb [][][]int, dividentList []e.Scalar) poly {
+func realVectorToPoly(scalarVect []e.Scalar, lagrangeBasisList [][]e.Scalar) poly {
 	//Prepares variable for the polynomial.
 	var answer poly
 	coefs := make([]e.Scalar, len(scalarVect))
 	coefs[0] = scalarVect[0] // first value in list of points, this is a constant coefficient in the polynomial (aka the first coefficient if a0 + a1x + a2x^2 + ...)
-	coefs2 := make([]e.Scalar, len(scalarVect))
-	coefs2[0] = scalarVect[0] // first value in list of points, this is a constant coefficient in the polynomial (aka the first coefficient if a0 + a1x + a2x^2 + ...)
-	var coefToBe2 e.Scalar
-	lagrangeBasisList := lagrangeBasisCalc(len(scalarVect), degreeComb, dividentList)
+	var coefToBe e.Scalar
+	//lagrangeBasisList := lagrangeBasisCalc(len(scalarVect), degreeComb, dividentList)
 	for i, y := range scalarVect {
 		for j, eScalar := range lagrangeBasisList[i] {
-			coefToBe2 = eScalar
+			coefToBe = eScalar
 
-			coefToBe2.Mul(&coefToBe2, &y)
-			coefs2[j+1].Add(&coefs2[j+1], &coefToBe2)
-
+			coefToBe.Mul(&coefToBe, &y)
+			coefs[j+1].Add(&coefs[j+1], &coefToBe)
 		}
-
 	}
-	//The for loop where the magic happens, goes over the input vector.
-	for i, y := range scalarVect {
-		//Gets the divident from the dividentlist.
-		dividentMinusI := dividentList[i]
-		var coefToBe e.Scalar
-		var combScalar e.Scalar
-
-		// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
-		for j, combs := range degreeComb {
-			// It then looks at one of these unique combinations e.g. 5,0,2,3,1,5
-			for _, comb := range combs {
-				// If the slice (unique combination) contains either 0 or the index we're looking at (from the input vector) we skip it.
-				if !slices.Contains(comb, 0) && !slices.Contains(comb, i) {
-					//We then go through the slice, and multiply the values together as scalars.
-					coefToBe.SetOne()
-					for _, c := range comb {
-						combScalar.SetUint64(uint64(c))
-						coefToBe.Mul(&coefToBe, &combScalar)
-					}
-					//If the comb length (j) is even we negate coefToBe,
-					//before multiplying it with with the value from our input vector
-					if ((j) % 2) == 0 {
-						coefToBe.Neg()
-					}
-					coefToBe.Mul(&coefToBe, &dividentMinusI)
-
-					coefToBe.Mul(&coefToBe, &y)
-					//We then multiply it with the divident (which has been inversed in the original method)
-					//And add it to the corresponding coefficient, decided by the length of combinations we're looking at j.
-					//coefToBe.Mul(&coefToBe, &dividentMinusI)
-					coefs[j+1].Add(&coefs[j+1], &coefToBe)
-				}
-			}
-		}
-
-	}
-	//DOne
-	fmt.Println("NEW COEFS!!!", coefs2)
-	fmt.Println("")
-	fmt.Println("OLD COEFSS!!! :) ", coefs)
 	answer.coefficients = coefs
 	return answer
 }
@@ -270,22 +226,20 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 	for i := range polynomial.coefficients[1:] { //we ignore the forst coeff as it is divided out
 		xPower.SetOne()
 		for j := i; j < len(coefs); j++ {
-
 			mulSomething.Mul(&polynomial.coefficients[j+1], &xPower)
 			coefs[i].Add(&coefs[i], &mulSomething)
 			xPower.Mul(&xPower, &xNul)
-
 		}
 	}
 	quotient.coefficients = coefs
 	return quotient
 }
 
-func certVectorToPolynomial(certVect [][]byte, degreeComb [][][]int, dividentList []e.Scalar) poly {
+func certVectorToPolynomial(certVect [][]byte, lagrangeBasisList [][]e.Scalar) poly {
 
 	scalarVector := certToScalarVector(certVect)
 
-	polynomial := realVectorToPoly(scalarVector, degreeComb, dividentList)
+	polynomial := realVectorToPoly(scalarVector, lagrangeBasisList)
 	return polynomial
 }
 

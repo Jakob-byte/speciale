@@ -3,6 +3,7 @@ package verkletree
 import (
 	"bytes"
 	"crypto/sha256"
+
 	"time"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
@@ -34,12 +35,13 @@ type membershipProof struct {
 
 // Struct representing the verkle-tree
 type verkleTree struct {
-	Root         *node
-	leafs        []*node
-	fanOut       int
-	pk           PK
-	degreeComb   [][][]int
-	dividentList []e.Scalar
+	Root              *node
+	leafs             []*node
+	fanOut            int
+	pk                PK
+	degreeComb        [][][]int
+	dividentList      []e.Scalar
+	lagrangeBasisList [][]e.Scalar
 }
 
 // Function to call with error to avoid overloading methdods with error if statements
@@ -107,20 +109,25 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	degreeComb := combCalculater(fanOut)
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
+	start := time.Now()
+
+	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
+	elapsed := time.Since(start)
+	fmt.Println("Time for langrangeBasis: ", elapsed)
+
 	// call to makeLayer to create next layer in the tree
-	nextLayer := makeLayer(leafs, fanOut, true, pk, degreeComb, dividentList)
+	nextLayer := makeLayer(leafs, fanOut, true, pk, lagrangeBasisList)
 	// while loop that exits when we are in the root
 	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut, false, pk, degreeComb, dividentList)
+		nextLayer = makeLayer(nextLayer, fanOut, false, pk, lagrangeBasisList)
 	}
 	// Creates the final verkletree struct.
 	verk = verkleTree{
-		fanOut:       fanOut,
-		Root:         nextLayer[0],
-		leafs:        leafs,
-		pk:           pk,
-		degreeComb:   degreeComb,
-		dividentList: dividentList,
+		fanOut:            fanOut,
+		Root:              nextLayer[0],
+		leafs:             leafs,
+		pk:                pk,
+		lagrangeBasisList: lagrangeBasisList,
 	}
 
 	return &verk
@@ -128,7 +135,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][][]int, dividentList []e.Scalar) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisList [][]e.Scalar) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -167,7 +174,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, degreeComb [][
 		}
 		//Creates the vectorcommit to the children of the node.
 		start := time.Now()
-		polynomial := certVectorToPolynomial(vectToCommit, degreeComb, dividentList)
+		polynomial := certVectorToPolynomial(vectToCommit, lagrangeBasisList)
 		elapsed := time.Since(start)
 		sumTimer += elapsed.Milliseconds()
 
@@ -275,7 +282,7 @@ func dumbUpdateLeaf(tree verkleTree, newCert []byte, oldCert []byte) (verkleTree
 			}
 		}
 
-		polyVector := certVectorToPolynomial(listlist, tree.degreeComb, tree.dividentList) //TODO what do we do with degComb and divList
+		polyVector := certVectorToPolynomial(listlist, tree.lagrangeBasisList) //TODO what do we do with degComb and divList
 		commitment := commit(tree.pk, polyVector)
 		nod = nod.parent
 		nod.ownVectorCommit = commitment
@@ -353,7 +360,7 @@ func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 				}
 			}
 
-			polyVector := certVectorToPolynomial(listlist, tree.degreeComb, tree.dividentList) //TODO what do we do with degComb and divList
+			polyVector := certVectorToPolynomial(listlist, tree.lagrangeBasisList) //TODO what do we do with degComb and divList
 			commitment := commit(tree.pk, polyVector)
 			nextSibling = nextSibling.parent
 			nextSibling.ownVectorCommit = commitment
