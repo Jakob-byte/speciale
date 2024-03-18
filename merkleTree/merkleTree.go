@@ -10,6 +10,8 @@ import (
 	//"math/big"
 	"log"
 	"os"
+	"regexp"
+	"strings"
 )
 
 // struct for representing a node in the tree
@@ -64,6 +66,42 @@ func loadCertificates(input string, amount ...int) [][]byte {
 	}
 	return fileArray
 }
+func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
+
+	content, err := os.ReadFile("testCerts/AllCertsOneFile15000")
+	if err != nil {
+		panic(err)
+	}
+
+	// Convert byte slice to string
+	text := string(content)
+
+	// Define regular expression to extract certificates
+	certRegex := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----`)
+
+	// Find all matches of certificates
+	matches := certRegex.FindAllStringSubmatch(text, -1)
+
+	// Initialize slice to store certificates
+	var certificates [][]byte
+	if len(amount) == 0 {
+		certificates = make([][]byte, len(matches))
+	} else {
+		certificates = make([][]byte, amount[0])
+	}
+
+	// Extract certificates and store them in the slice
+	for i, match := range matches {
+		if len(amount) != 0 && i == amount[0] {
+			return certificates
+		}
+		certificates[i] = []byte(strings.TrimSpace(match[0]))
+	}
+	//for i, cert := range certificates {
+	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
+	//}
+	return certificates
+}
 
 func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 	var merk merkleTree
@@ -115,7 +153,7 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 	}
 
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
-	
+
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.
 	for i := 0; i < len(nodes); {

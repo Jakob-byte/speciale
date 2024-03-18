@@ -7,6 +7,7 @@ import (
 	//"time"
 	"regexp"
 	"slices"
+	"strconv"
 	"strings"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
@@ -59,36 +60,18 @@ func check(err error) {
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
 // where [0} is the amount of certificates to load from said directory.
 // returns a [][]byte list/array of files
-func loadCertificates(input string, amount ...int) [][]byte {
-
-	files, err := os.ReadDir(input)
-	check(err)
+func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
-	//To handle test cases, where we limit input size
-	if len(amount) == 0 {
-		fileArray = make([][]byte, len(files))
-	} else {
-		fileArray = make([][]byte, amount[0])
+
+	for i := 0; i < amount; i++ {
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i))...)
 	}
-	j := 0
-	for i, v := range files {
-		f, err := os.ReadFile("testCerts/" + v.Name())
-		//fmt.Println(v.Name())
-		check(err)
-		fileArray[i] = f
-		j++
-		if len(amount) > 0 && j == amount[0] {
-			return fileArray
-		}
-	}
-	//fmt.Println("0:", fileArray[0])
-	//fmt.Println("1:", fileArray[1])
 	return fileArray
 }
 
 func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 
-	content, err := os.ReadFile("testCerts/AllCertsOneFile15000")
+	content, err := os.ReadFile("testCerts/" + input)
 	if err != nil {
 		panic(err)
 	}
@@ -210,7 +193,7 @@ func combCalculater(fanOut int) [][][]int {
 	var degreeComb [][][]int
 	for k := fanOut - 1; k > 0; k-- {
 		combinationten := combinations(fanOut, k-1)
-		fmt.Println("len of comb to add:", len(combinationten))
+		//fmt.Println("len of comb to add:", len(combinationten))
 		degreeComb = append(degreeComb, combinationten)
 	}
 	return degreeComb
@@ -341,6 +324,11 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
 	testTree := BuildTree(certs, tree.fanOut, pk)
 
 	return testTree.Root.ownVectorCommit == tree.Root.ownVectorCommit
+}
+
+func verifyNode(cert []byte, tree verkleTree) bool {
+	mp := createMembershipProof(cert, tree)
+	return verifyMembershipProof(mp, tree.pk)
 }
 
 // This function verifies the certificate cert is commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
