@@ -5,12 +5,13 @@ import (
 	"crypto/sha256"
 
 	//"time"
-
 	"regexp"
+	"slices"
 	"strings"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
-	combin "gonum.org/v1/gonum/stat/combin"
+
+	//	combin "gonum.org/v1/gonum/stat/combin"
 
 	"fmt"
 	"log"
@@ -111,10 +112,10 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 
 	// Extract certificates and store them in the slice
 	for i, match := range matches {
-		certificates[i] = []byte(strings.TrimSpace(match[0]))
 		if len(amount) != 0 && i == amount[0] {
 			return certificates
 		}
+		certificates[i] = []byte(strings.TrimSpace(match[0]))
 	}
 	//for i, cert := range certificates {
 	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
@@ -122,13 +123,95 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 	return certificates
 }
 
+// TODO Taken from combin, make proper cite
 // Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0.
 // Returns the combinations as [][][]int list.
+func combinations(n, k int) [][]int {
+	combins := Binomial(n, k)
+	data := make([][]int, combins)
+	if len(data) == 0 {
+		return data
+	}
+	data[0] = make([]int, k)
+	for i := range data[0] {
+		data[0][i] = i
+	}
+	next2 := data[0]
+	//fmt.Println("len before", len(data[0]))
+	//data[0] = data[0][1:]
+	//fmt.Println("len after", len(data[0]))
+	counter := 1
+	for i := 1; i < combins; i++ {
+		next := make([]int, k)
+		copy(next, next2)
+		nextCombination(next, n, k)
+		next2 = next
+		if slices.Contains(next, 0) {
+			next = []int{0}
+		} else {
+			data[counter] = next
+			counter++
+		}
+		//data[i] = next
+	}
+	stopIndex := len(data)
+	for i := 0; i < len(data); i++ {
+		if len(data[i]) == 0 {
+			stopIndex = i
+			break
+		}
+	}
+	//fmt.Println("len before", len(data))
+	//fmt.Println("fær", data)
+	data = data[:stopIndex]
+	if len(data) > 0 {
+		data = data[1:]
+	}
+	//fmt.Println("efter", data)
+	//fmt.Println("len after", len(data))
+	return data
+}
+
+// TODO Taken from combin, make proper cite
+// nextCombination generates the combination after s, overwriting the input value.
+func nextCombination(s []int, n, k int) {
+	for j := k - 1; j >= 0; j-- {
+		if s[j] == n+j-k {
+			continue
+		}
+		s[j]++
+		for l := j + 1; l < k; l++ {
+			s[l] = s[j] + l - j
+		}
+		break
+	}
+}
+
+func Binomial(n, k int) int {
+	if n < 0 || k < 0 {
+		panic("panic in Binomial")
+	}
+	if n < k {
+		panic("Second panic in Binomial")
+	}
+	// (n,k) = (n, n-k)
+	if k > n/2 {
+		k = n - k
+	}
+	b := 1
+	for i := 1; i <= k; i++ {
+		b = (n - k + i) * b / i
+	}
+	return b
+}
+
 func combCalculater(fanOut int) [][][]int {
 
 	var degreeComb [][][]int
 	for k := fanOut - 1; k > 0; k-- {
-		degreeComb = append(degreeComb, combin.Combinations(fanOut, k-1))
+		combinationten := combinations(fanOut, k-1)
+		fmt.Println("len of comb to add:", len(combinationten))
+		degreeComb = append(degreeComb, combinationten)
 	}
 	return degreeComb
 }
@@ -139,9 +222,9 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	var verk verkleTree
 
 	//Creates a leaf-node for each certificate.
-	fmt.Println("About to create list for nodes")
+	//fmt.Println("About to create list for nodes")
 	leafs := make([]*node, len(certs))
-	fmt.Println("ABout to start for loop to fill leaves")
+	//fmt.Println("ABout to start for loop to fill leaves")
 	for i := 0; i < len(certs); i++ {
 		leafs[i] = &node{
 			certificate: certs[i],
@@ -152,13 +235,13 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	}
 
 	//Makes the combinations of integers needed to calculate divident and polynomial.
-	fmt.Println("before comb calc")
+	//fmt.Println("before comb calc")
 	degreeComb := combCalculater(fanOut)
-	fmt.Println("After comb calc")
+	//fmt.Println("After comb calc")
 	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
 	dividentList := dividentCalculator(fanOut, degreeComb)
 	//start := time.Now()
-	fmt.Println("After div calc")
+	//fmt.Println("After div calc")
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
 	//elapsed := time.Since(start)
 	//fmt.Println("Time for langrangeBasis: ", elapsed)

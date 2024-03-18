@@ -70,7 +70,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 	max := 300
 	fanOut := 10
 	pk := setup(10, fanOut)
-	certArray := loadCertificates("testCerts/", max)
+	certArray := loadCertificatesFromOneFile("testCerts/", max)
 	verkTree := BuildTree(certArray, fanOut, pk)
 
 	for i := 0; i < 10; i++ {
@@ -87,13 +87,13 @@ func TestMembershipProofRealCerts(t *testing.T) {
 
 func TestRealCertificatesTime(t *testing.T) {
 	fmt.Println("TestRealCertificatesTime Running")
-	for i := 20; i <= 20; i++ {
+	for i := 26; i <= 26; i++ {
 		fmt.Println("Current fanout: ", i)
 		testAmount := 5
 		start := time.Now()
 		fanOut := i
 		pk := setup(4, fanOut)
-		certArray := loadCertificates("testCerts/")
+		certArray := loadCertificatesFromOneFile("testCerts/")
 		elapsed1 := time.Since(start)
 
 		fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")
@@ -124,7 +124,7 @@ func TestDumbUpdateLeafButEvil(t *testing.T) {
 	fmt.Println("TestDumbUpdateLeafButEvil Running")
 	fanOut := 10
 	pk := setup(4, fanOut)
-	certArray := loadCertificates("testCerts/")
+	certArray := loadCertificatesFromOneFile("testCerts/")
 
 	verkTree := BuildTree(certArray, fanOut, pk)
 
@@ -146,7 +146,7 @@ func TestInsertSimple(t *testing.T) {
 	fmt.Println("TestInsertSimple Running")
 	fanOut := 2
 	pk := setup(4, fanOut)
-	certArray := loadCertificates("testCerts/", 999)
+	certArray := loadCertificatesFromOneFile("testCerts/", 999)
 	verkTree := BuildTree(certArray, fanOut, pk)
 	baguetteCert := loadOneCert("baguetteCert.crt")
 	newTree, itWorked := insertLeaf(baguetteCert, *verkTree)
@@ -168,7 +168,7 @@ func TestMembershipProofTimes(t *testing.T) {
 	start := time.Now()
 	fanOut := 20
 	pk := setup(4, fanOut)
-	certArray := loadCertificates("testCerts/")
+	certArray := loadCertificatesFromOneFile("testCerts/")
 	elapsed1 := time.Since(start)
 
 	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")

@@ -2,8 +2,8 @@ package verkletree
 
 import (
 	"crypto/rand"
-	"fmt"
-	"runtime"
+	//"fmt"
+	//"runtime"
 	"slices"
 	"sync"
 
@@ -204,8 +204,8 @@ func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar
 			defer wg.Done()
 			lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList)
 		}()
-		numGoroutines := runtime.NumGoroutine()
-		fmt.Println("Number of active goroutines:", numGoroutines)
+		//numGoroutines := runtime.NumGoroutine()
+		//fmt.Println("Number of active goroutines:", numGoroutines)
 
 		//lagrangeBasisList = append(lagrangeBasisList, lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList))
 	}
