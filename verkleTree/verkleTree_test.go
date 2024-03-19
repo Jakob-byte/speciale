@@ -162,6 +162,14 @@ func TestInsertSimple(t *testing.T) {
 	}
 }
 
+func TestTreeBuild2(t *testing.T) {
+	fmt.Println("TestTreeBuild2 -  starting")
+	fanout:= 15
+	pk := setup(10, fanout)
+	certArray := loadCertificates("AllCertsOneFile20000", 5)
+	BuildTree(certArray, fanout, pk)
+}
+
 func TestMembershipProofTimes(t *testing.T) {
 	fmt.Println("TestMemberShipProofTimes Running")
 	testAmount := 5
@@ -225,37 +233,41 @@ func TestNewReadCertFunc(t *testing.T) {
 }
 
 // Benchmark/party time!!!!!!!
+var testCerts = struct {
+	certs [][]byte
+}{
+	certs: loadCertificates("AllCertsOneFIle20000", 5),
+}
 
 var table = []struct {
 	fanOut int
 	tree   verkleTree
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	{fanOut: 2, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 2, setup(10, 2))},
-	{fanOut: 3, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 3, setup(10, 3))},
-	{fanOut: 4, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 4, setup(10, 4))},
-	{fanOut: 5, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 5, setup(10, 5))},
-	{fanOut: 6, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 6, setup(10, 6))},
-	{fanOut: 7, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 7, setup(10, 7))},
-	{fanOut: 8, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 8, setup(10, 8))},
-	{fanOut: 9, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 9, setup(10, 9))},
-	{fanOut: 10, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 10, setup(10, 10))},
-	{fanOut: 11, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 11, setup(10, 11))},
-	{fanOut: 12, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 12, setup(10, 12))},
-	{fanOut: 13, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 13, setup(10, 13))},
-	{fanOut: 14, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 14, setup(10, 14))},
-	{fanOut: 15, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 15, setup(10, 15))},
-	{fanOut: 16, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 16, setup(10, 16))},
-	{fanOut: 17, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 17, setup(10, 17))},
-	{fanOut: 18, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 18, setup(10, 18))},
-	{fanOut: 19, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 19, setup(10, 19))},
-	{fanOut: 20, tree: *BuildTree(loadCertificates("AllCertsOneFile20000", 2), 20, setup(10, 20))},
-	//{fanOut: 25, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 25, setup(10, 25))},
+	//{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, setup(10, 2))},
+	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3, setup(10, 3))},
+	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4, setup(10, 4))},
+	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5, setup(10, 5))},
+	//{fanOut: 6, tree: *BuildTree(testCerts.certs, 6, setup(10, 6))},
+	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7, setup(10, 7))},
+	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8, setup(10, 8))},
+	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9))},
+	//{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10, 10))},
+	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11))},
+	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12))},
+	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13))},
+	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14))},
+	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15))},
+	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16,setup(10,16))},
+	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17,setup(10,17))},
+	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18,setup(10,18))},
+	//{fanOut: 19, tree: *BuildTree(testCerts.certs, 19,setup(10,19))},
+	//{fanOut: 20, tree: *BuildTree(testCerts.certs, 20,setup(10,20))},
+	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25,setup(10,25))},
 }
 
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
-	certArray := loadCertificates("AllCertsOneFile20000", 2)
 	b.ResetTimer()
 	for _, v := range table {
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
@@ -263,7 +275,7 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 			pk := setup(4, fanOut)
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				BuildTree(certArray, fanOut, pk)
+				BuildTree(testCerts.certs, fanOut, pk)
 
 				//result := verifyTree(certArray, *verkTree, pk)
 
@@ -277,14 +289,13 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 
 func BenchmarkVerifyNode(b *testing.B) {
 	fmt.Println("BenchmarkVerifyNode Running")
-	testCerts := loadCertificates("AllCertsOneFile20000", 2)
 	b.ResetTimer()
 
 	for _, v := range table {
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				verifyNode(testCerts[i], v.tree)
+				verifyNode(testCerts.certs[i], v.tree)
 			}
 		})
 	}

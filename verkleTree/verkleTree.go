@@ -4,7 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 
-	//"time"
+	"time"
 	"regexp"
 	"slices"
 	"strconv"
@@ -230,7 +230,10 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 	//fmt.Println("Time for langrangeBasis: ", elapsed)
 
 	// call to makeLayer to create next layer in the tree
+	start := time.Now()
+	
 	nextLayer := makeLayer(leafs, fanOut, true, pk, lagrangeBasisList)
+	
 	// while loop that exits when we are in the root
 	for len(nextLayer) > 1 {
 		nextLayer = makeLayer(nextLayer, fanOut, false, pk, lagrangeBasisList)
@@ -243,7 +246,8 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 		pk:                pk,
 		lagrangeBasisList: lagrangeBasisList,
 	}
-
+	elapsed := time.Since(start)
+	fmt.Println("Time elapsed making verkletree: ", elapsed)
 	return &verk
 }
 

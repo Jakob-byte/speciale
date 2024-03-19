@@ -6,6 +6,8 @@ import (
 
 	//"errors"
 	"fmt"
+	"strconv"
+	"time"
 	//"hash"
 	//"math/big"
 	"log"
@@ -23,6 +25,11 @@ type node struct {
 	certificate []byte
 	duplicate   bool
 	id          int
+}
+
+type witness struct {
+	hashList        [][][32]byte
+	childNumberList []int
 }
 
 // Struct representing the merkle-tree
@@ -43,32 +50,18 @@ func check(err error) {
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
 // where [0} is the amount of certificates to load from said directory.
 // returns a [][]byte list/array of files
-func loadCertificates(input string, amount ...int) [][]byte {
-
-	files, err := os.ReadDir(input)
-	check(err)
+func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
-	//To handle test cases, where we limit input size
-	if len(amount) == 0 {
-		fileArray = make([][]byte, len(files))
-	} else {
-		fileArray = make([][]byte, amount[0])
-	}
-	j := 0
-	for i, v := range files {
-		f, err := os.ReadFile("testCerts/" + v.Name())
-		check(err)
-		fileArray[i] = f
-		j++
-		if len(amount) > 0 && j == amount[0] {
-			return fileArray
-		}
+
+	for i := 0; i < amount; i++ {
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i))...)
 	}
 	return fileArray
 }
+
 func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 
-	content, err := os.ReadFile("testCerts/AllCertsOneFile15000")
+	content, err := os.ReadFile("testCerts/" + input)
 	if err != nil {
 		panic(err)
 	}
@@ -110,17 +103,18 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 
 	//build the leaf nodes of the tree
 	for i := 0; i < len(certs); i++ {
-		testHash := sha256.Sum256(certs[i])
 		leafs[i] = &node{
 			certificate: certs[i],
 			childNumb:   i % fanOut,
-			ownHash:     testHash,
+			ownHash:     sha256.Sum256(certs[i]),
 			duplicate:   false,
 			id:          i,
 		}
 	}
 
 	//function call to make the next layer
+	start := time.Now()
+
 	nextLayer := makeLayer(leafs, fanOut)
 	// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
 	for len(nextLayer) > 1 {
@@ -133,7 +127,8 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 		Root:   nextLayer[0],
 		leafs:  leafs,
 	}
-
+	elapsed := time.Since(start)
+	fmt.Println("Time elapsed making merkletree: ", elapsed)
 	return &merk
 }
 
@@ -166,10 +161,9 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 		}
 		//Creates the hash of the children of the node.
 
-		sum := sha256.Sum256(allChildrenHashes)
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
-			ownHash:   sum,
+			ownHash:   sha256.Sum256(allChildrenHashes),
 			childNumb: i % fanOut,
 			children:  childrenList,
 			id:        i / fanOut,
@@ -191,6 +185,11 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 }
 
 func verifyNode(cert []byte, tree merkleTree) bool {
+	witness := createWitness(cert, tree)
+	return verifyWitness(cert, witness, tree)
+}
+
+func createWitness(cert []byte, tree merkleTree) witness {
 	var nod *node
 	fanOut := tree.fanOut
 	notInList := true
@@ -201,39 +200,61 @@ func verifyNode(cert []byte, tree merkleTree) bool {
 		}
 	}
 	if notInList {
-		return false
+		return witness{}
 	}
 
 	var hashList [][][32]byte
+
 	var childNumberList []int
+
+	var counter int
 	for nod.parent != nil {
+		hashList0 := make([][32]byte, tree.fanOut-1)
+
 		childNumberList = append(childNumberList, nod.id%fanOut)
-		var hashList0 [][32]byte
+		counter = 0
 		for _, v := range nod.parent.children {
 			if nod.id != v.id {
-				hashList0 = append(hashList0, v.ownHash)
+				hashList0[counter] = v.ownHash
+				counter++ 
 			}
+			
 		}
+		
+		//fmt.Printf("NONWORKINGLIST: %T\n",(hashList0))
+		//fmt.Printf("workingLIST: %T\n",(hashList0working))
+
+		//fmt.Println("HashList0, should be equal to fanout", len(hashList0))
 		hashList = append(hashList, hashList0)
 		nod = nod.parent
 	}
+	//fmt.Println("depth of tree", len(hashList))
+	witness := witness{
+		hashList:        hashList,
+		childNumberList: childNumberList,
+	}
+	return witness
+}
 
+// if we wanna be cool we can fix stuff so we don't need to give the certificate to this function! by putting it in the hashlist somehow
+func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
 	sum := sha256.Sum256(cert)
-	for i := 0; i < len(hashList); i++ {
+	for i := 0; i < len(witness.hashList); i++ {
 		var byteToHash []byte
-		for j, v := range hashList[i] {
+		for j, v := range witness.hashList[i] {
 
-			if childNumberList[i] == j {
+			if witness.childNumberList[i] == j {
 				byteToHash = append(byteToHash, sum[:]...)
 			}
 			byteToHash = append(byteToHash, v[:]...)
 		}
-		if childNumberList[i] == fanOut-1 {
+		if witness.childNumberList[i] == tree.fanOut-1 {
 			byteToHash = append(byteToHash, sum[:]...)
 		}
 		sum = sha256.Sum256(byteToHash)
 	}
 	return sum == tree.Root.ownHash
+
 }
 
 func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
@@ -262,7 +283,7 @@ func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
 			}
 		}
 
-		// Bla bla
+		// Create the thing we want to hash
 		var byteToHash []byte
 		for j, v := range hashList {
 			if childNumber == j {
@@ -301,7 +322,7 @@ func loadOneCert(filePath string) []byte {
 }
 
 func main() {
-	certArray := loadCertificates("testCerts/")
+	certArray := loadCertificates("AllCertsOneFile20000", 2)
 	merkTree := BuildTree(certArray, 2)
 	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
 	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))

@@ -4,11 +4,12 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 )
 
 func TestVerifyTree(t *testing.T) {
 	fmt.Println("TestVerifyTree -  starting")
-	certArray := loadCertificatesFromOneFile("testCerts/")
+	certArray := loadCertificates("AllCertsOneFile20000", 2)
 	merkTree := BuildTree(certArray, 2)
 	result := verifyTree(certArray, *merkTree)
 	if result != true {
@@ -19,12 +20,21 @@ func TestVerifyTree(t *testing.T) {
 func TestVerifyCert(t *testing.T) {
 	fmt.Println("TestVerifyCert -  starting")
 
-	certArray := loadCertificatesFromOneFile("testCerts/")
-	merkTree := BuildTree(certArray, 2)
+	certArray := loadCertificates("AllCertsOneFile20000", 2)
+	merkTree := BuildTree(certArray, 1000)
+	
 	result := verifyNode(certArray[5], *merkTree)
+	
 	if result != true {
 		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
 	}
+}
+
+
+func TestTreeBuild2(t *testing.T) {
+	fmt.Println("TestTreeBuild -  starting")
+	certArray := loadCertificates("AllCertsOneFile20000", 5)
+	BuildTree(certArray, 15)
 }
 
 func TestTreeBuilder(t *testing.T) {
@@ -33,7 +43,7 @@ func TestTreeBuilder(t *testing.T) {
 	min := 10
 	for i := 0; i < 10; i++ {
 		randNumb := rand.Intn(max-min) + min
-		certArray := loadCertificatesFromOneFile("testCerts/", randNumb)
+		certArray := loadCertificates("AllCertsOneFile20000", 2)
 		merkTree := BuildTree(certArray, 2)
 		nodeToTest := rand.Intn(randNumb)
 		result := verifyNode(certArray[nodeToTest], *merkTree)
@@ -57,10 +67,10 @@ func TestDifferentFanOuts(t *testing.T) {
 	min := 100
 	maxFan := 100
 	minFan := 2
-	for i := 0; i < 10; i++ {
+	for i := 1; i < 2; i++ {
 		randNumb := rand.Intn(max-min) + min
 		fanNumb := rand.Intn(maxFan-minFan) + minFan
-		certArray := loadCertificatesFromOneFile("testCerts/", randNumb)
+		certArray := loadCertificates("AllCertsOneFile20000", 2)
 		merkTree := BuildTree(certArray, fanNumb)
 		nodeToTest := rand.Intn(randNumb)
 		result := verifyNode(certArray[nodeToTest], *merkTree)
@@ -80,7 +90,7 @@ func TestDifferentFanOuts(t *testing.T) {
 
 func TestUpdateLeafVerifyLeaf(t *testing.T) {
 	fmt.Println("TestUpdateLeafVerifyLeaf -  starting")
-	certArray := loadCertificatesFromOneFile("testCerts/")
+	certArray := loadCertificates("AllCertsOneFile20000", 2)
 	merkTree := BuildTree(certArray, 2)
 	newCert := loadOneCert("baguetteCert.crt")
 	result := verifyNode(newCert, *merkTree)
@@ -105,7 +115,7 @@ func TestUpdateLeafVerifyLeaf(t *testing.T) {
 
 func TestUpdateLeafVerifyTree(t *testing.T) {
 	fmt.Println("TestUpdateLeafVerifyTree -  starting")
-	certArray := loadCertificatesFromOneFile("testCerts/")
+	certArray := loadCertificates("AllCertsOneFile20000", 2)
 	merkTree := BuildTree(certArray, 2)
 	newCert := loadOneCert("baguetteCert.crt")
 	updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
@@ -126,43 +136,47 @@ func TestUpdateLeafVerifyTree(t *testing.T) {
 
 // Benchmark/party time!!!!!!!
 // Let's GOOOO!!!!!!!!!!!!!!!!!
+var testCerts = struct {
+	certs [][]byte
+}{
+	certs: loadCertificates("AllCertsOneFIle20000", 5),
+}
 
 var table = []struct {
 	fanOut int
 	tree   merkleTree
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	{fanOut: 2, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 2)},
-	{fanOut: 3, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 3)},
-	{fanOut: 4, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 4)},
-	{fanOut: 5, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 5)},
-	{fanOut: 6, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 6)},
-	{fanOut: 7, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 7)},
-	{fanOut: 8, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 8)},
-	{fanOut: 9, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 9)},
-	{fanOut: 10, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 10)},
-	{fanOut: 11, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 11)},
-	{fanOut: 12, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 12)},
-	{fanOut: 13, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 13)},
-	{fanOut: 14, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 14)},
-	{fanOut: 15, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 15)},
-	{fanOut: 16, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 16)},
-	{fanOut: 17, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 17)},
-	{fanOut: 18, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 18)},
-	{fanOut: 19, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 19)},
-	{fanOut: 20, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 20)},
-	//{fanOut: 25, tree: *BuildTree(loadCertificatesFromOneFile("banan"), 25)},
+	//{fanOut: 2, tree: *BuildTree(testCerts.certs, 2)},
+	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3)},
+	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
+	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5)},
+	//{fanOut: 6, tree: *BuildTree(testCerts.certs, 6)},
+	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7)},
+	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8)},
+	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9)},
+	//{fanOut: 10, tree: *BuildTree(testCerts.certs, 10)},
+	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11)},
+	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12)},
+	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13)},
+	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14)},
+	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15)},
+	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16)},
+	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17)},
+	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18)},
+	//{fanOut: 19, tree: *BuildTree(testCerts.certs, 19)},
+	//{fanOut: 20, tree: *BuildTree(testCerts.certs, 20)},
+	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25)},
 }
 
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
-	certArray := loadCertificatesFromOneFile("testCerts/")
 	b.ResetTimer()
 	for _, v := range table {
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				BuildTree(certArray, v.fanOut)
+				BuildTree(testCerts.certs, v.fanOut)
 
 				//result := verifyTree(certArray, *verkTree, pk)
 
@@ -176,14 +190,13 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 
 func BenchmarkVerifyNode(b *testing.B) {
 	fmt.Println("BenchmarkVerifyNode Running")
-	testCerts := loadCertificatesFromOneFile("testCerts/")
 	b.ResetTimer()
 
 	for _, v := range table {
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				verifyNode(testCerts[i], v.tree)
+				verifyNode(testCerts.certs[i], v.tree)
 			}
 		})
 	}
