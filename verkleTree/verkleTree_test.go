@@ -17,7 +17,7 @@ func TestBuildTreeAndVerifyTree(t *testing.T) {
 	}
 	fanOut := 2
 	pk := setup(1, fanOut)
-	verk := BuildTree(points, fanOut, pk)
+	verk := BuildTree(points, fanOut, pk, 1)
 
 	didItVerify := verifyTree(points, *verk, pk)
 	if !didItVerify {
@@ -164,10 +164,10 @@ func TestInsertSimple(t *testing.T) {
 
 func TestTreeBuild2(t *testing.T) {
 	fmt.Println("TestTreeBuild2 -  starting")
-	fanout:= 15
+	fanout:= 10
 	pk := setup(10, fanout)
-	certArray := loadCertificates("AllCertsOneFile20000", 5)
-	BuildTree(certArray, fanout, pk)
+	certArray := loadCertificates("AllCertsOneFile20000", 1)
+	BuildTree(certArray, fanout, pk, 4)
 }
 
 func TestMembershipProofTimes(t *testing.T) {

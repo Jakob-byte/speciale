@@ -4,11 +4,13 @@ import (
 	"bytes"
 	"crypto/sha256"
 
-	"time"
+	"math"
 	"regexp"
 	"slices"
 	"strconv"
 	"strings"
+	"sync"
+	"time"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 
@@ -201,7 +203,7 @@ func combCalculater(fanOut int) [][][]int {
 
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
-func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
+func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree {
 	var verk verkleTree
 
 	//Creates a leaf-node for each certificate.
@@ -231,13 +233,81 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 	// call to makeLayer to create next layer in the tree
 	start := time.Now()
-	
-	nextLayer := makeLayer(leafs, fanOut, true, pk, lagrangeBasisList)
-	
-	// while loop that exits when we are in the root
-	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut, false, pk, lagrangeBasisList)
+	nodes := leafs
+
+	//dup nodes
+	for len(nodes)%fanOut > 0 {
+		appendNode := &node{
+			certificate:     nodes[len(nodes)-1].certificate,
+			childNumb:       (nodes[len(nodes)-1].id + 1) % fanOut,
+			ownVectorCommit: nodes[len(nodes)-1].ownVectorCommit,
+			children:        nodes[len(nodes)-1].children,
+			duplicate:       true,
+			id:              nodes[len(nodes)-1].id + 1,
+		}
+		nodes = append(nodes, appendNode)
 	}
+
+	//New thread stuff, comment out to make code run -----------------------------------------------------------------------------------------
+	if len(numThreads) == 0 {
+		numThreads = append(numThreads, 1)
+	}
+
+	nextLayer := nodes
+	isLeafs := true
+	counterTing := 0
+	for len(nextLayer) > 1 {
+		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
+		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
+		nodesPerThread := int(NodePerThreadcalc)
+		var nodesForThread []*node
+		nextLayer2 := make([][]*node, len(nextLayer)/fanOut)
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for i := 0; i < len(nextLayer); {
+			lastIndex := i + int(nodesPerThread)
+			if lastIndex < len(nodes) {
+				nodesForThread = nextLayer[i:lastIndex]
+			} else {
+				if len(nextLayer[i:]) <1 {
+					continue
+				}
+				nodesForThread = nextLayer[i:]
+			}
+			wg.Add(1)
+			go func() {
+				defer wg.Done()
+				makeLayer(nodesForThread, fanOut, isLeafs, pk, lagrangeBasisList, i/nodesPerThread, &nextLayer2, &mu)
+			}()
+			i = i + nodesPerThread
+		}
+		wg.Wait()
+		//make sure that we do not set the leaf flag for the rest of the nodes!!!
+		if counterTing == 0 {
+			isLeafs = true
+			counterTing = 10
+		}
+
+		nextLayer = []*node{}
+		fmt.Println("Length of next layer", len(nextLayer))
+		for _, v := range nextLayer2 {
+			nextLayer = append(nextLayer, v...)
+		}
+		fmt.Println("Length of next layer2", len(nextLayer))
+		fmt.Println("nextLayer", nextLayer[0])
+		fmt.Println("nextLayer", nextLayer[0].ownCompressVectorCommit)
+		fmt.Println("nodesperThread Numb:", nodesPerThread)
+		//for i:=0 ; i<len(nextLayer); i++ {
+		//	fmt.Println("i",i )
+		//	fmt.Println(nextLayer[i].ownCompressVectorCommit)
+		//}
+	}
+	//What it said above until here ----------------------------------------------------------------------------------------------------------
+	//nextLayer = makeLayer(leafs, fanOut, true, pk, lagrangeBasisList, 0, &[][]*node{}, &sync.Mutex{})
+	//// while loop that exits when we are in the root
+	//for len(nextLayer) > 1 {
+	//	nextLayer = makeLayer(nextLayer, fanOut, false, pk, lagrangeBasisList, 0, &[][]*node{}, &sync.Mutex{})
+	//}
 	// Creates the final verkletree struct.
 	verk = verkleTree{
 		fanOut:            fanOut,
@@ -253,7 +323,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK) *verkleTree {
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisList [][]e.Scalar) []*node {
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisList [][]e.Scalar, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -277,6 +347,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 
 	for i := 0; i < len(nodes); {
 		//The loop starts by finding the children for the current node in the 'nextlayer'
+
 		childrenList := make([]*node, fanOut)
 		vectToCommit := make([][]byte, fanOut)
 		if firstLayer {
@@ -306,7 +377,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 			ownCompressVectorCommit: commitment.BytesCompressed(),
 			childNumb:               i % fanOut,
 			children:                childrenList,
-			id:                      i / fanOut,
+			id:                      i + nodes[0].id / fanOut,
 			polynomial:              polynomial,
 		}
 		//Sets the parent in each of the nodes children.
@@ -318,7 +389,9 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 	}
 	//fmt.Println("sumTimer for vector to poly", sumTimer)
 	//fmt.Println("sumTimer for commit", sumTimer2)
-
+	mu.Lock()
+	defer mu.Unlock()
+	(*nextlayerPointer)[index] = nextLayer
 	return nextLayer
 }
 
