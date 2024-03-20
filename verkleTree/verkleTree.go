@@ -208,9 +208,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	var verk verkleTree
 
 	//Creates a leaf-node for each certificate.
-	//fmt.Println("About to create list for nodes")
 	leafs := make([]*node, len(certs))
-	//fmt.Println("ABout to start for loop to fill leaves")
 	for i := 0; i < len(certs); i++ {
 		leafs[i] = &node{
 			certificate: certs[i],
@@ -221,7 +219,6 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	}
 
 	//Makes the combinations of integers needed to calculate divident and polynomial.
-	//fmt.Println("before comb calc")
 	degreeComb := combCalculater(fanOut)
 	
 	dividentList := dividentCalculator(fanOut, degreeComb)
