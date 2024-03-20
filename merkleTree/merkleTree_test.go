@@ -24,7 +24,7 @@ func TestVerifyCert(t *testing.T) {
 
 	
 	fmt.Println("len of certarray", len(certArray))
-	merkTree := BuildTree(certArray, 2,500)
+	merkTree := BuildTree(certArray, 2,1)
 	//for i:= 0 ; i<10; i++ {
 	//	fmt.Println(i, "hash at index , merkTree.leafs[i].parent.parent.ownHash)
 	//}
