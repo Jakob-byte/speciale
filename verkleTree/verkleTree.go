@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+	//"runtime"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 
@@ -261,24 +262,28 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
 		nodesPerThread := int(NodePerThreadcalc)
 		var nodesForThread []*node
-		nextLayer2 := make([][]*node, len(nextLayer)/fanOut)
+		nextLayer2 := make([][]*node, numThreads[0])//len(nextLayer)/fanOut)
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		for i := 0; i < len(nextLayer); {
 			lastIndex := i + int(nodesPerThread)
-			if lastIndex < len(nodes) {
+			if lastIndex < len(nextLayer) {
 				nodesForThread = nextLayer[i:lastIndex]
 			} else {
-				if len(nextLayer[i:]) <1 {
+				if len(nextLayer[i:]) < 1 {
 					continue
 				}
 				nodesForThread = nextLayer[i:]
 			}
 			wg.Add(1)
-			go func() {
+			go func(index int) {
 				defer wg.Done()
-				makeLayer(nodesForThread, fanOut, isLeafs, pk, lagrangeBasisList, i/nodesPerThread, &nextLayer2, &mu)
-			}()
+	//			fmt.Println("i:", i)
+	//			fmt.Println("i/nodesPerThread", i/nodesPerThread)
+				makeLayer(nodesForThread, fanOut, isLeafs, pk, lagrangeBasisList, (index/nodesPerThread), &nextLayer2, &mu)
+			}(i)
+	//		numGoroutines := runtime.NumGoroutine()
+	//		fmt.Println("Number of active goroutines:", numGoroutines)
 			i = i + nodesPerThread
 		}
 		wg.Wait()
@@ -289,14 +294,17 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		}
 
 		nextLayer = []*node{}
-		fmt.Println("Length of next layer", len(nextLayer))
+		//fmt.Println("Length of next layer", len(nextLayer))
+		//fmt.Println("Length of next layer2", len(nextLayer2))
+		//fmt.Println("Length of next layer2[0]", len(nextLayer2[0]))
 		for _, v := range nextLayer2 {
+			//fmt.Println("Im in fun lopo", j)
 			nextLayer = append(nextLayer, v...)
 		}
-		fmt.Println("Length of next layer2", len(nextLayer))
-		fmt.Println("nextLayer", nextLayer[0])
-		fmt.Println("nextLayer", nextLayer[0].ownCompressVectorCommit)
-		fmt.Println("nodesperThread Numb:", nodesPerThread)
+		//fmt.Println("Length of next layer2", len(nextLayer))
+		//fmt.Println("nextLayer[0]", nextLayer[0])
+		//fmt.Println("nextLayer[0].ownCompressedVector", nextLayer[0].ownCompressVectorCommit)
+		//fmt.Println("nodesperThread Numb:", nodesPerThread)
 		//for i:=0 ; i<len(nextLayer); i++ {
 		//	fmt.Println("i",i )
 		//	fmt.Println(nextLayer[i].ownCompressVectorCommit)
@@ -316,6 +324,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		pk:                pk,
 		lagrangeBasisList: lagrangeBasisList,
 	}
+	//fmt.Println("tree", verk)
 	elapsed := time.Since(start)
 	fmt.Println("Time elapsed making verkletree: ", elapsed)
 	return &verk
@@ -377,7 +386,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 			ownCompressVectorCommit: commitment.BytesCompressed(),
 			childNumb:               i % fanOut,
 			children:                childrenList,
-			id:                      i + nodes[0].id / fanOut,
+			id:                      i + nodes[0].id/fanOut,
 			polynomial:              polynomial,
 		}
 		//Sets the parent in each of the nodes children.
@@ -391,6 +400,8 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 	//fmt.Println("sumTimer for commit", sumTimer2)
 	mu.Lock()
 	defer mu.Unlock()
+	//fmt.Println("Index:", index)
+	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
 	return nextLayer
 }
