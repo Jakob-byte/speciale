@@ -9,7 +9,9 @@ import (
 	"strconv"
 	"time"
 	//"hash"
-	//"math/big"
+	"sync"
+
+	"math"
 	"log"
 	"os"
 	"regexp"
@@ -44,7 +46,6 @@ func check(err error) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	return
 }
 
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
@@ -54,7 +55,7 @@ func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
 
 	for i := 0; i < amount; i++ {
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i))...)
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i),1590)...)
 	}
 	return fileArray
 }
@@ -96,7 +97,7 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 	return certificates
 }
 
-func BuildTree(certs [][]byte, fanOut int) *merkleTree {
+func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	var merk merkleTree
 
 	leafs := make([]*node, len(certs))
@@ -110,31 +111,9 @@ func BuildTree(certs [][]byte, fanOut int) *merkleTree {
 			duplicate:   false,
 			id:          i,
 		}
+
 	}
-
-	//function call to make the next layer
-	start := time.Now()
-
-	nextLayer := makeLayer(leafs, fanOut)
-	// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
-	for len(nextLayer) > 1 {
-		nextLayer = makeLayer(nextLayer, fanOut)
-	}
-
-	// define the merkletree struct
-	merk = merkleTree{
-		fanOut: fanOut,
-		Root:   nextLayer[0],
-		leafs:  leafs,
-	}
-	elapsed := time.Since(start)
-	fmt.Println("Time elapsed making merkletree: ", elapsed)
-	return &merk
-}
-
-func makeLayer(nodes []*node, fanOut int) []*node {
-
-	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+	nodes := leafs
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
@@ -146,6 +125,101 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 		}
 		nodes = append(nodes, appendNode)
 	}
+
+	//function call to make the next layer
+	start := time.Now()
+
+	if len(numThreads) == 0 {
+		numThreads = append(numThreads, 1)
+	}
+
+
+
+
+	nextLayer := nodes
+	for len(nextLayer) > 1 {
+		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
+		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
+		nodesPerThread := int(NodePerThreadcalc)
+		var nodesForThread []*node
+		nextLayer2 := make([][]*node, numThreads[0])
+		var mu sync.Mutex
+		var wg sync.WaitGroup
+		for i := 0; i < len(nextLayer); {
+			lastIndex := i + int(nodesPerThread)
+			if lastIndex < len(nextLayer) {
+				nodesForThread = nextLayer[i:lastIndex]
+			} else {
+				if len(nextLayer[i:]) < 1 {
+					continue
+				}
+				nodesForThread = nextLayer[i:]
+			}
+			wg.Add(1)
+			go func(index int, nodesToUse []*node) {
+				defer wg.Done()
+				makeLayer(nodesToUse, fanOut, index, &nextLayer2, &mu)
+			}(i/nodesPerThread,nodesForThread)
+
+			i = i + nodesPerThread
+		}
+		wg.Wait()
+		
+		//fmt.Println("layer done -----------------------------------------------")
+
+		nextLayer = []*node{}
+
+		
+		for _, v := range nextLayer2 {
+			nextLayer = append(nextLayer, v...)
+		}
+		//for _, v := range nextLayer{
+		//	fmt.Println("Look an important id:", v.id)
+		//}
+//		fmt.Println("layer START -----------------------------------------------")
+
+
+	}
+
+
+
+
+	//nextLayer := makeLayer(leafs, fanOut)
+	//// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
+	//for len(nextLayer) > 1 {
+	//	nextLayer = makeLayer(nextLayer, fanOut)
+	//}
+
+	// define the merkletree struct
+	merk = merkleTree{
+		fanOut: fanOut,
+		Root:   nextLayer[0],
+		leafs:  nodes,
+	}
+	elapsed := time.Since(start)
+	fmt.Println("Time elapsed making merkletree: ", elapsed)
+	return &merk
+}
+
+func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
+
+	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+	 // hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
+	
+	
+	for len(nodes)%fanOut > 0 {
+
+		appendNode := &node{
+			certificate: nodes[len(nodes)-1].certificate,
+			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
+			ownHash:     nodes[len(nodes)-1].ownHash,
+			children:    nodes[len(nodes)-1].children,
+			duplicate:   true,
+			id:          1+nodes[len(nodes)-1].id,
+		}
+		nodes = append(nodes, appendNode)
+	}
+	
 
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
 
@@ -159,22 +233,35 @@ func makeLayer(nodes []*node, fanOut int) []*node {
 			childrenList = append(childrenList, nodes[i+k])
 			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownHash[:]...)
 		}
+		for _, a := range childrenList {
+			fmt.Println("THese id's are wrong I hope", a.id)
+		}
 		//Creates the hash of the children of the node.
 
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownHash:   sha256.Sum256(allChildrenHashes),
-			childNumb: i % fanOut,
+			childNumb: (i/fanOut) % fanOut,
 			children:  childrenList,
-			id:        i / fanOut,
+			id:        (len(nodes)/fanOut)*index + i,
 		}
-		//Sets the parent for each of the nodes in the now previous layer.
+		
+		////Sets the parent for each of the nodes in the now previous layer.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
 		}
 		i = i + fanOut
 	}
+	mu.Lock()
+	defer mu.Unlock()
+	//fmt.Println("Index:", index)
+	//fmt.Println("length of next layer", len(*nextlayerPointer))
+	(*nextlayerPointer)[index] = nextLayer
+	
+	
+	time.Sleep(10 * time.Second)
 	return nextLayer
+
 }
 
 func verifyTree(certs [][]byte, tree merkleTree) bool {
@@ -186,12 +273,14 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 
 func verifyNode(cert []byte, tree merkleTree) bool {
 	witness := createWitness(cert, tree)
+	fmt.Println("witness childnumblidt: ", witness.childNumberList)
+	//fmt.Println("witness hashList: ", witness.hashList)
 	return verifyWitness(cert, witness, tree)
 }
 
 func createWitness(cert []byte, tree merkleTree) witness {
 	var nod *node
-	fanOut := tree.fanOut
+	//fanOut := tree.fanOut
 	notInList := true
 	for _, v := range tree.leafs {
 		if bytes.Equal(v.certificate, cert) {
@@ -210,25 +299,37 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	var counter int
 	for nod.parent != nil {
 		hashList0 := make([][32]byte, tree.fanOut-1)
+		for _, s := range nod.parent.children{
+			fmt.Println("node parent children id's.", s.id)	
+		}
+		fmt.Println("node id childList", nod.id)
+		fmt.Println("node id childList", nod.parent.id)
+		fmt.Println("node id childList", nod.parent.parent.id)
+		fmt.Println("node id childList", nod.parent.parent.parent.id)
+		fmt.Println("node id childList", nod.parent.parent.parent.parent.id)
 
-		childNumberList = append(childNumberList, nod.id%fanOut)
+		childNumberList = append(childNumberList, nod.id%tree.fanOut)
 		counter = 0
+		fmt.Println("iamtheOwnHash", nod.ownHash)
 		for _, v := range nod.parent.children {
 			if nod.id != v.id {
+				fmt.Println("IDparent", nod.id)
+
+				fmt.Println("OWNHASH", v.childNumb, v.ownHash)
 				hashList0[counter] = v.ownHash
 				counter++ 
 			}
-			
 		}
-		
 		//fmt.Printf("NONWORKINGLIST: %T\n",(hashList0))
 		//fmt.Printf("workingLIST: %T\n",(hashList0working))
 
 		//fmt.Println("HashList0, should be equal to fanout", len(hashList0))
+		
 		hashList = append(hashList, hashList0)
 		nod = nod.parent
 	}
-	//fmt.Println("depth of tree", len(hashList))
+
+	fmt.Println("depth of tree", len(hashList))
 	witness := witness{
 		hashList:        hashList,
 		childNumberList: childNumberList,
@@ -253,6 +354,8 @@ func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
 		}
 		sum = sha256.Sum256(byteToHash)
 	}
+	fmt.Println("sum", sum)
+	fmt.Println("rootHash", tree.Root.ownHash)
 	return sum == tree.Root.ownHash
 
 }

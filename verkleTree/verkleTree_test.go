@@ -19,7 +19,7 @@ func TestBuildTreeAndVerifyTree(t *testing.T) {
 	pk := setup(1, fanOut)
 	verk := BuildTree(points, fanOut, pk, 1)
 
-	didItVerify := verifyTree(points, *verk, pk)
+	didItVerify := verifyTree(points, *verk, pk, 500)
 	if !didItVerify {
 		panic("Did not verify tree as expected")
 	}
@@ -114,7 +114,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		start = time.Now()
 		var result bool
 		for i := 0; i < testAmount; i++ {
-			result = verifyTree(certArray, *verkTree, pk)
+			result = verifyTree(certArray, *verkTree, pk, 500)
 		}
 		elapsed3 := time.Since(start).Seconds() / float64(testAmount)
 		fmt.Println("VerifyTree time : ", elapsed3, "seconds")
@@ -141,7 +141,7 @@ func TestDumbUpdateLeafButEvil(t *testing.T) {
 		t.Error("dumbUpdate func failed failed.")
 	}
 	certArray[10] = oneCert
-	itWorked := verifyTree(certArray, newVerkTree, newVerkTree.pk)
+	itWorked := verifyTree(certArray, newVerkTree, newVerkTree.pk, 500)
 	if !itWorked {
 		t.Error("Failed verifying dumb-updated tree")
 	}
@@ -159,7 +159,7 @@ func TestInsertSimple(t *testing.T) {
 		t.Error("inserting baguette certificate into tree failed ")
 	}
 	certArray = append(certArray, baguetteCert)
-	verifiedTree := verifyTree(certArray, newTree, pk)
+	verifiedTree := verifyTree(certArray, newTree, pk,500)
 
 	if !verifiedTree {
 		t.Error("Somehow insertLeaf worked, but it was not added to the tree. At least not correctly. Have a nice day.")
@@ -241,7 +241,7 @@ func TestNewReadCertFunc(t *testing.T) {
 var testCerts = struct {
 	certs [][]byte
 }{
-	//certs: loadCertificates("AllCertsOneFIle20000", 5),
+	certs: loadCertificates("AllCertsOneFIle20000", 5),
 }
 
 var table = []struct {
@@ -249,20 +249,20 @@ var table = []struct {
 	tree   verkleTree
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	//{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, setup(10, 2),500)},
-	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3, setup(10, 3),500)},
-	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4, setup(10, 4),500)},
-	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5, setup(10, 5),500)},
-	//{fanOut: 6, tree: *BuildTree(testCerts.certs, 6, setup(10, 6),500)},
-	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7, setup(10, 7),500)},
-	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8, setup(10, 8),500)},
-	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9),500)},
-	//{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10, 10),500)},
-	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11),500)},
-	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12),500)},
-	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13),500)},
-	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14),500)},
-	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15),500)},
+	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, setup(10, 2),500)},
+	{fanOut: 3, tree: *BuildTree(testCerts.certs, 3, setup(10, 3),500)},
+	{fanOut: 4, tree: *BuildTree(testCerts.certs, 4, setup(10, 4),500)},
+	{fanOut: 5, tree: *BuildTree(testCerts.certs, 5, setup(10, 5),500)},
+	{fanOut: 6, tree: *BuildTree(testCerts.certs, 6, setup(10, 6),500)},
+	{fanOut: 7, tree: *BuildTree(testCerts.certs, 7, setup(10, 7),500)},
+	{fanOut: 8, tree: *BuildTree(testCerts.certs, 8, setup(10, 8),500)},
+	{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9),500)},
+	{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10, 10),500)},
+	{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11),500)},
+	{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12),500)},
+	{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13),500)},
+	{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14),500)},
+	{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15),500)},
 	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16,setup(10,16),500)},
 	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17,setup(10,17),500)},
 	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18,setup(10,18),500)},

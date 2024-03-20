@@ -387,8 +387,8 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 
 // This function takes the certificates, verkletree and public key as input. nIt verifies that the verkletree is built using the given certificates.
 // Returns true if the tree was correctly built and false if not.
-func verifyTree(certs [][]byte, tree verkleTree, pk PK) bool {
-	testTree := BuildTree(certs, tree.fanOut, pk)
+func verifyTree(certs [][]byte, tree verkleTree, pk PK, numThreads int) bool {
+	testTree := BuildTree(certs, tree.fanOut, pk, numThreads)
 
 	return testTree.Root.ownVectorCommit == tree.Root.ownVectorCommit
 }
@@ -531,9 +531,23 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 
 // TODO Not finished, only works for certs%fanout != 0.
 func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
-	if len(tree.leafs)%tree.fanOut != 0 {
-		finalLeaf := tree.leafs[len(tree.leafs)-1]
-		nextSibling := finalLeaf.parent.children[len(tree.leafs)%tree.fanOut]
+	fmt.Println("len of leafs", len(tree.leafs))
+	var foundIt bool 
+	var nextSibling *node
+	for i:= len(tree.leafs)-1; i>=0; i--{
+		fmt.Println("i",i)
+		if !tree.leafs[i].duplicate{
+			if i==len(tree.leafs)-1 {
+				break
+			}
+			fmt.Println("i found a duplicate leaf")
+			foundIt = true
+			nextSibling = tree.leafs[i].parent.children[(i+1)%tree.fanOut]
+			break
+		}
+	}
+
+	if foundIt {
 		nextSibling.certificate = cert
 		nextSibling.duplicate = false
 		firstLayer := true
@@ -559,7 +573,7 @@ func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 		return tree, true
 
 	}
-
+	
 	return tree, false
 }
 
