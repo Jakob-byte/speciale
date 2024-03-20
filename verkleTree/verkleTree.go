@@ -223,8 +223,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	//Makes the combinations of integers needed to calculate divident and polynomial.
 	//fmt.Println("before comb calc")
 	degreeComb := combCalculater(fanOut)
-	//fmt.Println("After comb calc")
-	// define the dividents needed for for calculating the polynomial, these are the same for all polynomial/vectors of the given fanOut size
+	
 	dividentList := dividentCalculator(fanOut, degreeComb)
 	//start := time.Now()
 	//fmt.Println("After div calc")
@@ -262,7 +261,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
 		nodesPerThread := int(NodePerThreadcalc)
 		var nodesForThread []*node
-		nextLayer2 := make([][]*node, numThreads[0])//len(nextLayer)/fanOut)
+		nextLayer2 := make([][]*node, numThreads[0])
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		for i := 0; i < len(nextLayer); {
@@ -276,55 +275,38 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 				nodesForThread = nextLayer[i:]
 			}
 			wg.Add(1)
-			go func(index int) {
+			go func(index int,nodesToUse []*node, isLeafs2 bool) {
 				defer wg.Done()
-	//			fmt.Println("i:", i)
-	//			fmt.Println("i/nodesPerThread", i/nodesPerThread)
-				makeLayer(nodesForThread, fanOut, isLeafs, pk, lagrangeBasisList, (index/nodesPerThread), &nextLayer2, &mu)
-			}(i)
-	//		numGoroutines := runtime.NumGoroutine()
-	//		fmt.Println("Number of active goroutines:", numGoroutines)
+				makeLayer(nodesToUse, fanOut, isLeafs2, pk, lagrangeBasisList, (index), &nextLayer2, &mu)
+			}(i/nodesPerThread,nodesForThread, isLeafs)
+
 			i = i + nodesPerThread
 		}
 		wg.Wait()
-		//make sure that we do not set the leaf flag for the rest of the nodes!!!
-		if counterTing == 0 {
-			isLeafs = true
-			counterTing = 10
-		}
 
 		nextLayer = []*node{}
-		//fmt.Println("Length of next layer", len(nextLayer))
-		//fmt.Println("Length of next layer2", len(nextLayer2))
-		//fmt.Println("Length of next layer2[0]", len(nextLayer2[0]))
+
+		
 		for _, v := range nextLayer2 {
-			//fmt.Println("Im in fun lopo", j)
 			nextLayer = append(nextLayer, v...)
 		}
-		//fmt.Println("Length of next layer2", len(nextLayer))
-		//fmt.Println("nextLayer[0]", nextLayer[0])
-		//fmt.Println("nextLayer[0].ownCompressedVector", nextLayer[0].ownCompressVectorCommit)
-		//fmt.Println("nodesperThread Numb:", nodesPerThread)
-		//for i:=0 ; i<len(nextLayer); i++ {
-		//	fmt.Println("i",i )
-		//	fmt.Println(nextLayer[i].ownCompressVectorCommit)
-		//}
+
+		if counterTing == 0 {
+			counterTing = 10
+			isLeafs = false
+			
+		}
+
 	}
-	//What it said above until here ----------------------------------------------------------------------------------------------------------
-	//nextLayer = makeLayer(leafs, fanOut, true, pk, lagrangeBasisList, 0, &[][]*node{}, &sync.Mutex{})
-	//// while loop that exits when we are in the root
-	//for len(nextLayer) > 1 {
-	//	nextLayer = makeLayer(nextLayer, fanOut, false, pk, lagrangeBasisList, 0, &[][]*node{}, &sync.Mutex{})
-	//}
-	// Creates the final verkletree struct.
+
 	verk = verkleTree{
 		fanOut:            fanOut,
 		Root:              nextLayer[0],
-		leafs:             leafs,
+		leafs:             nodes,
 		pk:                pk,
 		lagrangeBasisList: lagrangeBasisList,
 	}
-	//fmt.Println("tree", verk)
+
 	elapsed := time.Since(start)
 	fmt.Println("Time elapsed making verkletree: ", elapsed)
 	return &verk

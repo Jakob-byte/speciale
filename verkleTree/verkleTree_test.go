@@ -45,7 +45,7 @@ func TestVerifyNode(t *testing.T) {
 	}
 }
 
-func TestMembershipProof(t *testing.T) {
+func TestMembershipProof2(t *testing.T) {
 	fmt.Println("verifyMemberShip Running")
 
 	points := [][]byte{
@@ -53,13 +53,18 @@ func TestMembershipProof(t *testing.T) {
 		{15},
 		{9},
 		{27},
+		{30},
+		{40},
+		{50},
+		{60},
 	}
 	fanOut := 2
 	pk := setup(1, fanOut)
-	verk := BuildTree(points, fanOut, pk)
+	verk := BuildTree(points, fanOut, pk,2)
 	mp := createMembershipProof(points[2], *verk)
 	didPointVerify := verifyMembershipProof(mp, pk)
-
+	//fmt.Println("memberShipProof", mp)
+	//fmt.Println("leafs", verk.leafs[0])
 	if !didPointVerify {
 		panic("point did not verify as expected")
 	}
@@ -173,22 +178,21 @@ func TestTreeBuild2(t *testing.T) {
 
 func TestMembershipProofTimes(t *testing.T) {
 	fmt.Println("TestMemberShipProofTimes Running")
-	testAmount := 5
 	start := time.Now()
-	fanOut := 10
+	fanOut := 15
 	pk := setup(4, fanOut)
 	certArray := loadCertificates("AllCertsOneFile20000", 5)
 	elapsed1 := time.Since(start)
 
-	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1, "seconds")
+	fmt.Println("time elapsed for loading certs, and setup : ", elapsed1)
 
 	start = time.Now()
 	verkTree := BuildTree(certArray, fanOut, pk, 500)
-	elapsed2 := time.Since(start).Seconds() / float64(testAmount)
-	fmt.Println("Built tree time : ", elapsed2, "seconds")
+	elapsed2 := time.Since(start)
+	fmt.Println("Built tree time : ", elapsed2)
 
 	var success bool
-	indexToTime := 65342
+	indexToTime := 5342
 	certToWitness := certArray[indexToTime]
 
 	start = time.Now()
@@ -218,7 +222,7 @@ func TestMembershipProofTimes(t *testing.T) {
 	if elapsed3 < elapsed4 {
 		t.Errorf("Result was incorrect, got: ") //%t, want: %t.", elapsed3, elapsed4)
 	}
-
+	//fmt.Println("MembereshipProof", membershipProof)
 	fmt.Println("VerifyTree time First time: ", elapsed3, "ms")
 	fmt.Println("VerifyTree time Second time: ", elapsed4, "ms")
 	fmt.Println("VerifyTree time third time: ", elapsed5, "ms")
@@ -237,7 +241,7 @@ func TestNewReadCertFunc(t *testing.T) {
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 5),
+	//certs: loadCertificates("AllCertsOneFIle20000", 5),
 }
 
 var table = []struct {
