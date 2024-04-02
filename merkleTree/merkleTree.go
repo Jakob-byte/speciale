@@ -8,11 +8,12 @@ import (
 	"fmt"
 	"strconv"
 	"time"
+
 	//"hash"
 	"sync"
 
-	"math"
 	"log"
+	"math"
 	"os"
 	"regexp"
 	"strings"
@@ -55,7 +56,7 @@ func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
 
 	for i := 0; i < amount; i++ {
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i),1590)...)
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), 1590)...)
 	}
 	return fileArray
 }
@@ -100,11 +101,11 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	var merk merkleTree
 
-	leafs := make([]*node, len(certs))
+	nodes := make([]*node, len(certs))
 
 	//build the leaf nodes of the tree
 	for i := 0; i < len(certs); i++ {
-		leafs[i] = &node{
+		nodes[i] = &node{
 			certificate: certs[i],
 			childNumb:   i % fanOut,
 			ownHash:     sha256.Sum256(certs[i]),
@@ -113,13 +114,11 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 		}
 
 	}
-	nodes := leafs
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
 			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
 			ownHash:     nodes[len(nodes)-1].ownHash,
-			children:    nodes[len(nodes)-1].children,
 			duplicate:   true,
 			id:          nodes[len(nodes)-1].id + 1,
 		}
@@ -133,9 +132,6 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 		numThreads = append(numThreads, 1)
 	}
 
-
-
-
 	nextLayer := nodes
 	for len(nextLayer) > 1 {
 		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
@@ -146,7 +142,7 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 		var mu sync.Mutex
 		var wg sync.WaitGroup
 		for i := 0; i < len(nextLayer); {
-			lastIndex := i + int(nodesPerThread)
+			lastIndex := i + nodesPerThread
 			if lastIndex < len(nextLayer) {
 				nodesForThread = nextLayer[i:lastIndex]
 			} else {
@@ -159,30 +155,25 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 			go func(index int, nodesToUse []*node) {
 				defer wg.Done()
 				makeLayer(nodesToUse, fanOut, index, &nextLayer2, &mu)
-			}(i/nodesPerThread,nodesForThread)
+			}(i/nodesPerThread, nodesForThread)
 
 			i = i + nodesPerThread
 		}
 		wg.Wait()
-		
+
 		//fmt.Println("layer done -----------------------------------------------")
 
 		nextLayer = []*node{}
 
-		
 		for _, v := range nextLayer2 {
 			nextLayer = append(nextLayer, v...)
 		}
 		//for _, v := range nextLayer{
 		//	fmt.Println("Look an important id:", v.id)
 		//}
-//		fmt.Println("layer START -----------------------------------------------")
-
+		//		fmt.Println("layer START -----------------------------------------------")
 
 	}
-
-
-
 
 	//nextLayer := makeLayer(leafs, fanOut)
 	//// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
@@ -191,6 +182,7 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	//}
 
 	// define the merkletree struct
+	fmt.Println("Len of nextlayer, should be 1: ", len(nextLayer))
 	merk = merkleTree{
 		fanOut: fanOut,
 		Root:   nextLayer[0],
@@ -204,9 +196,8 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
-	 // hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
-	
-	
+	// hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
+
 	for len(nodes)%fanOut > 0 {
 
 		appendNode := &node{
@@ -215,11 +206,10 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 			ownHash:     nodes[len(nodes)-1].ownHash,
 			children:    nodes[len(nodes)-1].children,
 			duplicate:   true,
-			id:          1+nodes[len(nodes)-1].id,
+			id:          1 + nodes[len(nodes)-1].id,
 		}
 		nodes = append(nodes, appendNode)
 	}
-	
 
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
 
@@ -241,11 +231,11 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownHash:   sha256.Sum256(allChildrenHashes),
-			childNumb: (i/fanOut) % fanOut,
+			childNumb: (i / fanOut) % fanOut,
 			children:  childrenList,
 			id:        (len(nodes)/fanOut)*index + i,
 		}
-		
+
 		////Sets the parent for each of the nodes in the now previous layer.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
@@ -257,8 +247,7 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 	//fmt.Println("Index:", index)
 	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
-	
-	
+
 	time.Sleep(10 * time.Second)
 	return nextLayer
 
@@ -299,8 +288,8 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	var counter int
 	for nod.parent != nil {
 		hashList0 := make([][32]byte, tree.fanOut-1)
-		for _, s := range nod.parent.children{
-			fmt.Println("node parent children id's.", s.id)	
+		for _, s := range nod.parent.children {
+			fmt.Println("node parent children id's.", s.id)
 		}
 		fmt.Println("node id childList", nod.id)
 		fmt.Println("node id childList", nod.parent.id)
@@ -317,14 +306,14 @@ func createWitness(cert []byte, tree merkleTree) witness {
 
 				fmt.Println("OWNHASH", v.childNumb, v.ownHash)
 				hashList0[counter] = v.ownHash
-				counter++ 
+				counter++
 			}
 		}
 		//fmt.Printf("NONWORKINGLIST: %T\n",(hashList0))
 		//fmt.Printf("workingLIST: %T\n",(hashList0working))
 
 		//fmt.Println("HashList0, should be equal to fanout", len(hashList0))
-		
+
 		hashList = append(hashList, hashList0)
 		nod = nod.parent
 	}
