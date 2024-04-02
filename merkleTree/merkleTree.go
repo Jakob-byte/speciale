@@ -54,9 +54,16 @@ func check(err error) {
 // returns a [][]byte list/array of files
 func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
-
-	for i := 0; i < amount; i++ {
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), 1590)...)
+	files := 1
+	stuffToRead := 20000
+	if amount > stuffToRead {
+		files = int(math.Ceil(float64(amount)/float64(stuffToRead)))
+	}
+	for i := 0; i < files; i++ {
+		if(i==files-1){
+			stuffToRead = amount - i * stuffToRead
+		}
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i),stuffToRead)...)
 	}
 	return fileArray
 }
@@ -135,7 +142,9 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	nextLayer := nodes
 	for len(nextLayer) > 1 {
 		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
+		// 1000/3 = 333,333333
 		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
+		//(3333,3333 / 4) * 3 => 84 * 3 =  252
 		nodesPerThread := int(NodePerThreadcalc)
 		var nodesForThread []*node
 		nextLayer2 := make([][]*node, numThreads[0])
@@ -182,7 +191,6 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	//}
 
 	// define the merkletree struct
-	fmt.Println("Len of nextlayer, should be 1: ", len(nextLayer))
 	merk = merkleTree{
 		fanOut: fanOut,
 		Root:   nextLayer[0],
@@ -197,9 +205,7 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	// hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
-
 	for len(nodes)%fanOut > 0 {
-
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
 			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
@@ -210,7 +216,6 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 		}
 		nodes = append(nodes, appendNode)
 	}
-
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
 
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
@@ -223,17 +228,16 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 			childrenList = append(childrenList, nodes[i+k])
 			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownHash[:]...)
 		}
-		for _, a := range childrenList {
-			fmt.Println("THese id's are wrong I hope", a.id)
-		}
+		//for _, a := range childrenList {
+		//	fmt.Println("THese id's are wrong I hope", a.id)
+		//}
 		//Creates the hash of the children of the node.
 
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownHash:   sha256.Sum256(allChildrenHashes),
-			childNumb: (i / fanOut) % fanOut,
 			children:  childrenList,
-			id:        (len(nodes)/fanOut)*index + i,
+			id:        i/fanOut + (len(nodes)/fanOut)*index,
 		}
 
 		////Sets the parent for each of the nodes in the now previous layer.
@@ -248,7 +252,6 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
 
-	time.Sleep(10 * time.Second)
 	return nextLayer
 
 }
@@ -262,7 +265,6 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 
 func verifyNode(cert []byte, tree merkleTree) bool {
 	witness := createWitness(cert, tree)
-	fmt.Println("witness childnumblidt: ", witness.childNumberList)
 	//fmt.Println("witness hashList: ", witness.hashList)
 	return verifyWitness(cert, witness, tree)
 }
@@ -288,23 +290,13 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	var counter int
 	for nod.parent != nil {
 		hashList0 := make([][32]byte, tree.fanOut-1)
-		for _, s := range nod.parent.children {
-			fmt.Println("node parent children id's.", s.id)
-		}
-		fmt.Println("node id childList", nod.id)
-		fmt.Println("node id childList", nod.parent.id)
-		fmt.Println("node id childList", nod.parent.parent.id)
-		fmt.Println("node id childList", nod.parent.parent.parent.id)
-		fmt.Println("node id childList", nod.parent.parent.parent.parent.id)
+		
 
 		childNumberList = append(childNumberList, nod.id%tree.fanOut)
 		counter = 0
-		fmt.Println("iamtheOwnHash", nod.ownHash)
 		for _, v := range nod.parent.children {
 			if nod.id != v.id {
-				fmt.Println("IDparent", nod.id)
-
-				fmt.Println("OWNHASH", v.childNumb, v.ownHash)
+				
 				hashList0[counter] = v.ownHash
 				counter++
 			}
@@ -318,7 +310,7 @@ func createWitness(cert []byte, tree merkleTree) witness {
 		nod = nod.parent
 	}
 
-	fmt.Println("depth of tree", len(hashList))
+	
 	witness := witness{
 		hashList:        hashList,
 		childNumberList: childNumberList,
@@ -343,8 +335,7 @@ func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
 		}
 		sum = sha256.Sum256(byteToHash)
 	}
-	fmt.Println("sum", sum)
-	fmt.Println("rootHash", tree.Root.ownHash)
+
 	return sum == tree.Root.ownHash
 
 }
