@@ -53,7 +53,7 @@ func TestTreeBuilder(t *testing.T) {
 	for i := 0; i < 100; i++ {
 		randNumb := rand.Intn(max-min) + min
 		randFan := rand.Intn(fanMax-fanMin) + fanMin
-		randThread := rand.Intn(threadMax - threadMin) + threadMin
+		randThread := rand.Intn(threadMax-threadMin) + threadMin
 		certArray := loadCertificates("AllCertsOneFile20000", randNumb)
 		merkTree := BuildTree(certArray, randFan, randThread)
 		nodeToTest := rand.Intn(len(certArray))
@@ -72,6 +72,7 @@ func TestTreeBuilder(t *testing.T) {
 	}
 }
 
+// Hej
 func TestDifferentFanOuts(t *testing.T) {
 	fmt.Println("TestDifferentFanOuts -  starting")
 	max := 500
