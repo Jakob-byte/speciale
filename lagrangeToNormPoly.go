@@ -46,6 +46,38 @@ func vectorToPoly(points []float64) poly {
 	return answer
 }
 
+func newRealvVectorToPoly(points []float64) poly {
+	var answer poly
+	coefs := make([]float64, len(points))
+	coefs[0] = points[0] // first value in list of points, this is constant coefficient
+	divident := 1.0
+	superX := 1
+
+	for i := len(points); i > 1; i-- {
+		superX = superX * i
+	}
+
+	for i := 0; i < len(points); i++ {
+		for coefIndex := 1; coefIndex < len(points); coefIndex++ {
+			//set of length coefindex
+			// for loop which adds combinations to the set?
+			// 2 extra for loops?
+			for k := 1; k < len(points); k++ {
+				coefs[coefIndex] += (float64(superX) * (1 / float64(k))) / float64(divident)
+			}
+
+			if coefIndex%2 == 1 {
+				coefs[coefIndex] *= -1
+			}
+		}
+	}
+
+	fmt.Println(answer)
+	fmt.Println(divident)
+
+	return answer
+}
+
 func realVectorToPoly(points []float64) poly {
 	var answer poly
 	coefs := make([]float64, len(points))
@@ -103,7 +135,6 @@ func realVectorToPoly(points []float64) poly {
 					for _, c := range comb {
 						coefToBe *= float64(c)
 					}
-					fmt.Println("i, coefToBe", i, coefToBe)
 
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
@@ -168,28 +199,12 @@ func main() {
 		5,
 		15,
 		9,
-		27,
+		//27,
 	}
 
-	//fmt.Println(points)
-	//poly := vectorToPoly(points)
-	//fmt.Println("coefficients", poly.coefficients)
-	//fmt.Println("results x=1", calcPoly(0, poly))
-	//fmt.Println("re sults x=2", calcPoly(1, poly))
-	//fmt.Println("results x=3", calcPoly(2, poly))
 	poly2 := realVectorToPoly(points)
-	//fmt.Println(poly2.coefficients)
-	//fmt.Println(calcPoly(2, poly2))
-	//fmt.Println("results x=0", calcPoly(0, poly2))
-	//fmt.Println("results x=1", calcPoly(1, poly2))
-	//fmt.Println("results x=2", calcPoly(2, poly2))
-	//fmt.Println("results x=3", calcPoly(3, poly2))
-	//fmt.Println("results x=4", calcPoly(4, poly2))
-	//fmt.Println("results x=5", calcPoly(5, poly2))
-	//fmt.Println("results x=6", calcPoly(6, poly2))
-
-	quotientPoly := quotientOfPoly(poly2, 2)
-	fmt.Println("QuotientPoliiiii", quotientPoly.coefficients)
+	//quotientPoly := quotientOfPoly(poly2, 2)
+	fmt.Println("coefffs", poly2.coefficients)
 	fmt.Println("Succes")
 
 }
