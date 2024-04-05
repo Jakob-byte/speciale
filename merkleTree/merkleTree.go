@@ -57,13 +57,13 @@ func loadCertificates(input string, amount int) [][]byte {
 	files := 1
 	stuffToRead := 20000
 	if amount > stuffToRead {
-		files = int(math.Ceil(float64(amount)/float64(stuffToRead)))
+		files = int(math.Ceil(float64(amount) / float64(stuffToRead)))
 	}
 	for i := 0; i < files; i++ {
-		if(i==files-1){
-			stuffToRead = amount - i * stuffToRead
+		if i == files-1 {
+			stuffToRead = amount - i*stuffToRead
 		}
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i),stuffToRead)...)
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), stuffToRead)...)
 	}
 	return fileArray
 }
@@ -235,9 +235,9 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
-			ownHash:   sha256.Sum256(allChildrenHashes),
-			children:  childrenList,
-			id:        i/fanOut + (len(nodes)/fanOut)*index,
+			ownHash:  sha256.Sum256(allChildrenHashes),
+			children: childrenList,
+			id:       i/fanOut + (len(nodes)/fanOut)*index,
 		}
 
 		////Sets the parent for each of the nodes in the now previous layer.
@@ -246,6 +246,8 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 		}
 		i = i + fanOut
 	}
+	// Locks the mutex for the nextLayer slice so that the thread can correctly input its nodes to the slice and defers the unlock so it unlocks when finished
+
 	mu.Lock()
 	defer mu.Unlock()
 	//fmt.Println("Index:", index)
@@ -256,6 +258,7 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 
 }
 
+// verifies that the input tree is made of the input certs, by rebuilding the tree from the certificates and comparing the roothash
 func verifyTree(certs [][]byte, tree merkleTree) bool {
 	testTree := BuildTree(certs, tree.fanOut)
 
@@ -263,12 +266,14 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 
 }
 
+// Verifies a node is in the tree by creating witness and veryifing the witness
 func verifyNode(cert []byte, tree merkleTree) bool {
 	witness := createWitness(cert, tree)
 	//fmt.Println("witness hashList: ", witness.hashList)
 	return verifyWitness(cert, witness, tree)
 }
 
+// Creates the witness for a given certificate, which is a witness struct consisting of a list of hashes and a childNumberList to know how to combine the hashes
 func createWitness(cert []byte, tree merkleTree) witness {
 	var nod *node
 	//fanOut := tree.fanOut
@@ -290,13 +295,12 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	var counter int
 	for nod.parent != nil {
 		hashList0 := make([][32]byte, tree.fanOut-1)
-		
 
 		childNumberList = append(childNumberList, nod.id%tree.fanOut)
 		counter = 0
 		for _, v := range nod.parent.children {
 			if nod.id != v.id {
-				
+
 				hashList0[counter] = v.ownHash
 				counter++
 			}
@@ -310,7 +314,6 @@ func createWitness(cert []byte, tree merkleTree) witness {
 		nod = nod.parent
 	}
 
-	
 	witness := witness{
 		hashList:        hashList,
 		childNumberList: childNumberList,

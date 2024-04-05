@@ -258,6 +258,8 @@ func quotientOfPoly(polynomial poly, x0 uint64) poly {
 	return quotient
 }
 
+// takes as input the certifictes as a list of bytes, and the lagrangeBasis and returns the lagrange polynomial for certificates and lagrangebasis
+// the lagrangebasisLsit and the certVect must have same length
 func certVectorToPolynomial(certVect [][]byte, lagrangeBasisList [][]e.Scalar) poly {
 
 	scalarVector := certToScalarVector(certVect)
@@ -266,9 +268,11 @@ func certVectorToPolynomial(certVect [][]byte, lagrangeBasisList [][]e.Scalar) p
 	return polynomial
 }
 
+// Commit function, that computes the KZG polynomial commitment, given the public key and polynomial
 func commit(pk PK, polynomial poly) e.G1 {
 	var commitment e.G1
 	var cToBe e.G1
+	// computes the commitment as coef_i*(a^i*g_1) for i=0 to degree of polynomial
 	for i, coef := range polynomial.coefficients {
 		cToBe.ScalarMult(&coef, &pk.alphaG1s[i])
 		if i == 0 {
@@ -284,12 +288,15 @@ func open() int { //TODO fiks den aka. lav den
 	return 0
 }
 
+// verifies that the polynomial for the commitment is correct, by recomputing the commitment for the polynomial and checking it is the same as the one to verify
 func verifyPoly(pk PK, commitmentToVerify e.G1, polynomial poly) bool {
 	commitment := commit(pk, polynomial)
 
 	return commitment.IsEqual(&commitmentToVerify)
 }
 
+// Creates the witness for the specified index of the polynomial
+// computing the quotientPolynomial for the given index and then calculating a commitment for the quotient and a evaluation of the index of the original polynomial
 func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 	//HokusPokusDinKatErIFokus()
 	quotientPoly := quotientOfPoly(polynomial, index)
@@ -303,6 +310,7 @@ func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 	return witness
 }
 
+// Verifies the witness corresponds with the commitment
 func verifyWitness(pk PK, commitment e.G1, witness witnessStruct) bool {
 	lSide := e.Pair(&commitment, &pk.g2)
 

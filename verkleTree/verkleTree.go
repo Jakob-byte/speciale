@@ -11,6 +11,7 @@ import (
 	"strings"
 	"sync"
 	"time"
+
 	//"runtime"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
@@ -61,13 +62,20 @@ func check(err error) {
 }
 
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
-// where [0} is the amount of certificates to load from said directory.
+// where [0] is the amount of certificates to load from said directory.
 // returns a [][]byte list/array of files
 func loadCertificates(input string, amount int) [][]byte {
 	var fileArray [][]byte
-
-	for i := 0; i < amount; i++ {
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i))...)
+	files := 1
+	stuffToRead := 20000
+	if amount > stuffToRead {
+		files = int(math.Ceil(float64(amount) / float64(stuffToRead)))
+	}
+	for i := 0; i < files; i++ {
+		if i == files-1 {
+			stuffToRead = amount - i*stuffToRead
+		}
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), stuffToRead)...)
 	}
 	return fileArray
 }
@@ -220,7 +228,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 
 	//Makes the combinations of integers needed to calculate divident and polynomial.
 	degreeComb := combCalculater(fanOut)
-	
+
 	dividentList := dividentCalculator(fanOut, degreeComb)
 	//start := time.Now()
 	//fmt.Println("After div calc")
@@ -250,10 +258,14 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		numThreads = append(numThreads, 1)
 	}
 
+	//setup for starting to build tree setting nextLayer as the starting point, which is the leaf nodes, setting isLeafs to true.
 	nextLayer := nodes
 	isLeafs := true
-	counterTing := 0
+
+	//While loop that keeps making layers of the tree until the length of the nextlayer is >1 which means we are at the root of the tree
 	for len(nextLayer) > 1 {
+
+		// Calculates how many nodes each thread will be assigned and makes a list for the threads to save their output in
 		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
 		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
 		nodesPerThread := int(NodePerThreadcalc)
@@ -261,6 +273,8 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		nextLayer2 := make([][]*node, numThreads[0])
 		var mu sync.Mutex
 		var wg sync.WaitGroup
+
+		//Collects the nodes for each thread, and starts the process of making the layer with a go routine
 		for i := 0; i < len(nextLayer); {
 			lastIndex := i + int(nodesPerThread)
 			if lastIndex < len(nextLayer) {
@@ -272,30 +286,28 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 				nodesForThread = nextLayer[i:]
 			}
 			wg.Add(1)
-			go func(index int,nodesToUse []*node, isLeafs2 bool) {
+			go func(index int, nodesToUse []*node, isLeafs2 bool) {
 				defer wg.Done()
 				makeLayer(nodesToUse, fanOut, isLeafs2, pk, lagrangeBasisList, (index), &nextLayer2, &mu)
-			}(i/nodesPerThread,nodesForThread, isLeafs)
+			}(i/nodesPerThread, nodesForThread, isLeafs)
 
 			i = i + nodesPerThread
 		}
 		wg.Wait()
 
+		// collects each threads list of nodes into a single slice of nodes, for the next layer
 		nextLayer = []*node{}
-
-		
 		for _, v := range nextLayer2 {
 			nextLayer = append(nextLayer, v...)
 		}
 
-		if counterTing == 0 {
-			counterTing = 10
+		if isLeafs {
 			isLeafs = false
-			
 		}
 
 	}
 
+	//Defines the verkleTree Struct
 	verk = verkleTree{
 		fanOut:            fanOut,
 		Root:              nextLayer[0],
@@ -377,6 +389,7 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 	}
 	//fmt.Println("sumTimer for vector to poly", sumTimer)
 	//fmt.Println("sumTimer for commit", sumTimer2)
+	// Locks the mutex for the nextLayer slice so that the thread can correctly input its nodes to the slice and defers the unlock so it unlocks when finished
 	mu.Lock()
 	defer mu.Unlock()
 	//fmt.Println("Index:", index)
@@ -393,6 +406,7 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK, numThreads int) bool {
 	return testTree.Root.ownVectorCommit == tree.Root.ownVectorCommit
 }
 
+// Verifes a specific certificate is in the tree, by first calling createMemberShipProof for the given certificate, and then returns a call to verifyMemberShipProof
 func verifyNode(cert []byte, tree verkleTree) bool {
 	mp := createMembershipProof(cert, tree)
 	return verifyMembershipProof(mp, tree.pk)
@@ -420,6 +434,7 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 	}
 	//Creates the lists required for membership proof
 	witnessStructEmpty := witnessStruct{}
+	//Calculates the witness up until we see the root
 	for nod.parent != nil {
 		if nod.witness == witnessStructEmpty {
 			nod.witness = createWitness(tree.pk, nod.parent.polynomial, uint64(nod.childNumb))
@@ -532,12 +547,12 @@ func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
 // TODO Not finished, only works for certs%fanout != 0.
 func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 	fmt.Println("len of leafs", len(tree.leafs))
-	var foundIt bool 
+	var foundIt bool
 	var nextSibling *node
-	for i:= len(tree.leafs)-1; i>=0; i--{
-		fmt.Println("i",i)
-		if !tree.leafs[i].duplicate{
-			if i==len(tree.leafs)-1 {
+	for i := len(tree.leafs) - 1; i >= 0; i-- {
+		fmt.Println("i", i)
+		if !tree.leafs[i].duplicate {
+			if i == len(tree.leafs)-1 {
 				break
 			}
 			fmt.Println("i found a duplicate leaf")
@@ -573,7 +588,7 @@ func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 		return tree, true
 
 	}
-	
+
 	return tree, false
 }
 
