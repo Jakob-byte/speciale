@@ -121,7 +121,7 @@ func newDividentCalc(x int, points []float64, superX int) float64 {
 			}
 			sumj = sumj * int(xLambdaV)
 			sumK := 0
-			for k := (len(points) - lambda + i - 1); k < len(points); k++ {
+			for k := (len(points) - lambda + i - 1); k < len(points); k++ { //TODO This doesn't work.. at all..
 				if x == k {
 					continue
 				}
