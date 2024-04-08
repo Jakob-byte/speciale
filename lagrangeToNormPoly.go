@@ -199,7 +199,6 @@ func main() {
 		5,
 		15,
 		9,
-		//27,
 	}
 
 	poly2 := realVectorToPoly(points)
