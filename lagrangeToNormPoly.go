@@ -53,29 +53,100 @@ func newRealvVectorToPoly(points []float64) poly {
 	divident := 1.0
 	superX := 1
 
-	for i := len(points); i > 1; i-- {
+	for i := len(points) - 1; i > 1; i-- {
 		superX = superX * i
 	}
 
-	for i := 0; i < len(points); i++ {
-		for coefIndex := 1; coefIndex < len(points); coefIndex++ {
-			//set of length coefindex
-			// for loop which adds combinations to the set?
-			// 2 extra for loops?
-			for k := 1; k < len(points); k++ {
-				coefs[coefIndex] += (float64(superX) * (1 / float64(k))) / float64(divident)
-			}
+	for v := 0; v < len(points); v++ {
+		fmt.Println("CALCULATING DIVIDENT")
+		divident = newDividentCalc(v, points, superX)
 
-			if coefIndex%2 == 1 {
-				coefs[coefIndex] *= -1
+		fmt.Println("DONE DIVIDENT", divident)
+		for lambda := 1; lambda < len(points); lambda++ {
+
+			//fmt.Println(coefs[202020])
+			weBroke := false
+			sumsum := 0.0
+			for i := 1; i < len(points)-lambda; i++ {
+				fmt.Println("In i loop")
+				sumj := 1.
+				for j := i; j < i+lambda; j++ {
+					fmt.Println("In j loop")
+					if v == j {
+						//if v >= j && v <= j + lambda
+						weBroke = true
+						break
+					}
+					sumj *= float64(j)
+				}
+				if weBroke {
+					weBroke = false
+					continue
+				}
+				sumk := 0.0
+				for k := i + lambda; k < len(points); k++ {
+					fmt.Println("In k loop")
+					if k == v { //Måske yeet, virker unødvendigt.
+						continue
+					}
+					sumk += float64(k)
+				}
+				sumsum = sumj * sumk
+			}
+			if (lambda % 2) == 0 {
+				coefs[lambda] -= sumsum / divident
+			} else {
+				coefs[lambda] += sumsum / divident
 			}
 		}
 	}
-
-	fmt.Println(answer)
+	answer.coefficients = coefs
+	fmt.Println(answer.coefficients)
 	fmt.Println(divident)
 
 	return answer
+}
+
+func newDividentCalc(x int, points []float64, superX int) float64 {
+	sumsumsum := 0
+	for lambda := 2; lambda < len(points); lambda++ {
+		sumsumK := 0
+
+		for i := 1; i < (len(points) - lambda + 1); i++ {
+			xLambdaV := math.Pow(float64(x), float64(lambda))
+			fmt.Println("lambda boooooy", xLambdaV)
+			sumj := 1
+			for j := i + 1; j < (i + len(points) - lambda - 1); j++ {
+				sumj *= j
+			}
+			sumj = sumj * int(xLambdaV)
+			sumK := 0
+			for k := (len(points) - lambda + i - 1); k < len(points); k++ {
+				if x == k {
+					continue
+				}
+				fmt.Println("iamK", k)
+				sumK += k
+			}
+			fmt.Println("SUMJ", sumj)
+			fmt.Println("SUMK", sumK)
+
+			sumsumK += sumj * sumK
+
+			fmt.Println("SUMsumK", sumsumK)
+		}
+
+		if (lambda % 2) == 0 {
+			sumsumK *= -1
+		}
+		fmt.Println("SUMsumK", sumsumK)
+
+		sumsumsum += sumsumK
+	}
+	fmt.Println("sumsumsumsum", sumsumsum)
+
+	sumsumsum += superX
+	return float64(sumsumsum)
 }
 
 func realVectorToPoly(points []float64) poly {
@@ -139,6 +210,7 @@ func realVectorToPoly(points []float64) poly {
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
 					}
+					fmt.Println("I AM DIVIDENT FOR j+1", j+1, dividentMinusI)
 					coefs[j+1] += (coefToBe * y) / dividentMinusI
 					//fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
@@ -199,11 +271,16 @@ func main() {
 		5,
 		15,
 		9,
+		20,
 	}
 
 	poly2 := realVectorToPoly(points)
 	//quotientPoly := quotientOfPoly(poly2, 2)
 	fmt.Println("coefffs", poly2.coefficients)
+	fmt.Println("NEW WAY COMING NOW")
+	poly3 := newRealvVectorToPoly(points)
+	//quotientPoly := quotientOfPoly(poly2, 2)
+	fmt.Println("coefffs", poly3.coefficients)
 	fmt.Println("Succes")
 
 }
