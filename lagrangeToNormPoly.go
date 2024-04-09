@@ -53,100 +53,79 @@ func newRealvVectorToPoly(points []float64) poly {
 	divident := 1.0
 	superX := 1
 
+	//superCoefs := make([][]float64, len(points))
+
 	for i := len(points) - 1; i > 1; i-- {
 		superX = superX * i
 	}
 
-	for v := 0; v < len(points); v++ {
-		fmt.Println("CALCULATING DIVIDENT")
+	for v := 0; v < len(points)-1; v++ {
+		//if v > 0 {
+		//	coefs = make([]float64, len(points))
+		//	coefs[0] = 0
+		//}
 		divident = newDividentCalc(v, points, superX)
-
-		fmt.Println("DONE DIVIDENT", divident)
-		for lambda := 1; lambda < len(points); lambda++ {
-
-			//fmt.Println(coefs[202020])
-			weBroke := false
-			sumsum := 0.0
-			for i := 1; i < len(points)-lambda; i++ {
-				fmt.Println("In i loop")
-				sumj := 1.
-				for j := i; j < i+lambda; j++ {
-					fmt.Println("In j loop")
-					if v == j {
-						//if v >= j && v <= j + lambda
-						weBroke = true
-						break
-					}
-					sumj *= float64(j)
-				}
-				if weBroke {
-					weBroke = false
+		sumsum := 0
+		for lambda := 1; lambda < len(points)-1; lambda++ {
+			ctr := 0
+			for i := 1; i <= lambda+1; i++ {
+				if v > 0 && i == 1 {
+					ctr += 1
 					continue
 				}
-				sumk := 0.0
-				for k := i + lambda; k < len(points); k++ {
-					fmt.Println("In k loop")
-					if k == v { //Måske yeet, virker unødvendigt.
+				sumj := 1
+				for j := i; j < len(points)-lambda-1+ctr; j++ {
+					if v == j {
 						continue
 					}
-					sumk += float64(k)
+					sumj *= j
 				}
-				sumsum = sumj * sumk
-			}
-			if (lambda % 2) == 0 {
-				coefs[lambda] -= sumsum / divident
-			} else {
-				coefs[lambda] += sumsum / divident
-			}
-		}
-	}
-	answer.coefficients = coefs
-	fmt.Println(answer.coefficients)
-	fmt.Println(divident)
+				sumk := 0
+				for k := len(points) - lambda - 1 + ctr; k < len(points); k++ {
+					sumk += k
+				}
 
+				ctr++
+				sumsum += sumj * sumk
+				if lambda == len(points)-2 {
+					break
+				}
+			}
+			if lambda%2 == 0 {
+				sumsum *= -1
+			}
+			coefs[lambda] += (float64(sumsum) * points[v]) / divident
+		}
+		coefs[len(coefs)-1] += points[v] / divident
+		//superCoefs[v] = coefs
+	}
+	//coefs[len(coefs)-1] = 1
+	//fmt.Println(answer.coefficients)
+	//fmt.Println(divident)
+	//finalCoef := make([]float64, len(points))
+	//finalCoef[0] = points[0]
+	//fmt.Println("superCoefs: ", superCoefs)
+	//for i, v := range points {
+	//	for j, u := range superCoefs[i] {
+	//		fmt.Println("u:", u)
+	//		fmt.Println("v:", v)
+	//		uv := u * v
+	//		fmt.Println("uv:", v)
+	//		finalCoef[j] += uv
+	//	}
+	//}
+	//
+	//answer.coefficients = finalCoef
+	answer.coefficients = coefs
 	return answer
 }
 
 func newDividentCalc(x int, points []float64, superX int) float64 {
-	sumsumsum := 0
-	for lambda := 2; lambda < len(points); lambda++ {
-		sumsumK := 0
 
-		for i := 1; i < (len(points) - lambda + 1); i++ {
-			xLambdaV := math.Pow(float64(x), float64(lambda))
-			fmt.Println("lambda boooooy", xLambdaV)
-			sumj := 1
-			for j := i + 1; j < (i + len(points) - lambda - 1); j++ {
-				sumj *= j
-			}
-			sumj = sumj * int(xLambdaV)
-			sumK := 0
-			for k := (len(points) - lambda + i - 1); k < len(points); k++ { //TODO This doesn't work.. at all..
-				if x == k {
-					continue
-				}
-				fmt.Println("iamK", k)
-				sumK += k
-			}
-			fmt.Println("SUMJ", sumj)
-			fmt.Println("SUMK", sumK)
-
-			sumsumK += sumj * sumK
-
-			fmt.Println("SUMsumK", sumsumK)
-		}
-
-		if (lambda % 2) == 0 {
-			sumsumK *= -1
-		}
-		fmt.Println("SUMsumK", sumsumK)
-
-		sumsumsum += sumsumK
+	for i := 1; i <= x; i++ {
+		superX = superX * 1 / (len(points) - i) * -(i) //Nice and fast.
 	}
-	fmt.Println("sumsumsumsum", sumsumsum)
-
-	sumsumsum += superX
-	return float64(sumsumsum)
+	return float64(superX)
 }
 
 func realVectorToPoly(points []float64) poly {
@@ -199,6 +178,7 @@ func realVectorToPoly(points []float64) poly {
 			}
 
 		}
+
 		for j, combs := range degreeComb {
 			for _, comb := range combs {
 				if !slices.Contains(comb, i) {
@@ -210,7 +190,6 @@ func realVectorToPoly(points []float64) poly {
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
 					}
-					fmt.Println("I AM DIVIDENT FOR j+1", j+1, dividentMinusI)
 					coefs[j+1] += (coefToBe * y) / dividentMinusI
 					//fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
@@ -271,6 +250,8 @@ func main() {
 		5,
 		15,
 		9,
+		29,
+		17,
 		20,
 	}
 
