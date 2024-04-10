@@ -59,47 +59,138 @@ func newRealvVectorToPoly(points []float64) poly {
 		superX = superX * i
 	}
 
-	for v := 0; v < len(points)-1; v++ {
+	for v := 0; v < len(points); v++ {
+		//if v == 4 {
+		//	fmt.Println(coefs[100])
+		//}
 		//if v > 0 {
 		//	coefs = make([]float64, len(points))
 		//	coefs[0] = 0
 		//}
+		//fmt.Println("v: ", v)
 		divident = newDividentCalc(v, points, superX)
-		sumsum := 0
+		sumsum := 0.0
 		for lambda := 1; lambda < len(points)-1; lambda++ {
-			ctr := 0
-			for i := 1; i <= lambda+1; i++ {
-				if v > 0 && i == 1 {
-					ctr += 1
-					continue
+			sumsum = 0
+			updatedJList := true
+			//fmt.Println(updatedJList)
+
+			jList := make([]float64, len(points)-2-(lambda))
+			//fmt.Println("lenOFJlistHERE: ", len(jList))
+			ctrJlist := 0.
+			for o := range jList { //init the jList to be 1,2,3,4,....
+				if o == v {
+					ctrJlist++
 				}
-				sumj := 1
-				for j := i; j < len(points)-lambda-1+ctr; j++ {
-					if v == j {
-						continue
-					}
+				jList[o] = float64(o + int(ctrJlist))
+			}
+
+			if len(jList) != 0 && v != 0 {
+				appendNumb := jList[len(jList)-1] + 1
+				if int(appendNumb) == v {
+					appendNumb++
+				}
+				jList = append(jList[1:], appendNumb)
+
+			}
+			i := 1
+			for updatedJList {
+				//		fmt.Println("jList:", jList)
+				//if v > 0 && i == 1 {
+				//	ctr += 1
+				//
+				//	continue
+				//}
+
+				sumj := 1.
+				for _, j := range jList { //j := i; j < len(points)-lambda-1+ctr; j++ {
+					//if v == j {
+					//	continue
+					//}
 					sumj *= j
 				}
 				sumk := 0
-				for k := len(points) - lambda - 1 + ctr; k < len(points); k++ {
+				//TODO start at end of jList for k Loop
+
+				if len(jList) == 0 {
+					jList = append(jList, 0)
+				}
+				for k := int(jList[len(jList)-1]) + 1; k < len(points); k++ { //len(points) - lambda - 1 + ctr; k < len(points); k++ { // kommer til at plusse sig selv til i nogle cases! KlemZe har added et if statement
+					if v == k {
+						continue
+					}
 					sumk += k
 				}
 
-				ctr++
-				sumsum += sumj * sumk
+				//	fmt.Println("lambda: ", lambda)
+				//	fmt.Println("sumj: ", sumj)
+				//	fmt.Println("sumk: ", sumk)
+				//	fmt.Println("divident: ", divident)
+				sumsum += (sumj * float64(sumk)) / (divident)
+				//	fmt.Println("sumsum: ", sumsum)
 				if lambda == len(points)-2 {
+					//			fmt.Println("Vi er her, dudes!")
 					break
 				}
+
+				//2-1 ; o >= 0 ; o--
+				//
+				for o := len(jList) - 1; o >= 0; o-- { //update jList for next subexpression e.g. (1,2,3) -> (1,2,4)
+					//		fmt.Println("funky math", float64(len(points))-float64(2+(len(jList)-1-o)))
+					funkymath := float64(len(points)) - float64(2+(len(jList)-1-o))
+					//		fmt.Println("o:", o)
+					if jList[o] < funkymath { // 6-(2+(3-1-2) =4 ---- 6-(2+(3-1-1)) ---6 -(2+(3-1-0))
+						// jList[1]=3 < 5-(2+(2-1-1))=3  ----- o=1
+						// jList[0]=2 < 5-(2+(2-1-0))=2  ----- o=0
+						if jList[o]+1 == float64(v) {
+							jList[o] += 1
+
+						}
+						jList[o]++
+						if jList[o] > funkymath && o == 0 {
+							updatedJList = false
+							break
+						}
+						if o != len(jList)-1 {
+							ctr42 := 0
+							for q := o + 1; q < len(jList); q++ { // <=?
+								ctr42 = 0
+								if jList[q-1]+1 == float64(v) {
+									ctr42++ //no work
+								}
+								jList[q] = jList[q-1] + 1 + float64(ctr42)
+
+							}
+						}
+						//if jList[len(jList)-1] > funkymath+1 {
+						//	updatedJList = false
+						//}
+						break
+					}
+					//		fmt.Println("WE SET TO FALSE", i, o, jList)
+
+					if o == 0 {
+						updatedJList = false
+					}
+				}
+				i++
 			}
-			if lambda%2 == 0 {
+			if lambda%2 == 1 {
 				sumsum *= -1
 			}
-			coefs[lambda] += (float64(sumsum) * points[v]) / divident
+			coefs[lambda] += (float64(sumsum) * points[v]) // divident
+			//	fmt.Println("new coefs: ", points[v], lambda, coefs[lambda])
 		}
-		coefs[len(coefs)-1] += points[v] / divident
+		if len(points)%2 == 1 {
+			coefs[len(coefs)-1] += points[v] / divident
+		} else {
+			coefs[len(coefs)-1] -= points[v] / divident
+		}
+		//	fmt.Println("checkThis Out now: ", coefs[len(coefs)-1])
 		//superCoefs[v] = coefs
 	}
 	//coefs[len(coefs)-1] = 1
+	// -2.5+0.20
 	//fmt.Println(answer.coefficients)
 	//fmt.Println(divident)
 	//finalCoef := make([]float64, len(points))
@@ -190,10 +281,11 @@ func realVectorToPoly(points []float64) poly {
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
 					}
+					//fmt.Println("Working coef: ", y, j+1, (coefToBe*y)/dividentMinusI)
 					coefs[j+1] += (coefToBe * y) / dividentMinusI
 					//fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
-
+				//
 			}
 
 		}
@@ -251,8 +343,19 @@ func main() {
 		15,
 		9,
 		29,
-		17,
+		40,
 		20,
+		50,
+		60,
+		70,
+		11,
+		91,
+		33,
+		4,
+		14,
+		17,
+		32,
+		49,
 	}
 
 	poly2 := realVectorToPoly(points)
@@ -263,5 +366,6 @@ func main() {
 	//quotientPoly := quotientOfPoly(poly2, 2)
 	fmt.Println("coefffs", poly3.coefficients)
 	fmt.Println("Succes")
+	fmt.Println("realCoefs: ", poly2.coefficients)
 
 }
