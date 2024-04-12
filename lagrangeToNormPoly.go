@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"slices"
+	"time"
 
 	combin "gonum.org/v1/gonum/stat/combin"
 )
@@ -60,6 +61,7 @@ func newRealvVectorToPoly(points []float64) poly {
 	}
 
 	for v := 0; v < len(points); v++ {
+		//fmt.Println("AT point v: ", v)
 		//if v == 4 {
 		//	fmt.Println(coefs[100])
 		//}
@@ -71,6 +73,8 @@ func newRealvVectorToPoly(points []float64) poly {
 		divident = newDividentCalc(v, points, superX)
 		sumsum := 0.0
 		for lambda := 1; lambda < len(points)-1; lambda++ {
+
+			//fmt.Println("At lambda: ", lambda)
 			sumsum = 0
 			updatedJList := true
 			//fmt.Println(updatedJList)
@@ -343,29 +347,24 @@ func main() {
 		15,
 		9,
 		29,
-		40,
-		20,
-		50,
-		60,
-		70,
-		11,
-		91,
-		33,
-		4,
-		14,
-		17,
-		32,
-		49,
 	}
 
-	poly2 := realVectorToPoly(points)
+	//poly2 := realVectorToPoly(points)
 	//quotientPoly := quotientOfPoly(poly2, 2)
-	fmt.Println("coefffs", poly2.coefficients)
+	//fmt.Println("coefffs", poly2.coefficients)
 	fmt.Println("NEW WAY COMING NOW")
 	poly3 := newRealvVectorToPoly(points)
 	//quotientPoly := quotientOfPoly(poly2, 2)
 	fmt.Println("coefffs", poly3.coefficients)
 	fmt.Println("Succes")
-	fmt.Println("realCoefs: ", poly2.coefficients)
+
+	for i := 1; i <= 40; i++ {
+		points = append(points, float64(i))
+		start := time.Now()
+		newRealvVectorToPoly(points)
+		timeSpent := time.Since(start)
+		fmt.Println("Time spent on fanout", len(points), " is ", timeSpent)
+	}
+	//fmt.Println("realCoefs: ", poly2.coefficients)
 
 }
