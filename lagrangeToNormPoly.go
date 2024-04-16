@@ -47,6 +47,27 @@ func vectorToPoly(points []float64) poly {
 	return answer
 }
 
+func vanderCalc(points []float64) [][]float64 {
+	size := len(points)
+	m := make([][]float64, size)
+	for i := 0; i < size; i++ {
+		for j := 0; j < size; j++ {
+			m[i] = append(m[i], math.Pow(float64(i), float64(j)))
+		}
+	}
+	return m
+}
+
+func calcDeterminant(vanderBoi [][]float64) float64 {
+	det := 1
+	for k := 1; k <= len(vanderBoi); k++ {
+		for j := k + 1; j <= len(vanderBoi); j++ {
+			det *= (j - k)
+		}
+	}
+	return float64(det)
+}
+
 func newRealvVectorToPoly(points []float64) poly {
 	var answer poly
 	coefs := make([]float64, len(points))
@@ -341,30 +362,232 @@ func quotientOfPoly(polynomial poly, x0 float64) poly {
 	return quotient
 }
 
+func getCofactor(A [][]float64, temp [][]float64, p int, q int, n int) [][]float64 {
+
+	i := 0
+	j := 0
+
+	// Looping for each element of the matrix
+	for row := range n {
+
+		for col := range n {
+
+			// Copying into temporary matrix only those element
+			// which are not in given row and column
+			if row != p && col != q {
+
+				temp[i][j] = float64(A[row][col])
+				j += 1
+
+				// Row is filled, so increase row index and
+				// reset col index
+				if j == n-1 {
+					j = 0
+					i += 1
+				}
+			}
+		}
+	}
+	return temp
+}
+
+func determinant(A [][]float64, n int) float64 {
+
+	D := 0.0 // Initialize result
+
+	// Base case : if matrix contains single element
+	if n == 1 {
+		return A[0][0]
+	}
+
+	temp := make([][]float64, n) // To store cofactors
+	for i := range n {
+		temp[i] = make([]float64, n)
+		// temp.append([None for _ in range(N)])
+	}
+	sign := 1.0 // To store sign multiplier
+
+	// Iterate for each element of first row
+	for f := range n {
+		// Getting Cofactor of A[0][f]
+		getCofactor(A, temp, 0, f, n)
+		D += sign * A[0][f] * determinant(temp, n-1)
+
+		// terms are to be added with alternate sign
+		sign = -sign
+	}
+
+	return D
+}
+
+// Function to get adjoint of A[N][N] in adj[N][N].
+func adjoint(A [][]float64, adj [][]float64, N int) [][]float64 {
+
+	if N == 1 {
+		adj[0][0] = 1
+		return adj
+	}
+
+	// temp is used to store cofactors of A[][]
+	sign := 1.
+	temp := make([][]float64, N) // To store cofactors
+	for i := range N {
+		temp[i] = make([]float64, N)
+		//temp.append([None for _ in range(N)])
+	}
+
+	for i := range N {
+
+		for j := range N {
+			// Get cofactor of A[i][j]
+			getCofactor(A, temp, i, j, N)
+
+			// sign of adj[j][i] positive if sum of row
+			// and column indexes is even.
+			//sign = [1, -1][(i + j) % 2]
+			sign = 1
+			if ((i + j) % 2) == 1 {
+				sign = -1
+			}
+
+			// Interchanging rows and columns to get the
+			// transpose of the cofactor matrix
+			adj[j][i] = (sign) * (determinant(temp, N-1))
+		}
+	}
+	return adj
+}
+
+func inverse(A [][]float64, inverse [][]float64, N int) [][]float64 {
+
+	// Find determinant of A[][]
+	det := calcDeterminant(A)
+	//fmt.Println("calcdeter", det)
+	//det := determinant(A, N)
+	if det == 0 {
+		print("Singular matrix, can't find its inverse")
+		return [][]float64{}
+	}
+
+	// Find adjoint
+	//adj := []
+	adj := make([][]float64, N)
+	for i := range N {
+		adj[i] = make([]float64, N)
+		//adj.append([None for _ in range(N)])
+	}
+	//fmt.Println("About to call adjoint")
+	start := time.Now()
+	adj = adjoint(A, adj, N)
+	elapsed := time.Since(start)
+	fmt.Println("ADJOINT RUNTIME FOR N", N, elapsed)
+	// Find Inverse using formula "inverse(A) = adj(A)/det(A)"
+	for i := range N {
+		//fmt.Println("I am in inverse for I: ", i)
+		for j := range N {
+			inverse[i][j] = adj[i][j] / det
+		}
+	}
+	return inverse
+}
+
+func MulMatrix(matrix1 [][]float64, matrix2 [][]float64) [][]float64 {
+	result := make([][]float64, len(matrix1))
+	for i := 0; i < len(matrix1); i++ {
+		result[i] = make([]float64, len(matrix1))
+		for j := 0; j < len(matrix2); j++ {
+			for k := 0; k < len(matrix2); k++ {
+				result[i][j] += matrix1[i][k] * matrix2[k][j]
+			}
+		}
+	}
+	return result
+}
+func MulMatrixMitVector(matrix1 [][]float64, vector []float64) []float64 {
+	result := make([]float64, len(matrix1))
+	for i := 0; i < len(matrix1); i++ {
+		//result[i] = make([]float64, len(matrix1))
+		for j := 0; j < len(vector); j++ {
+			result[i] += matrix1[i][j] * vector[j]
+
+		}
+	}
+	return result
+}
+
 func main() {
 	points := []float64{
 		5,
 		15,
-		9,
-		29,
+		//	9,
+		//	29,
+		//	45,
+		//	23,
+		//	51,
+		//	52,
+		//	69,
+		//	190,
+		//	16,
+		//	52,
 	}
 
 	//poly2 := realVectorToPoly(points)
 	//quotientPoly := quotientOfPoly(poly2, 2)
 	//fmt.Println("coefffs", poly2.coefficients)
-	fmt.Println("NEW WAY COMING NOW")
-	poly3 := newRealvVectorToPoly(points)
+	fmt.Println("NEW Vander-WAY COMING NOW")
+	vanderboii := vanderCalc(points)
+	for i := range len(vanderboii) {
+		fmt.Println(vanderboii[i])
+	}
+
+	deter := calcDeterminant(vanderboii)
+	fmt.Println("deterboiiiii", deter)
 	//quotientPoly := quotientOfPoly(poly2, 2)
-	fmt.Println("coefffs", poly3.coefficients)
 	fmt.Println("Succes")
 
+	fmt.Println("TRYING NEW DETERMINANT FUNC NOW")
+	N := len(vanderboii)
+	//det := determinant(vanderboii, N)
+	//fmt.Println("DETDETDET: ", det)
+	adj := make([][]float64, N) // To store cofactors
+	inv := make([][]float64, N)
+	for i := range N {
+		adj[i] = make([]float64, N)
+		inv[i] = make([]float64, N)
+		//temp.append([None for _ in range(N)])
+	}
+	//adjencyCalc := adjoint(vanderboii, adj, N)
+	//fmt.Println("ADJ: ", adjencyCalc)
+	fmt.Println("Calling inverse now")
+	start := time.Now()
+	invCalc := inverse(vanderboii, inv, N)
+	timed := time.Since(start)
+	fmt.Println("timed", timed)
+	fmt.Println("INVERSECALC: ", invCalc)
+	//shouldBeIdentity := MulMatrix(vanderboii, invCalc)
+	//for i := range N {
+	//	fmt.Println("ooohhh", shouldBeIdentity[i][i])
+	//}
+	shouldBeFunc := MulMatrixMitVector(invCalc, points)
+	fmt.Println("should be the coeff", shouldBeFunc)
 	for i := 1; i <= 40; i++ {
 		points = append(points, float64(i))
+		vanderboii := vanderCalc(points)
+
+		N := len(vanderboii)
+		//det := determinant(vanderboii, N)
+		//fmt.Println("DETDETDET: ", det)
+		adj := make([][]float64, N) // To store cofactors
+		inv := make([][]float64, N)
+		for j := range N {
+			adj[j] = make([]float64, N)
+			inv[j] = make([]float64, N)
+			//temp.append([None for _ in range(N)])
+		}
 		start := time.Now()
-		newRealvVectorToPoly(points)
-		timeSpent := time.Since(start)
-		fmt.Println("Time spent on fanout", len(points), " is ", timeSpent)
+		inverse(vanderboii, inv, N)
+		elapsed := time.Since(start)
+		fmt.Println("Time spent on fanout", len(points), " is ", elapsed)
 	}
-	//fmt.Println("realCoefs: ", poly2.coefficients)
 
 }
