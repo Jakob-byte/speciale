@@ -7,7 +7,6 @@ import (
 	//"errors"
 	"fmt"
 	"strconv"
-	"time"
 
 	//"hash"
 	"sync"
@@ -133,7 +132,6 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	}
 
 	//function call to make the next layer
-	start := time.Now()
 
 	if len(numThreads) == 0 {
 		numThreads = append(numThreads, 1)
@@ -196,8 +194,6 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 		Root:   nextLayer[0],
 		leafs:  nodes,
 	}
-	elapsed := time.Since(start)
-	fmt.Println("Time elapsed making merkletree: ", elapsed)
 	return &merk
 }
 

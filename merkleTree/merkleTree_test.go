@@ -10,7 +10,6 @@ import (
 func TestLoadFunc(t *testing.T) {
 	fmt.Println("TestLoadFunc -  starting")
 	certArray := loadCertificates("AllCertsOneFile20000", 20000)
-	fmt.Println("should be a certificate", certArray[500])
 	if len(certArray) != 20000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 20000)
 	}
@@ -176,19 +175,35 @@ func TestUpdateLeafVerifyTree(t *testing.T) {
 }
 
 // Benchmark/party time!!!!!!!
-// Let's GOOOO!!!!!!!!!!!!!!!!!
+// Benchmark site https://blog.logrocket.com/benchmarking-golang-improve-function-performance/
+// Loads all certs, to use less for tests use testCerts.certs[:500] to pick the first 500 certs.
+// run benchmarks: go test -bench=benchmarkName -run=^a
+// To get memory alloc, run each test 100 times and avoid timeout use:
+// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee old.txt
 var testCerts = struct {
 	certs [][]byte
 }{
-	//certs: loadCertificates("AllCertsOneFIle20000", 100000),
+	certs: loadCertificates("AllCertsOneFIle20000", 100000),
+}
+
+var fanOuts = struct {
+	v []int
+}{
+	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+}
+var threads = struct {
+	v []int
+}{
+	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 var table = []struct {
-	fanOut int
-	tree   merkleTree
+	fanOut     int
+	tree       merkleTree
+	testFanout []int
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	//{fanOut: 2, tree: *BuildTree(testCerts.certs, 2)},
+	//{fanOut: 2, tree: *BuildTree(testCerts.certs[:500], 2)},
 	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3)},
 	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
 	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5)},
@@ -213,19 +228,15 @@ var table = []struct {
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
 	b.ResetTimer()
-	for _, v := range table {
-		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				BuildTree(testCerts.certs, v.fanOut, 500)
-
-				//result := verifyTree(certArray, *verkTree, pk)
-
-				//if result != true {
-				//	b.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-				//}
-			}
-		})
+	for _, v := range fanOuts.v {
+		for _, o := range threads.v {
+			b.Run(fmt.Sprintf("fanOut: %d, threads: %d", v, o), func(b *testing.B) {
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					BuildTree(testCerts.certs, v, o)
+				}
+			})
+		}
 	}
 }
 
