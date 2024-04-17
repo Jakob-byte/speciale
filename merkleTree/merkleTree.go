@@ -3,9 +3,12 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"slices"
+	"sort"
 
 	//"errors"
 	"fmt"
+	//"sort"
 	"strconv"
 
 	//"hash"
@@ -64,6 +67,9 @@ func loadCertificates(input string, amount int) [][]byte {
 		}
 		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
 	}
+
+	sort.Slice(fileArray, func(i, j int) bool { return -1 == bytes.Compare(fileArray[i], fileArray[j]) })
+
 	return fileArray
 }
 
@@ -274,16 +280,27 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	var nod *node
 	//fanOut := tree.fanOut
 	notInList := true
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, cert) {
-			nod = v
-			notInList = false
-		}
+
+	certs := make([][]byte, len(tree.leafs))
+	for i := range len(tree.leafs) {
+		certs[i] = tree.leafs[i].certificate
 	}
+
+	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
+		return bytes.Compare(a, b)
+	})
+	notInList = !found
+
+	//for _, v := range tree.leafs {
+	//	if bytes.Equal(v.certificate, cert) {
+	//		nod = v
+	//		notInList = false
+	//	}
+	//}
 	if notInList {
 		return witness{}
 	}
-
+	nod = tree.leafs[n]
 	var hashList [][][32]byte
 
 	var childNumberList []int
