@@ -7,6 +7,35 @@ import (
 	//"time"
 )
 
+func TestLoadFunc(t *testing.T) {
+	fmt.Println("TestLoadFunc -  starting")
+	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+	fmt.Println("should be a certificate", certArray[500])
+	if len(certArray) != 20000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 20000)
+	}
+
+	certArray = loadCertificates("AllCertsOneFile20000", 40000)
+	if len(certArray) != 40000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 40000)
+	}
+
+	certArray = loadCertificates("AllCertsOneFile20000", 50000)
+	if len(certArray) != 50000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 50000)
+	}
+
+	certArray = loadCertificates("AllCertsOneFile20000", 60000)
+	if len(certArray) != 60000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 60000)
+	}
+
+	certArray = loadCertificates("AllCertsOneFile20000", 1000000)
+	if len(certArray) != 1000000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 1000000)
+	}
+}
+
 func TestVerifyTree(t *testing.T) {
 	fmt.Println("TestVerifyTree -  starting")
 	certArray := loadCertificates("AllCertsOneFile20000", 20000)

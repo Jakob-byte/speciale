@@ -61,11 +61,8 @@ k.generate_key(crypto.TYPE_RSA, 4096)
 certs = ""
 certsToGen = 20000
 letters = string.ascii_lowercase
-hej = write_random_lowercase(2)
-print( hej)
 
-print( hej, "Se på den eer")
-for j in range(6,51):
+for j in range(1,6):
     certs = ""
     print("working on file: ", j)
     for i in range(certsToGen):

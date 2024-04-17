@@ -63,7 +63,7 @@ func loadCertificates(input string, amount int) [][]byte {
 		if i == files-1 {
 			stuffToRead = amount - i*stuffToRead
 		}
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), stuffToRead)...)
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
 	}
 	return fileArray
 }
