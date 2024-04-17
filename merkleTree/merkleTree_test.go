@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math/rand"
 	"testing"
+	"time"
 	//"time"
 )
 
@@ -183,7 +184,7 @@ func TestUpdateLeafVerifyTree(t *testing.T) {
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000000),
+	certs: loadCertificates("AllCertsOneFIle20000", 100000),
 }
 
 var fanOuts = struct {
@@ -191,10 +192,11 @@ var fanOuts = struct {
 }{
 	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
+
 var threads = struct {
 	v []int
 }{
-	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+	v: []int{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 var table = []struct {
@@ -203,28 +205,20 @@ var table = []struct {
 	testFanout []int
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	//{fanOut: 2, tree: *BuildTree(testCerts.certs[:500], 2)},
-	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3)},
-	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
-	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5)},
-	//{fanOut: 6, tree: *BuildTree(testCerts.certs, 6)},
-	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7)},
-	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8)},
-	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9)},
-	//{fanOut: 10, tree: *BuildTree(testCerts.certs, 10)},
-	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11)},
-	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12)},
-	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13)},
-	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14)},
-	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15)},
-	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16)},
-	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17)},
-	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18)},
-	//{fanOut: 19, tree: *BuildTree(testCerts.certs, 19)},
-	//{fanOut: 20, tree: *BuildTree(testCerts.certs, 20)},
-	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25)},
+	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2)},
+	{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
+	{fanOut: 8, tree: *BuildTree(testCerts.certs, 8)},
+	{fanOut: 16, tree: *BuildTree(testCerts.certs, 16)},
+	{fanOut: 32, tree: *BuildTree(testCerts.certs, 32)},
+	{fanOut: 64, tree: *BuildTree(testCerts.certs, 64)},
+	{fanOut: 128, tree: *BuildTree(testCerts.certs, 128)},
+	{fanOut: 256, tree: *BuildTree(testCerts.certs, 256)},
+	{fanOut: 512, tree: *BuildTree(testCerts.certs, 512)},
+	{fanOut: 1024, tree: *BuildTree(testCerts.certs, 1024)},
 }
 
+// To run
+// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee merkBuildTreeBench.txt
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
 	b.ResetTimer()
@@ -240,15 +234,92 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 	}
 }
 
+// To run this test
+// go test -bench=BenchmarkVerifyNode -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkVerifyNodeBench.txt
 func BenchmarkVerifyNode(b *testing.B) {
 	fmt.Println("BenchmarkVerifyNode Running")
 	b.ResetTimer()
 
+	randomCerts := make([][]byte, 1000)
+
+	for k := range randomCerts {
+		randInt := rand.Intn(len(testCerts.certs))
+		randomCerts[k] = testCerts.certs[randInt]
+		//(0, len(testCerts.certs))
+	}
+
 	for _, v := range table {
-		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
+		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				verifyNode(testCerts.certs[i], v.tree)
+				verifyNode(randomCerts[i], v.tree)
+			}
+		})
+
+	}
+}
+
+// To run this test
+// go test -bench=BenchmarkCreateWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkCreateWitnessBench.txt
+func BenchmarkCreateWitness(b *testing.B) {
+	fmt.Println("BenchmarkVerifyNode Running")
+	b.ResetTimer()
+
+	randomCerts := make([][]byte, 1000)
+
+	for k := range randomCerts {
+		randInt := rand.Intn(len(testCerts.certs))
+		randomCerts[k] = testCerts.certs[randInt]
+		//(0, len(testCerts.certs))
+	}
+
+	for _, v := range table {
+		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
+			//b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				createWitness(randomCerts[i], v.tree)
+			}
+		})
+	}
+}
+
+// To run this test
+// go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=10000x -benchmem  -timeout 99999s | tee merkVerifyWitnessBench.txt
+func BenchmarkVerifyWitness(b *testing.B) {
+	fmt.Println("BenchmarkVerifyNode Running")
+	testAmount := 10000 //Change if you change -benchtime=10000x
+	certsToTest := make([][]byte, testAmount)
+	witnesses := make([][]witness, len(table))
+	start := time.Now()
+	for o := range witnesses {
+		witnesses[o] = make([]witness, testAmount)
+	}
+	elapsed := time.Since(start)
+	fmt.Println("Time spent after witness 1", elapsed)
+
+	//Get certs to test
+	for k := range testAmount {
+		randInt := rand.Intn(len(testCerts.certs))
+		certsToTest[k] = testCerts.certs[randInt]
+		//(0, len(testCerts.certs))
+	}
+	elapsed = time.Since(start)
+	fmt.Println("Time spent after witness 2", elapsed)
+	//get proofs from the different trees
+	for i, v := range table {
+		for k := range testAmount {
+			witnesses[i][k] = createWitness(certsToTest[k], v.tree)
+		}
+	}
+	elapsed = time.Since(start)
+	fmt.Println("Time spent after witness 3", elapsed)
+
+	b.ResetTimer()
+	for o, v := range table {
+		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
+			//b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				verifyWitness(certsToTest[i], witnesses[o][i], v.tree)
 			}
 		})
 	}
