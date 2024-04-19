@@ -55,6 +55,13 @@ type verkleTree struct {
 	lagrangeBasisList [][]e.Scalar
 }
 
+type membershipProofPortable struct {
+	Commits [][]byte
+	Index   []uint64
+	Fx0     [][]byte
+	W       [][]byte
+}
+
 // Function to call with error to avoid overloading methdods with error if statements
 func check(err error) {
 	if err != nil {
@@ -64,7 +71,52 @@ func check(err error) {
 
 // Creates a json from the witness, and returns it. Logs a fatal error if it fails.
 func createJsonOfMembershipProof(mp membershipProof) []byte {
-	
+	commits := make([][]byte, len(mp.Commitments))
+	for i, v := range mp.Commitments {
+		commits[i] = v.BytesCompressed()
+	}
+	index := make([]uint64, len(mp.Witnesses))
+	fx0 := make([][]byte, len(mp.Witnesses))
+	w := make([][]byte, len(mp.Witnesses))
+
+	for i, v := range mp.Witnesses {
+		index[i] = v.Index
+		fx0[i], _ = v.Fx0.MarshalBinary() //TODO fix
+		w[i] = v.W.BytesCompressed()
+	}
+	memProofPort := membershipProofPortable{Commits: commits, Index: index, Fx0: fx0, W: w}
+	jSoooon, err := json.Marshal(memProofPort)
+	check(err)
+	return jSoooon
+}
+
+// Retrieves the membership proof from the provided json. Crashes everything otherwise.
+func retrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
+	var unMarshalled membershipProofPortable
+	json.Unmarshal(jsonFile, &unMarshalled)
+
+	commits := make([]e.G1, len(unMarshalled.Commits))
+	for i, v := range unMarshalled.Commits {
+		commits[i].SetBytes(v)
+	}
+	length := len(unMarshalled.Index)
+	witnesss := make([]witnessStruct, length)
+
+	for i := range length {
+		witnesss[i].Fx0.SetBytes(unMarshalled.Fx0[i])
+		witnesss[i].Index = unMarshalled.Index[i]
+		witnesss[i].W.SetBytes(unMarshalled.W[i])
+	}
+	//fmt.Println("witnesssss", witnesss)
+	//fmt.Println("Comits", commits)
+	return membershipProof{Witnesses: witnesss, Commitments: commits}
+}
+
+// Creates a json from the witness, and returns it. Logs a fatal error if it fails.
+func genJsonWitness(wit any) []byte {
+	json, err := json.Marshal(wit)
+	check(err)
+	return json
 
 }
 
@@ -457,6 +509,9 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 // Verifies the membership proof it receives as input with the public key.
 // Returns true if the proof is correct, false if it isn't.
 func verifyMembershipProof(mp membershipProof, pk PK) bool {
+	if len(mp.Witnesses) == 0 {
+		return false
+	}
 	for i := 0; i < len(mp.Witnesses); i++ {
 		witnessIsTrue := verifyWitness(pk, mp.Commitments[i], mp.Witnesses[i])
 		if !witnessIsTrue {

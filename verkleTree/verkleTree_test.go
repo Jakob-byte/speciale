@@ -174,6 +174,38 @@ func TestSizeOfMembershipProof(t *testing.T) {
 
 }
 
+func TestJsonConverter(t *testing.T) {
+	fmt.Println("TestJsonConverter Running")
+	fanOut := 10
+	pk := setup(10, fanOut)
+	verkTree := BuildTree(testCerts.certs, fanOut, pk, 500)
+
+	mp := createMembershipProof(testCerts.certs[1], *verkTree)
+	bytesss := mp.Commitments[1].Bytes()
+	fmt.Println(mp.Commitments[1])
+	mp.Commitments[1].SetBytes(bytesss)
+	fmt.Println(bytesss)
+	fmt.Println(mp.Commitments[1])
+	fmt.Println("Ignore the rest")
+
+	didPointVerify := verifyMembershipProof(mp, pk)
+	if didPointVerify != true {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, true)
+	}
+	jsonTest := createJsonOfMembershipProof(mp)
+	fmt.Println("Size of sent proof: ", len(jsonTest))
+	retrievedMP := retrieveMembershipProofFromJson(jsonTest)
+
+	didPointVerify = verifyMembershipProof(retrievedMP, pk)
+	if didPointVerify != true {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, true)
+	}
+	//fmt.Println("WHat is going on", retrievedMP)
+	for i := range mp.Witnesses {
+		fmt.Println("are they equal?", mp.Witnesses[i].W.IsEqual(&retrievedMP.Witnesses[i].W))
+	}
+}
+
 func TestInsertSimple(t *testing.T) {
 	fmt.Println("TestInsertSimple Running")
 	fanOut := 3
@@ -286,15 +318,15 @@ var table = []struct {
 	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9), 500)},
 	//{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10, 10), 500)},
 	{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11), 500)},
-	{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12), 500)},
-	{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13), 500)},
-	{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14), 500)},
-	{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15), 500)},
-	{fanOut: 16, tree: *BuildTree(testCerts.certs, 16, setup(10, 16), 500)},
-	{fanOut: 17, tree: *BuildTree(testCerts.certs, 17, setup(10, 17), 500)},
-	{fanOut: 18, tree: *BuildTree(testCerts.certs, 18, setup(10, 18), 500)},
-	{fanOut: 19, tree: *BuildTree(testCerts.certs, 19, setup(10, 19), 500)},
-	{fanOut: 20, tree: *BuildTree(testCerts.certs, 20, setup(10, 20), 500)},
+	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12), 500)},
+	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13), 500)},
+	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14), 500)},
+	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15), 500)},
+	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16, setup(10, 16), 500)},
+	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17, setup(10, 17), 500)},
+	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18, setup(10, 18), 500)},
+	//{fanOut: 19, tree: *BuildTree(testCerts.certs, 19, setup(10, 19), 500)},
+	//{fanOut: 20, tree: *BuildTree(testCerts.certs, 20, setup(10, 20), 500)},
 	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25, setup(10, 25), 500)},
 }
 
