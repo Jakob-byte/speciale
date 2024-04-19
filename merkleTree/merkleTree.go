@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 	"slices"
 	"sort"
 
@@ -12,13 +13,12 @@ import (
 	"strconv"
 
 	//"hash"
-	"sync"
-
 	"log"
 	"math"
 	"os"
 	"regexp"
 	"strings"
+	"sync"
 )
 
 // struct for representing a node in the tree
@@ -33,8 +33,8 @@ type node struct {
 }
 
 type witness struct {
-	hashList        [][][32]byte
-	childNumberList []int
+	HashList        [][][32]byte
+	ChildNumberList []int
 }
 
 // Struct representing the merkle-tree
@@ -68,6 +68,7 @@ func loadCertificates(input string, amount int) [][]byte {
 		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
 	}
 
+	//Sorts the certificates
 	sort.Slice(fileArray, func(i, j int) bool { return -1 == bytes.Compare(fileArray[i], fileArray[j]) })
 
 	return fileArray
@@ -108,6 +109,14 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
 	//}
 	return certificates
+}
+
+// Creates a json from the witness, and returns it. Logs a fatal error if it fails.
+func genJsonWitness(wit witness) []byte {
+	json, err := json.Marshal(wit)
+	check(err)
+	return json
+
 }
 
 func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
@@ -281,22 +290,24 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	//fanOut := tree.fanOut
 	notInList := true
 
+	//Retrieves all the certificates from the leaf nodes
 	certs := make([][]byte, len(tree.leafs))
 	for i := range len(tree.leafs) {
 		certs[i] = tree.leafs[i].certificate
 	}
 
+	//Performs binary search on the leafs, and returns if it found something and what it found.
 	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
 		return bytes.Compare(a, b)
 	})
 	notInList = !found
 
-	//for _, v := range tree.leafs {
-	//	if bytes.Equal(v.certificate, cert) {
-	//		nod = v
-	//		notInList = false
-	//	}
-	//}
+	///for _, v := range tree.leafs {
+	///	if bytes.Equal(v.certificate, cert) {
+	///		nod = v
+	///		notInList = false
+	///	}
+	///}
 	if notInList {
 		return witness{}
 	}
@@ -328,8 +339,8 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	}
 
 	witness := witness{
-		hashList:        hashList,
-		childNumberList: childNumberList,
+		HashList:        hashList,
+		ChildNumberList: childNumberList,
 	}
 	return witness
 }
@@ -337,16 +348,16 @@ func createWitness(cert []byte, tree merkleTree) witness {
 // if we wanna be cool we can fix stuff so we don't need to give the certificate to this function! by putting it in the hashlist somehow
 func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
 	sum := sha256.Sum256(cert)
-	for i := 0; i < len(witness.hashList); i++ {
+	for i := 0; i < len(witness.HashList); i++ {
 		var byteToHash []byte
-		for j, v := range witness.hashList[i] {
+		for j, v := range witness.HashList[i] {
 
-			if witness.childNumberList[i] == j {
+			if witness.ChildNumberList[i] == j {
 				byteToHash = append(byteToHash, sum[:]...)
 			}
 			byteToHash = append(byteToHash, v[:]...)
 		}
-		if witness.childNumberList[i] == tree.fanOut-1 {
+		if witness.ChildNumberList[i] == tree.fanOut-1 {
 			byteToHash = append(byteToHash, sum[:]...)
 		}
 		sum = sha256.Sum256(byteToHash)

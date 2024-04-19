@@ -2,6 +2,7 @@ package verkletree
 
 import (
 	"crypto/rand"
+
 	//"fmt"
 	//"runtime"
 	"slices"
@@ -27,9 +28,9 @@ type poly struct {
 
 // The witness struct which contains the necessary info for a witness to prove it is contained in a commitment.
 type witnessStruct struct {
-	index uint64
-	fx0   e.Scalar
-	w     e.G1
+	Index uint64
+	Fx0   e.Scalar
+	W     e.G1
 }
 
 var mutexBuddy sync.Mutex
@@ -303,9 +304,9 @@ func createWitness(pk PK, polynomial poly, index uint64) witnessStruct {
 	w := commit(pk, quotientPoly)
 	fx0 := calcPoly(index, polynomial)
 	witness := witnessStruct{
-		w:     w,
-		index: index,
-		fx0:   fx0,
+		W:     w,
+		Index: index,
+		Fx0:   fx0,
 	}
 	return witness
 }
@@ -317,16 +318,16 @@ func verifyWitness(pk PK, commitment e.G1, witness witnessStruct) bool {
 	// e(w, alpha * g2 - x0 * g2) * e(g1, g2) ^f(x_0)
 	var alphaG2minusX0G2 e.G2
 	var x0 e.Scalar
-	x0.SetUint64(uint64(witness.index))
+	x0.SetUint64(uint64(witness.Index))
 	var x0g2 e.G2
 	x0g2.ScalarMult(&x0, &pk.g2)
 	x0g2.Neg()
 	alphaG2minusX0G2.Add(&pk.alphaG2, &x0g2) //
-	rSide1 := e.Pair(&witness.w, &alphaG2minusX0G2)
+	rSide1 := e.Pair(&witness.W, &alphaG2minusX0G2)
 	rSide2 := e.Pair(&pk.g1, &pk.g2)
 
 	// try the other Pair Function pairPRod first make into list
-	rSide2.Exp(rSide2, &witness.fx0)
+	rSide2.Exp(rSide2, &witness.Fx0)
 
 	rSide1.Mul(rSide1, rSide2)
 

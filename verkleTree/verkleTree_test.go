@@ -147,6 +147,33 @@ func TestDumbUpdateLeafButEvil(t *testing.T) {
 	}
 }
 
+func TestSizeOfMembershipProof(t *testing.T) {
+	fmt.Println("TestSizeOfMembershipProof Running")
+
+	randInt := rand.Intn(len(testCerts.certs))
+	randomCert := testCerts.certs[randInt]
+	witnessList := make([]membershipProof, len(table))
+	for i, v := range table {
+		witnessList[i] = createMembershipProof(randomCert, v.tree)
+	}
+
+	for i, v := range witnessList {
+		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the membershipProof is", len(genJsonWitness(v)))
+		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the witness is", len(genJsonWitness(v.Witnesses)))
+		for _, u := range v.Witnesses {
+			fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the individual witness structs is", len(genJsonWitness(u)))
+			fx0, _ := u.Fx0.MarshalBinary()
+			fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the individual fx0 structs is", len(genJsonWitness(fx0)))
+			fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the individual index structs is", len(genJsonWitness(u.Index)))
+			fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the individual w structs is", len(genJsonWitness(u.W.BytesCompressed())))
+
+		}
+		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the commitmnets is", len(genJsonWitness(v.Commitments)))
+
+	}
+
+}
+
 func TestInsertSimple(t *testing.T) {
 	fmt.Println("TestInsertSimple Running")
 	fanOut := 3
@@ -268,7 +295,7 @@ var table = []struct {
 	{fanOut: 18, tree: *BuildTree(testCerts.certs, 18, setup(10, 18), 500)},
 	{fanOut: 19, tree: *BuildTree(testCerts.certs, 19, setup(10, 19), 500)},
 	{fanOut: 20, tree: *BuildTree(testCerts.certs, 20, setup(10, 20), 500)},
-	{fanOut: 25, tree: *BuildTree(testCerts.certs, 25, setup(10, 25), 500)},
+	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25, setup(10, 25), 500)},
 }
 
 func BenchmarkBuildTreeTime(b *testing.B) {

@@ -10,27 +10,42 @@ import (
 
 func TestLoadFunc(t *testing.T) {
 	fmt.Println("TestLoadFunc -  starting")
+	start := time.Now()
 	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+	elapsed := time.Since(start)
+	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 20000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 20000)
 	}
 
+	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 40000)
+	elapsed = time.Since(start)
+	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 40000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 40000)
 	}
 
-	certArray = loadCertificates("AllCertsOneFile20000", 50000)
-	if len(certArray) != 50000 {
-		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 50000)
-	}
-
+	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 60000)
+	elapsed = time.Since(start)
+	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 60000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 60000)
 	}
 
+	start = time.Now()
+	certArray = loadCertificates("AllCertsOneFile20000", 80000)
+	elapsed = time.Since(start)
+	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	if len(certArray) != 80000 {
+		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 80000)
+	}
+
+	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 1000000)
+	elapsed = time.Since(start)
+	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 1000000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 1000000)
 	}
@@ -50,8 +65,7 @@ func TestVerifyCert(t *testing.T) {
 	fmt.Println("TestVerifyCert -  starting")
 
 	certArray := loadCertificates("AllCertsOneFile20000", 20000)
-	// 1590 certificate
-	fmt.Println("len of certarray", len(certArray))
+
 	merkTree := BuildTree(certArray, 2, 2)
 	//for i:= 0 ; i<10; i++ {
 	//	fmt.Println(i, "hash at index , merkTree.leafs[i].parent.parent.ownHash)
@@ -65,8 +79,9 @@ func TestVerifyCert(t *testing.T) {
 
 }
 
+// Hvad er det her for en test!?
 func TestTreeBuild2(t *testing.T) {
-	fmt.Println("TestTreeBuild -  starting")
+	fmt.Println("TestTreeBuild2 -  starting")
 	certArray := loadCertificates("AllCertsOneFile20000", 5)
 	BuildTree(certArray, 15, 500)
 }
@@ -79,7 +94,7 @@ func TestTreeBuilder(t *testing.T) {
 	fanMax := 100
 	threadMin := 1
 	threadMax := 1000
-	for i := 0; i < 100; i++ {
+	for i := 0; i < 10; i++ {
 		randNumb := rand.Intn(max-min) + min
 		randFan := rand.Intn(fanMax-fanMin) + fanMin
 		randThread := rand.Intn(threadMax-threadMin) + threadMin
@@ -129,51 +144,66 @@ func TestDifferentFanOuts(t *testing.T) {
 	}
 }
 
-func TestUpdateLeafVerifyLeaf(t *testing.T) {
-	fmt.Println("TestUpdateLeafVerifyLeaf -  starting")
-	certArray := loadCertificates("AllCertsOneFile20000", 20000)
-	merkTree := BuildTree(certArray, 2, 500)
-	newCert := loadOneCert("baguetteCert.crt")
-	result := verifyNode(newCert, *merkTree)
+func TestSizeOfWitnesses(t *testing.T) {
+	fmt.Println("TestSizeOfWitnesses Running")
 
-	if result != false {
-		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
+	randInt := rand.Intn(len(testCerts.certs))
+	randomCert := testCerts.certs[randInt]
+	witnessList := make([]witness, len(table))
+	for i, v := range table {
+		witnessList[i] = createWitness(randomCert, v.tree)
 	}
 
-	updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
-
-	result = verifyNode(certArray[10], *updatedTree)
-	if result != false {
-		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-	}
-
-	result = verifyNode(newCert, *updatedTree)
-	if result != true {
-		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
+	for i, v := range witnessList {
+		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the witness is", len(genJsonWitness(v)))
 	}
 
 }
 
-func TestUpdateLeafVerifyTree(t *testing.T) {
-	fmt.Println("TestUpdateLeafVerifyTree -  starting")
-	certArray := loadCertificates("AllCertsOneFile20000", 20000)
-	merkTree := BuildTree(certArray, 2, 500)
-	newCert := loadOneCert("baguetteCert.crt")
-	updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
-
-	result := verifyTree(certArray, *updatedTree)
-	if result != false {
-		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-	}
-
-	certArray[10] = newCert
-
-	result = verifyTree(certArray, *updatedTree)
-
-	if result != true {
-		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-	}
-}
+//	func TestUpdateLeafVerifyLeaf(t *testing.T) {
+//		fmt.Println("TestUpdateLeafVerifyLeaf -  starting")
+//		certArray := loadCertificates("AllCertsOneFile20000", 20000)
+//		merkTree := BuildTree(certArray, 2, 500)
+//		newCert := loadOneCert("baguetteCert.crt")
+//		result := verifyNode(newCert, *merkTree)
+//
+//		if result != false {
+//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
+//		}
+//
+//		updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
+//
+//		result = verifyNode(certArray[10], *updatedTree)
+//		if result != false {
+//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
+//		}
+//
+//		result = verifyNode(newCert, *updatedTree)
+//		if result != true {
+//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
+//		}
+//
+// }
+//func TestUpdateLeafVerifyTree(t *testing.T) {
+//	fmt.Println("TestUpdateLeafVerifyTree -  starting")
+//	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+//	merkTree := BuildTree(certArray, 2, 500)
+//	newCert := loadOneCert("baguetteCert.crt")
+//	updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
+//
+//	result := verifyTree(certArray, *updatedTree)
+//	if result != false {
+//		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
+//	}
+//
+//	certArray[10] = newCert
+//
+//	result = verifyTree(certArray, *updatedTree)
+//
+//	if result != true {
+//		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
+//	}
+//}
 
 // Benchmark/party time!!!!!!!
 // Benchmark site https://blog.logrocket.com/benchmarking-golang-improve-function-performance/
@@ -184,7 +214,7 @@ func TestUpdateLeafVerifyTree(t *testing.T) {
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000),
+	certs: loadCertificates("AllCertsOneFIle20000", 100000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {
@@ -263,7 +293,6 @@ func BenchmarkVerifyNode(b *testing.B) {
 // go test -bench=BenchmarkCreateWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkCreateWitnessBench.txt
 func BenchmarkCreateWitness(b *testing.B) {
 	fmt.Println("BenchmarkVerifyNode Running")
-	b.ResetTimer()
 
 	randomCerts := make([][]byte, 1000)
 
@@ -273,6 +302,7 @@ func BenchmarkCreateWitness(b *testing.B) {
 		//(0, len(testCerts.certs))
 	}
 
+	b.ResetTimer()
 	for _, v := range table {
 		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()

@@ -3,6 +3,7 @@ package verkletree
 import (
 	"bytes"
 	"crypto/sha256"
+	"encoding/json"
 
 	"math"
 	"regexp"
@@ -39,8 +40,8 @@ type node struct {
 
 // Membership proof struct containt the neccessary information to verify node belongs to tree.
 type membershipProof struct {
-	witnesses   []witnessStruct
-	commitments []e.G1
+	Witnesses   []witnessStruct
+	Commitments []e.G1
 }
 
 // Struct representing the verkle-tree
@@ -61,6 +62,12 @@ func check(err error) {
 	}
 }
 
+// Creates a json from the witness, and returns it. Logs a fatal error if it fails.
+func createJsonOfMembershipProof(mp membershipProof) []byte {
+	
+
+}
+
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
 // where [0] is the amount of certificates to load from said directory.
 // returns a [][]byte list/array of files
@@ -75,7 +82,7 @@ func loadCertificates(input string, amount int) [][]byte {
 		if i == files-1 {
 			stuffToRead = amount - i*stuffToRead
 		}
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i), stuffToRead)...)
+		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
 	}
 	return fileArray
 }
@@ -444,14 +451,14 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 		nod = nod.parent
 	}
 
-	return membershipProof{witnesses: witnessList, commitments: commitList}
+	return membershipProof{Witnesses: witnessList, Commitments: commitList}
 }
 
 // Verifies the membership proof it receives as input with the public key.
 // Returns true if the proof is correct, false if it isn't.
 func verifyMembershipProof(mp membershipProof, pk PK) bool {
-	for i := 0; i < len(mp.witnesses); i++ {
-		witnessIsTrue := verifyWitness(pk, mp.commitments[i], mp.witnesses[i])
+	for i := 0; i < len(mp.Witnesses); i++ {
+		witnessIsTrue := verifyWitness(pk, mp.Commitments[i], mp.Witnesses[i])
 		if !witnessIsTrue {
 			return false
 		}
