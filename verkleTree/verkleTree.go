@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
+	"sort"
 
 	"math"
 	"regexp"
@@ -11,7 +12,6 @@ import (
 	"strconv"
 	"strings"
 	"sync"
-	"time"
 
 	//"runtime"
 
@@ -136,6 +136,10 @@ func loadCertificates(input string, amount int) [][]byte {
 		}
 		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
 	}
+
+	//Sorts the certificates
+	sort.Slice(fileArray, func(i, j int) bool { return -1 == bytes.Compare(fileArray[i], fileArray[j]) })
+
 	return fileArray
 }
 
@@ -296,7 +300,6 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	//fmt.Println("Time for langrangeBasis: ", elapsed)
 
 	// call to makeLayer to create next layer in the tree
-	start := time.Now()
 	nodes := leafs
 
 	//dup nodes
@@ -375,8 +378,6 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		lagrangeBasisList: lagrangeBasisList,
 	}
 
-	elapsed := time.Since(start)
-	fmt.Println("Time elapsed making verkletree: ", elapsed)
 	return &verk
 }
 
@@ -479,18 +480,31 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 
 	notInList := true
 	//Finds the node which has the certificate. If it doesn't exist we return false.
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, cert) {
-			nod = v
-			notInList = false
-		}
+	//for _, v := range tree.leafs {
+	//	if bytes.Equal(v.certificate, cert) {
+	//		nod = v
+	//		notInList = false
+	//	}
+	//}
+
+	//Retrieves all the certificates from the leaf nodes, to make them searchable with binary search
+	certs := make([][]byte, len(tree.leafs))
+	for i := range len(tree.leafs) {
+		certs[i] = tree.leafs[i].certificate
 	}
+
+	//Performs binary search on the leafs, and returns if it found something and what it found.
+	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
+		return bytes.Compare(a, b)
+	})
+	notInList = !found
 
 	var witnessList []witnessStruct
 	var commitList []e.G1
 	if notInList {
 		return membershipProof{}
 	}
+	nod = tree.leafs[n]
 	//Creates the lists required for membership proof
 	witnessStructEmpty := witnessStruct{}
 	//Calculates the witness up until we see the root
