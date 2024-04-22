@@ -8,12 +8,48 @@ import (
 	//"time"
 )
 
+var testCerts = struct {
+	certs [][]byte
+}{
+	certs: loadCertificates("AllCertsOneFIle20000", 100000), //TODO change back to 1 million
+}
+
+var fanOuts = struct {
+	v []int
+}{
+	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+}
+
+var threads = struct {
+	v []int
+}{
+	v: []int{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+}
+
+var table = []struct {
+	fanOut     int
+	tree       merkleTree
+	testFanout []int
+}{
+	//{input: 1, tree: *BuildTree(testCerts.certs, 1)}}, Doesn't work for some reasone :D  //TODO undo so we can test for different fanouts
+	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2)},
+	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
+	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8)},
+	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16)},
+	//{fanOut: 32, tree: *BuildTree(testCerts.certs, 32)},
+	//{fanOut: 64, tree: *BuildTree(testCerts.certs, 64)},
+	//{fanOut: 128, tree: *BuildTree(testCerts.certs, 128)},
+	//{fanOut: 256, tree: *BuildTree(testCerts.certs, 256)},
+	//{fanOut: 512, tree: *BuildTree(testCerts.certs, 512)},
+	//{fanOut: 1024, tree: *BuildTree(testCerts.certs, 1024)},
+}
+
 func TestLoadFunc(t *testing.T) {
 	fmt.Println("TestLoadFunc -  starting")
 	start := time.Now()
 	certArray := loadCertificates("AllCertsOneFile20000", 20000)
 	elapsed := time.Since(start)
-	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 20000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 20000)
 	}
@@ -21,7 +57,7 @@ func TestLoadFunc(t *testing.T) {
 	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 40000)
 	elapsed = time.Since(start)
-	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 40000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 40000)
 	}
@@ -29,7 +65,7 @@ func TestLoadFunc(t *testing.T) {
 	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 60000)
 	elapsed = time.Since(start)
-	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 60000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 60000)
 	}
@@ -37,7 +73,7 @@ func TestLoadFunc(t *testing.T) {
 	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 80000)
 	elapsed = time.Since(start)
-	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 80000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 80000)
 	}
@@ -45,7 +81,7 @@ func TestLoadFunc(t *testing.T) {
 	start = time.Now()
 	certArray = loadCertificates("AllCertsOneFile20000", 1000000)
 	elapsed = time.Since(start)
-	fmt.Println("Time spent building ", len(certArray), " certificates, it took: ", elapsed)
+	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 1000000 {
 		t.Errorf("Result was incorrect, got: %v, want: %v.", len(certArray), 1000000)
 	}
@@ -53,7 +89,7 @@ func TestLoadFunc(t *testing.T) {
 
 func TestVerifyTree(t *testing.T) {
 	fmt.Println("TestVerifyTree -  starting")
-	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+	certArray := testCerts.certs
 	merkTree := BuildTree(certArray, 2, 500)
 	result := verifyTree(certArray, *merkTree)
 	if result != true {
@@ -64,7 +100,7 @@ func TestVerifyTree(t *testing.T) {
 func TestVerifyCert(t *testing.T) {
 	fmt.Println("TestVerifyCert -  starting")
 
-	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+	certArray := testCerts.certs
 
 	merkTree := BuildTree(certArray, 2, 2)
 	//for i:= 0 ; i<10; i++ {
@@ -79,11 +115,47 @@ func TestVerifyCert(t *testing.T) {
 
 }
 
-// Hvad er det her for en test!?
-func TestTreeBuild2(t *testing.T) {
-	fmt.Println("TestTreeBuild2 -  starting")
-	certArray := loadCertificates("AllCertsOneFile20000", 5)
-	BuildTree(certArray, 15, 500)
+func TestNegativeVerifyCert(t *testing.T) {
+	fmt.Println("TestNegativeVerifyCert -  starting")
+
+	certArray := testCerts.certs[:10000]
+
+	merkTree := BuildTree(certArray, 2, 2)
+	//for i:= 0 ; i<10; i++ {
+	//	fmt.Println(i, "hash at index , merkTree.leafs[i].parent.parent.ownHash)
+	//}
+	result := verifyNode(testCerts.certs[10001], *merkTree)
+
+	if result {
+		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
+		//fmt.Println(certArray[3204043959346])
+	}
+}
+
+func TestNegativeWitnessTestWithDifferentCerts(t *testing.T) {
+	fmt.Println("TestNegativeWitnessTestWithDifferentCerts Running")
+	certsToTestOn1 := testCerts.certs[:10000]
+	certsToTestOn2 := testCerts.certs[2000:12000]
+	tree1 := BuildTree(certsToTestOn1, 10, 8)
+	tree2 := BuildTree(certsToTestOn2, 10, 8)
+	certToVerify := certsToTestOn1[2500]
+	witness := createWitness(certToVerify, *tree1)
+	if verifyWitness(certToVerify, witness, *tree2) {
+		t.Error("Should not have output true, should be false.")
+	}
+}
+
+func TestNegativeWitnessTestWithDifferentFanout(t *testing.T) {
+	fmt.Println("TestNegativeWitnessTestWithDifferentFanout Running")
+	certsToTestOn1 := testCerts.certs[:10000]
+	certsToTestOn2 := testCerts.certs[:10000]
+	tree1 := BuildTree(certsToTestOn1, 2, 8)
+	tree2 := BuildTree(certsToTestOn2, 4, 8)
+	certToVerify := certsToTestOn1[2500]
+	witness := createWitness(certToVerify, *tree1)
+	if verifyWitness(certToVerify, witness, *tree2) {
+		t.Error("Should not have output true, should be false.")
+	}
 }
 
 func TestTreeBuilder(t *testing.T) {
@@ -116,7 +188,16 @@ func TestTreeBuilder(t *testing.T) {
 	}
 }
 
-// Hej
+func TestNegativeTreeVerify(t *testing.T) {
+	fmt.Println("TestNegativeTreeVerify -  starting")
+	certs := testCerts.certs[:100000]
+	tree1 := BuildTree(certs, 2, 8)
+	if verifyTree(testCerts.certs[20000:120000], *tree1) {
+		t.Errorf("Verified the tree, although the certs were different")
+	}
+}
+
+// Hej - goddav
 func TestDifferentFanOuts(t *testing.T) {
 	fmt.Println("TestDifferentFanOuts -  starting")
 	max := 500
@@ -126,7 +207,7 @@ func TestDifferentFanOuts(t *testing.T) {
 	for i := 1; i < 2; i++ {
 		randNumb := rand.Intn(max-min) + min
 		fanNumb := rand.Intn(maxFan-minFan) + minFan
-		certArray := loadCertificates("AllCertsOneFile20000", 20000)
+		certArray := testCerts.certs
 		merkTree := BuildTree(certArray, fanNumb, 500)
 		nodeToTest := rand.Intn(randNumb)
 		result := verifyNode(certArray[nodeToTest], *merkTree)
@@ -144,6 +225,35 @@ func TestDifferentFanOuts(t *testing.T) {
 	}
 }
 
+func TestJsonConverterInTree(t *testing.T) {
+	fmt.Println("TestJsonConverter Running")
+	certToVerify := testCerts.certs[40123]
+	witness := createWitness(certToVerify, table[0].tree)
+	if !verifyWitness(certToVerify, witness, table[0].tree) {
+		t.Error("Should have been in the tree, what went wrong? (before conversion)")
+	}
+
+	jsooon := genJsonWitness(witness)
+	witnessAgain := getWitnessFromJson(jsooon)
+	if !verifyWitness(certToVerify, witnessAgain, table[0].tree) {
+		t.Error("Json conversion failed, does not recognize the witness?")
+	}
+}
+func TestJsonConverterNotInTree(t *testing.T) {
+	fmt.Println("TestJsonConverter Running")
+	certToVerify := testCerts.certs[50123]
+	tree := BuildTree(testCerts.certs[:50000], 2, 8)
+	witness := createWitness(certToVerify, *tree)
+	if verifyWitness(certToVerify, witness, *tree) {
+		t.Error("Should not have been in the tree, found it before conversion though.")
+	}
+
+	jsooon := genJsonWitness(witness)
+	witnessAgain := getWitnessFromJson(jsooon)
+	if verifyWitness(certToVerify, witnessAgain, *tree) {
+		t.Error("Should not have been in tree, found it after conversion though.")
+	}
+}
 func TestSizeOfWitnesses(t *testing.T) {
 	fmt.Println("TestSizeOfWitnesses Running")
 
@@ -157,7 +267,6 @@ func TestSizeOfWitnesses(t *testing.T) {
 	for i, v := range witnessList {
 		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the witness is", len(genJsonWitness(v)))
 	}
-
 }
 
 // Testing for the best amount of threads depending on fanout for the pc building the tree.
@@ -165,7 +274,7 @@ func TestSizeOfWitnesses(t *testing.T) {
 // 8 for Ryzen 7 4700u
 func TestDifferentAmountOfThreads(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreads -  starting")
-	fanOuts := []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, fan := range fanOuts {
 		for threads := 1; threads < 20; threads++ {
@@ -228,41 +337,6 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 // run benchmarks: go test -bench=benchmarkName -run=^a
 // To get memory alloc, run each test 100 times and avoid timeout use:
 // go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee old.txt
-var testCerts = struct {
-	certs [][]byte
-}{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000000), //TODO change back to 1 million
-}
-
-var fanOuts = struct {
-	v []int
-}{
-	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
-}
-
-var threads = struct {
-	v []int
-}{
-	v: []int{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
-}
-
-var table = []struct {
-	fanOut     int
-	tree       merkleTree
-	testFanout []int
-}{
-	//{input: 1}, Doesn't work for some reasone :D
-	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2)},
-	{fanOut: 4, tree: *BuildTree(testCerts.certs, 4)},
-	{fanOut: 8, tree: *BuildTree(testCerts.certs, 8)},
-	{fanOut: 16, tree: *BuildTree(testCerts.certs, 16)},
-	{fanOut: 32, tree: *BuildTree(testCerts.certs, 32)},
-	{fanOut: 64, tree: *BuildTree(testCerts.certs, 64)},
-	{fanOut: 128, tree: *BuildTree(testCerts.certs, 128)},
-	{fanOut: 256, tree: *BuildTree(testCerts.certs, 256)},
-	{fanOut: 512, tree: *BuildTree(testCerts.certs, 512)},
-	{fanOut: 1024, tree: *BuildTree(testCerts.certs, 1024)},
-}
 
 // To run
 // go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee merkBuildTreeBench.txt

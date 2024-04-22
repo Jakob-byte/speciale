@@ -119,6 +119,12 @@ func genJsonWitness(wit witness) []byte {
 
 }
 
+func getWitnessFromJson(jsonWit []byte) witness {
+	var unMarshalled witness
+	json.Unmarshal(jsonWit, &unMarshalled)
+	return unMarshalled
+}
+
 func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	var merk merkleTree
 
