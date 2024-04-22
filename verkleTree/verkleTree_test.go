@@ -403,7 +403,7 @@ func BenchmarkCreateMembershipProof(b *testing.B) {
 }
 
 // To run this test
-// go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=10000x -benchmem  -timeout 99999s | tee merkVerifyWitnessBench.txt
+// go test -bench=BenchmarkVerifyMembershipProof -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkVerifyWitnessBench.txt
 func BenchmarkVerifyMembershipProof(b *testing.B) {
 	fmt.Println("BenchmarkVerifyMembershipProof Running")
 	testAmount := 10000 //Change if you change -benchtime=10000x
