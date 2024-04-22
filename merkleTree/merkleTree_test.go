@@ -160,6 +160,23 @@ func TestSizeOfWitnesses(t *testing.T) {
 
 }
 
+// Testing for the best amount of threads depending on fanout for the pc building the tree.
+// Appears to be equal to the amount of cores on the CPU.
+// 8 for Ryzen 7 4700u
+func TestDifferentAmountOfThreads(t *testing.T) {
+	fmt.Println("TestDifferentAmountOfThreads -  starting")
+	fanOuts := []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+
+	for _, fan := range fanOuts {
+		for threads := 1; threads < 20; threads++ {
+			start := time.Now()
+			BuildTree(testCerts.certs, fan, threads)
+			elapsed := time.Since(start)
+			fmt.Println("Time elapsed making tree with fanout: ", fan, " and threads:", threads, "is: ", elapsed)
+		}
+	}
+}
+
 //	func TestUpdateLeafVerifyLeaf(t *testing.T) {
 //		fmt.Println("TestUpdateLeafVerifyLeaf -  starting")
 //		certArray := loadCertificates("AllCertsOneFile20000", 20000)
@@ -214,7 +231,7 @@ func TestSizeOfWitnesses(t *testing.T) {
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000), //TODO change back to 1 million
+	certs: loadCertificates("AllCertsOneFIle20000", 1000000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {
