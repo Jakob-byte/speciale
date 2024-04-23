@@ -233,12 +233,20 @@ func TestRealCertificatesTime(t *testing.T) {
 func TestJsonConverter(t *testing.T) {
 	fmt.Println("TestJsonConverter Running")
 	fanOut := 25
+
 	pk := setup(30, fanOut)
-	verkTree := BuildTree(testCerts.certs, fanOut, pk, 500)
+
+	verkTree := BuildTree(testCerts.certs, fanOut, pk, 8)
 
 	mp := createMembershipProof(testCerts.certs[1], *verkTree)
+	//fmt.Println("Before set bytes:")
+	//fmt.Println(mp.Commitments[1])
+	//copuy := mp.Commitments[1]
 	bytesss := mp.Commitments[1].Bytes()
 	mp.Commitments[1].SetBytes(bytesss)
+	//fmt.Println("After set bytes")
+	//fmt.Println(mp.Commitments[1])
+	//fmt.Println("But are they are equal: ", copuy.IsEqual(&mp.Commitments[1]))
 
 	didPointVerify := verifyMembershipProof(mp, pk)
 	if didPointVerify != true {

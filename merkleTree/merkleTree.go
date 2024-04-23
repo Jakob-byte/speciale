@@ -61,6 +61,7 @@ func loadCertificates(input string, amount int) [][]byte {
 	if amount > stuffToRead {
 		files = int(math.Ceil(float64(amount) / float64(stuffToRead)))
 	}
+	//listss := make([][][]byte, (amount/stuffToRead)+1)
 	for i := 0; i < files; i++ {
 		if i == files-1 {
 			stuffToRead = amount - i*stuffToRead
