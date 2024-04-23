@@ -11,7 +11,7 @@ import (
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000), //TODO change back to 1 million
+	certs: loadCertificates("AllCertsOneFIle20000", 1000000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {
@@ -343,8 +343,8 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
 	b.ResetTimer()
-	for _, v := range fanOuts.v {
-		for _, o := range threads.v {
+	for _, v := range fanOuts.v { //Different fanouts
+		for _, o := range threads.v { //Different amount of threads
 			b.Run(fmt.Sprintf("fanOut: %d, threads: %d", v, o), func(b *testing.B) {
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
@@ -443,5 +443,22 @@ func BenchmarkVerifyWitness(b *testing.B) {
 				verifyWitness(certsToTest[i], witnesses[o][i], v.tree)
 			}
 		})
+	}
+}
+
+// go test -bench=BenchmarkDifferentAmountOfThreads -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfThreadsBench.txt
+func BenchmarkDifferentAmountOfThreads(b *testing.B) {
+	fmt.Println("TestDifferentAmountOfThreads -  starting")
+	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+
+	for _, fan := range fanOuts {
+		for threads := 1; threads < 20; threads++ {
+			b.Run(fmt.Sprintf("fanOut: %d and threads %d", fan, threads), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					BuildTree(testCerts.certs, fan, threads)
+
+				}
+			})
+		}
 	}
 }
