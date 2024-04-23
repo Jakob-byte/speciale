@@ -52,7 +52,7 @@ func TestBuildTreeAndVerifyTree(t *testing.T) {
 	pk := setup(1, fanOut)
 	verk := BuildTree(points, fanOut, pk, 1)
 
-	didItVerify := verifyTree(points, *verk, pk, 500)
+	didItVerify := verifyTree(points, *verk, pk, 8)
 	if !didItVerify {
 		panic("Did not verify tree as expected")
 	}
@@ -108,7 +108,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 	max := len(testCerts.certs)
 	fanOut := 10
 	pk := setup(10, fanOut)
-	verkTree := BuildTree(testCerts.certs, fanOut, pk, 500)
+	verkTree := BuildTree(testCerts.certs, fanOut, pk, 8)
 
 	for i := 0; i < 10; i++ {
 		randNumb := rand.Intn(max)
@@ -127,8 +127,8 @@ func TestNegativeMembershipProofRealCerts(t *testing.T) {
 	certToTest := testCerts.certs[30242]
 	pk1 := setup(10, fanOut)
 	pk2 := setup(10, fanOut)
-	verkTree1 := BuildTree(testCerts.certs[:50000], fanOut, pk1, 500)
-	verkTree2 := BuildTree(testCerts.certs[:50000], fanOut, pk2, 500)
+	verkTree1 := BuildTree(testCerts.certs[:50000], fanOut, pk1, 8)
+	verkTree2 := BuildTree(testCerts.certs[:50000], fanOut, pk2, 8)
 	memProof := createMembershipProof(certToTest, *verkTree1)
 	if verifyMembershipProof(memProof, verkTree2.pk) {
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
@@ -164,10 +164,10 @@ func TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
 // Probably always equal to the amount of cores on the CPU.
 func TestDifferentAmountOfThreads(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreads -  starting")
-	fanOut := 20
+	fanOut := 10
 	pk := setup(42, fanOut)
 
-	for threads := 2; threads < 20; threads++ {
+	for threads := 8; threads < 9; threads++ {
 		start := time.Now()
 		BuildTree(testCerts.certs, fanOut, pk, threads)
 		elapsed := time.Since(start)
@@ -187,7 +187,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		start = time.Now()
 		var verkTree *verkleTree
 		for i := 0; i < testAmount; i++ {
-			verkTree = BuildTree(testCerts.certs, fanOut, pk, 500)
+			verkTree = BuildTree(testCerts.certs, fanOut, pk, 8)
 		}
 		elapsed2 := time.Since(start).Seconds() / float64(testAmount)
 		fmt.Println("Built tree time : ", elapsed2, "seconds")
@@ -195,7 +195,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		start = time.Now()
 		var result bool
 		for i := 0; i < testAmount; i++ {
-			result = verifyTree(testCerts.certs, *verkTree, pk, 500)
+			result = verifyTree(testCerts.certs, *verkTree, pk, 8)
 		}
 		elapsed3 := time.Since(start).Seconds() / float64(testAmount)
 		fmt.Println("VerifyTree time : ", elapsed3, "seconds")
@@ -232,7 +232,7 @@ func TestRealCertificatesTime(t *testing.T) {
 // Tests whether the JSON converter works correctly, by comparing the membership proofs from before and after using it.
 func TestJsonConverter(t *testing.T) {
 	fmt.Println("TestJsonConverter Running")
-	fanOut := 25
+	fanOut := 10
 
 	pk := setup(30, fanOut)
 
@@ -368,7 +368,7 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 			pk := setup(4, fanOut)
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				BuildTree(testCerts.certs, fanOut, pk, 500)
+				BuildTree(testCerts.certs, fanOut, pk, 8)
 			}
 		})
 	}

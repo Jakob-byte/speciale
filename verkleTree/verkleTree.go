@@ -130,20 +130,38 @@ func loadCertificates(input string, amount int) [][]byte {
 	if amount > stuffToRead {
 		files = int(math.Ceil(float64(amount) / float64(stuffToRead)))
 	}
+
+	certThreadList := make([][][]byte, (amount/stuffToRead)+1)
+
+	var mu sync.Mutex
+	var wg sync.WaitGroup
+
 	for i := 0; i < files; i++ {
 		if i == files-1 {
 			stuffToRead = amount - i*stuffToRead
 		}
-		fileArray = append(fileArray, loadCertificatesFromOneFile(input+"-"+strconv.Itoa(i)+".crt", stuffToRead)...)
-	}
+		wg.Add(1)
 
+		go func(index int, amountToRead int) {
+			defer wg.Done()
+			loadCertificatesFromOneFile(input+"-"+strconv.Itoa(index)+".crt", index, &certThreadList, &mu, amountToRead)
+		}(i, stuffToRead)
+	}
+	wg.Wait()
+
+	for _, v := range certThreadList {
+
+		if len(v) > 0 {
+			fileArray = append(fileArray, v...)
+		}
+	}
 	//Sorts the certificates
 	sort.Slice(fileArray, func(i, j int) bool { return -1 == bytes.Compare(fileArray[i], fileArray[j]) })
 
 	return fileArray
 }
 
-func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
+func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte, mu *sync.Mutex, amount ...int) {
 
 	content, err := os.ReadFile("testCerts/" + input)
 	if err != nil {
@@ -170,14 +188,16 @@ func loadCertificatesFromOneFile(input string, amount ...int) [][]byte {
 	// Extract certificates and store them in the slice
 	for i, match := range matches {
 		if len(amount) != 0 && i == amount[0] {
-			return certificates
+			break
 		}
 		certificates[i] = []byte(strings.TrimSpace(match[0]))
 	}
 	//for i, cert := range certificates {
 	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
 	//}
-	return certificates
+	mu.Lock()
+	defer mu.Unlock()
+	(*listPoint)[index] = certificates
 }
 
 // TODO Taken from combin, make proper cite

@@ -90,7 +90,7 @@ func TestLoadFunc(t *testing.T) {
 func TestVerifyTree(t *testing.T) {
 	fmt.Println("TestVerifyTree -  starting")
 	certArray := testCerts.certs
-	merkTree := BuildTree(certArray, 2, 500)
+	merkTree := BuildTree(certArray, 2, 8)
 	result := verifyTree(certArray, *merkTree)
 	if result != true {
 		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
@@ -208,7 +208,7 @@ func TestDifferentFanOuts(t *testing.T) {
 		randNumb := rand.Intn(max-min) + min
 		fanNumb := rand.Intn(maxFan-minFan) + minFan
 		certArray := testCerts.certs
-		merkTree := BuildTree(certArray, fanNumb, 500)
+		merkTree := BuildTree(certArray, fanNumb, 8)
 		nodeToTest := rand.Intn(randNumb)
 		result := verifyNode(certArray[nodeToTest], *merkTree)
 
