@@ -38,14 +38,28 @@ func TestProveRoot(t *testing.T) {
 }
 
 func TestVerifyRoot(t *testing.T) {
+	start := time.Now()
+	fanout := 512
+	params := rootsetup(42, fanout)
+	elapsed := time.Since(start)
+	fmt.Println("Time setup:", elapsed)
+	start = time.Now()
+	scalVect := certToScalarVector(testCerts.certs[:fanout])
+	elapsed = time.Since(start)
+	fmt.Println("certToScalVect time: ", elapsed)
 
-	params := rootsetup(42, 16)
-
-	scalVect := certToScalarVector(testCerts.certs[:16])
-	fmt.Println(len(testCerts.certs[:16]))
+	start = time.Now()
 	commitment := rootCommit(params, scalVect)
+	elapsed = time.Since(start)
+	fmt.Println("time commit: ", elapsed)
+	start = time.Now()
 	proof := rootProveGen(params, scalVect, 4)
+	elapsed = time.Since(start)
+	fmt.Println("Time gen proof", elapsed)
+	start = time.Now()
 	didItWork := rootVerify(params, commitment, proof, scalVect[4], 4)
-	fmt.Println("IT WORKKEDD!!!!!!!!!!!!!!!!!: ", didItWork)
+	elapsed = time.Since(start)
+	fmt.Println("VerifyProof time", elapsed)
+	fmt.Println("IT WORKKEDD: ", didItWork)
 
 }
