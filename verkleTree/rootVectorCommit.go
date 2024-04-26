@@ -5,7 +5,6 @@ import (
 
 	//"fmt"
 	//"runtime"
-
 	"sync"
 
 	//combin "gonum.org/v1/gonum/stat/combin"
@@ -88,22 +87,24 @@ func rootSetup(security, t int) pubParams {
 	for i := range params.aPrimeDomainI {
 		params.aPrimeDomainI[i] = rootaPrime(params, i, params.aPrimeDomainI[i])
 	}
-
 	// lagrange Basis magic
+
 	for i := range params.lagrangeBasis {
 		// make evalLagrange func
 		l := evalLagrangeValue(params, i, *a)
 		params.lagrangeBasis[i].ScalarMult(&l, g1)
 	}
-
 	var e2 e.Scalar
+
 	for i := range params.diff2 {
 		e2.Sub(a, &params.domain[i])
 		params.diff2[i].ScalarMult(&e2, g2)
 	}
 
 	//Creates the public key
+
 	params = preCalculate(params)
+
 	return params
 }
 
@@ -175,7 +176,6 @@ func preCalculate(params pubParams) pubParams {
 			params.precalc.ta[m][j].Mul(&params.precalc.ta[m][j], &invAprioriI)
 			invSubmj := invSub(params, m, j)
 			params.precalc.ta[m][j].Mul(&params.precalc.ta[m][j], &invSubmj) //TODO insert func
-
 		}
 	}
 

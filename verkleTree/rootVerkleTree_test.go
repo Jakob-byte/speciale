@@ -2,15 +2,15 @@ package verkletree
 
 import (
 	"fmt"
-	"testing"
 	"math/rand"
+	"testing"
 	"time"
 )
 
 var rootTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000000),
+	certs: loadCertificates("AllCertsOneFIle20000", 100000),
 }
 
 var rootTable = []struct {
@@ -18,26 +18,16 @@ var rootTable = []struct {
 	tree   rootVerkleTree
 }{
 	//{input: 1}, Doesn't work for some reasone :D
-	//{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, setup(10, 2), 8)},
-	//{fanOut: 3, tree: *BuildTree(testCerts.certs, 3, setup(10, 3), 8)},
-	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4, setup(10, 4), 8)},
-	//{fanOut: 5, tree: *BuildTree(testCerts.certs, 5, setup(10, 5), 8)},
-	//{fanOut: 6, tree: *BuildTree(testCerts.certs, 6, setup(10, 6), 8)},
-	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7, setup(10, 7), 8)},
-	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8, setup(10, 8), 8)},
-	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9), 8)},
-	{fanOut: 10, tree: *rootBuildTree(testCerts.certs, 10, rootSetup(10, 10), 8)},
-	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11), 8)},
-	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12), 8)},
-	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13), 8)},
-	//{fanOut: 14, tree: *BuildTree(testCerts.certs, 14, setup(10, 14), 8)},
-	//{fanOut: 15, tree: *BuildTree(testCerts.certs, 15, setup(10, 15), 8)},
-	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16, setup(10, 16), 8)},
-	//{fanOut: 17, tree: *BuildTree(testCerts.certs, 17, setup(10, 17), 8)},
-	//{fanOut: 18, tree: *BuildTree(testCerts.certs, 18, setup(10, 18), 8)},
-	//{fanOut: 19, tree: *BuildTree(testCerts.certs, 19, setup(10, 19), 8)},
-	//{fanOut: 20, tree: *BuildTree(testCerts.certs, 20, setup(10, 20), 8)},
-	//{fanOut: 25, tree: *BuildTree(testCerts.certs, 25, setup(10, 25), 8)},
+	//{fanOut: 2, tree: *rootBuildTree(rootTestCerts.certs, 2, rootSetup(10, 2), 8)},
+	//{fanOut: 4, tree: *rootBuildTree(rootTestCerts.certs, 4, rootSetup(10, 4), 8)},
+	{fanOut: 8, tree: *rootBuildTree(rootTestCerts.certs, 8, rootSetup(10, 8), 8)},
+	{fanOut: 16, tree: *rootBuildTree(rootTestCerts.certs, 16, rootSetup(10, 16), 8)},
+	//{fanOut: 32, tree: *rootBuildTree(rootTestCerts.certs, 32, rootSetup(10, 32), 8)},
+	//{fanOut: 64, tree: *rootBuildTree(rootTestCerts.certs, 64, rootSetup(10, 64), 8)},
+	//{fanOut: 128, tree: *rootBuildTree(rootTestCerts.certs, 128, rootSetup(10, 128), 8)},
+	//{fanOut: 256, tree: *rootBuildTree(rootTestCerts.certs, 256, rootSetup(10, 256), 8)},
+	//{fanOut: 512, tree: *rootBuildTree(rootTestCerts.certs, 512, rootSetup(10, 512), 8)},
+	//{fanOut: 1024, tree: *rootBuildTree(rootTestCerts.certs, 1024, rootSetup(10, 1024), 8)},
 }
 
 var fanOuts = struct {
@@ -90,14 +80,14 @@ func TestRootMembershipProof(t *testing.T) {
 }
 func TestRootMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
-	max := len(testCerts.certs)
+	max := len(rootTestCerts.certs)
 	fanOut := 10
 	pk := rootSetup(10, fanOut)
-	verkTree := rootBuildTree(testCerts.certs, fanOut, pk, 8)
+	verkTree := rootBuildTree(rootTestCerts.certs, fanOut, pk, 8)
 
 	for i := 0; i < 10; i++ {
 		randNumb := rand.Intn(max)
-		mp := rootCreateMembershipProof(testCerts.certs[randNumb], *verkTree)
+		mp := rootCreateMembershipProof(rootTestCerts.certs[randNumb], *verkTree)
 		didPointVerify := rootVerifyMembershipProof(mp, pk)
 		if didPointVerify != true {
 			t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, true)
@@ -109,11 +99,11 @@ func TestRootMembershipProofRealCerts(t *testing.T) {
 func TestRootNegativeMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestNegativeMembershipProofRealCerts Running")
 	fanOut := 10
-	certToTest := testCerts.certs[30242]
+	certToTest := rootTestCerts.certs[30242]
 	pk1 := rootSetup(10, fanOut)
 	pk2 := rootSetup(10, fanOut)
-	verkTree1 := rootBuildTree(testCerts.certs[:50000], fanOut, pk1, 8)
-	verkTree2 := rootBuildTree(testCerts.certs[:50000], fanOut, pk2, 8)
+	verkTree1 := rootBuildTree(rootTestCerts.certs[:50000], fanOut, pk1, 8)
+	verkTree2 := rootBuildTree(rootTestCerts.certs[:50000], fanOut, pk2, 8)
 	memProof := rootCreateMembershipProof(certToTest, *verkTree1)
 	if rootVerifyMembershipProof(memProof, verkTree2.pk) {
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
@@ -125,8 +115,8 @@ func TestRootNegativeVerifyTree(t *testing.T) {
 	fanOut := 10
 	pk1 := rootSetup(10, fanOut)
 	pk2 := rootSetup(10, fanOut)
-	verkTree1 := rootBuildTree(testCerts.certs, fanOut, pk1, 8)
-	if rootVerifyTree(testCerts.certs, *verkTree1, pk2, 8) {
+	verkTree1 := rootBuildTree(rootTestCerts.certs, fanOut, pk1, 8)
+	if rootVerifyTree(rootTestCerts.certs, *verkTree1, pk2, 8) {
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
 	}
 }
@@ -135,8 +125,8 @@ func TestRootDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees -  starting")
 	fanOut := 10
 	pk1 := rootSetup(10, fanOut)
-	verkTree1 := rootBuildTree(testCerts.certs, fanOut, pk1, 8)
-	verkTree2 := rootBuildTree(testCerts.certs, fanOut, pk1, 800)
+	verkTree1 := rootBuildTree(rootTestCerts.certs, fanOut, pk1, 8)
+	verkTree2 := rootBuildTree(rootTestCerts.certs, fanOut, pk1, 800)
 
 	if !verkTree1.Root.ownVectorCommit.IsEqual(&verkTree2.Root.ownVectorCommit) {
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
@@ -149,7 +139,7 @@ func TestRootDifferentAmountOfThreads(t *testing.T) {
 
 	for threads := 1; threads < 20; threads++ {
 		start := time.Now()
-		rootBuildTree(testCerts.certs, fanOut, pk, threads)
+		rootBuildTree(rootTestCerts.certs, fanOut, pk, threads)
 		elapsed := time.Since(start)
 		fmt.Println("Time elapsed making tree with fanout: ", fanOut, " and threads:", threads, "is: ", elapsed)
 	}
@@ -166,7 +156,7 @@ func TestRootRealCertificatesTime(t *testing.T) {
 		start = time.Now()
 		var verkTree *rootVerkleTree
 		for i := 0; i < testAmount; i++ {
-			verkTree = rootBuildTree(testCerts.certs, fanOut, pk, 8)
+			verkTree = rootBuildTree(rootTestCerts.certs, fanOut, pk, 8)
 		}
 		elapsed2 := time.Since(start).Seconds() / float64(testAmount)
 		fmt.Println("Built tree time : ", elapsed2, "seconds")
@@ -174,7 +164,7 @@ func TestRootRealCertificatesTime(t *testing.T) {
 		start = time.Now()
 		var result bool
 		for i := 0; i < testAmount; i++ {
-			result = rootVerifyTree(testCerts.certs, *verkTree, pk, 8)
+			result = rootVerifyTree(rootTestCerts.certs, *verkTree, pk, 8)
 		}
 		elapsed3 := time.Since(start).Seconds() / float64(testAmount)
 		fmt.Println("VerifyTree time : ", elapsed3, "seconds")
@@ -185,7 +175,65 @@ func TestRootRealCertificatesTime(t *testing.T) {
 	}
 }
 
-// go test -bench=BenchmarkRootBuildTreeTime -run=^a -benchtime=1x -benchmem  -timeout 99999s | tee verkrootBuildTreeBench.txt
+// Tests whether the JSON converter works correctly, by comparing the membership proofs from before and after using it.
+func TestRootJsonConverter(t *testing.T) {
+	fmt.Println("TestJsonConverter Running")
+	fanOut := 2
+
+	pk := rootSetup(30, fanOut)
+
+	verkTree := rootBuildTree(rootTestCerts.certs, fanOut, pk, 8)
+
+	mp := rootCreateMembershipProof(rootTestCerts.certs[1], *verkTree)
+	//fmt.Println("Before set bytes:")
+	//fmt.Println(mp.Commitments[1])
+	//copuy := mp.Commitments[1]
+	bytesss := mp.Commitments[1].Bytes()
+	mp.Commitments[1].SetBytes(bytesss)
+	//fmt.Println("After set bytes")
+	//fmt.Println(mp.Commitments[1])
+	//fmt.Println("But are they are equal: ", copuy.IsEqual(&mp.Commitments[1]))
+
+	didPointVerify := rootVerifyMembershipProof(mp, pk)
+	if didPointVerify != true {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, true)
+	}
+	jsonTest := rootCreateJsonOfMembershipProof(mp)
+
+	retrievedMP := rootRetrieveMembershipProofFromJson(jsonTest)
+	//fmt.Println("retrieved mp", retrievedMP)
+	didPointVerify = rootVerifyMembershipProof(retrievedMP, pk)
+	if didPointVerify != true {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, true)
+	}
+	//fmt.Println("WHat is going on", retrievedMP)
+	for i := range mp.Witnesses {
+		if !mp.Witnesses[i].W.IsEqual(&retrievedMP.Witnesses[i].W) {
+			fmt.Println("They are not equal, send help!")
+		}
+	}
+}
+
+// Function to test the size of the witness/proofs needed for different fanouts of the tree.
+func TestRootSizeOfWitnesses(t *testing.T) {
+	fmt.Println("TestSizeOfWitnesses Running")
+
+	randInt := rand.Intn(len(rootTestCerts.certs))
+	randomCert := rootTestCerts.certs[randInt]
+	fmt.Println("Set the random cert")
+	witnessList := make([][]byte, len(rootTable))
+	fmt.Println("Made witness list")
+	for i, v := range rootTable {
+		witnessList[i] = rootCreateJsonOfMembershipProof(rootCreateMembershipProof(randomCert, v.tree))
+	}
+	fmt.Println("Finished making json proofs")
+	for i, v := range witnessList {
+		fmt.Println("At fanout ", rootTable[i].fanOut, " and ", len(rootTestCerts.certs), " certificates, the size of the witness is", len(v))
+	}
+
+}
+
+// go test -bench=BenchmarkRootBuildTreeTime -run=^a -benchtime=1x -benchmem  -timeout 99999s | tee verkRootBuildTreeBench.txt
 func BenchmarkRootBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkRootBuildTreeTime Running")
 	b.ResetTimer()
@@ -193,9 +241,89 @@ func BenchmarkRootBuildTreeTime(b *testing.B) {
 		b.Run(fmt.Sprintf("fanOut: %d", v), func(b *testing.B) {
 			fanOut := v
 			pk := rootSetup(4, fanOut)
+			//rootSetup(4, fanOut)
+			b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				rootBuildTree(rootTestCerts.certs, fanOut, pk, 12)
+			}
+		})
+	}
+}
+
+// go test -bench=BenchmarkRootVerifyNode -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee verkRootVerifyMemProofBench.txt
+func BenchmarkRootVerifyNode(b *testing.B) {
+	fmt.Println("BenchmarkRootVerifyNode Running")
+	b.ResetTimer()
+
+	for _, v := range rootTable {
+		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				rootBuildTree(testCerts.certs, fanOut, pk, 12)
+				rootVerifyNode(rootTestCerts.certs[i], v.tree)
+			}
+		})
+	}
+}
+
+// go test -bench=BenchmarkRootCreateMembershipProof -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee verkRootVerifyMemProofBench.txt
+func BenchmarkRootCreateMembershipProof(b *testing.B) {
+	fmt.Println("BenchmarkRootCreateMembershipProof Running")
+
+	randomCerts := make([][]byte, 10000)
+
+	for k := range randomCerts {
+		randInt := rand.Intn(len(testCerts.certs))
+		randomCerts[k] = rootTestCerts.certs[randInt]
+	}
+
+	b.ResetTimer()
+	for _, v := range rootTable {
+		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
+			//b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				rootCreateMembershipProof(randomCerts[i], v.tree)
+			}
+		})
+	}
+}
+
+// To run this test
+// go test -bench=BenchmarkRootVerifyMembershipProof -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee VerkRootVerifyWitnessBench.txt
+func BenchmarkRootVerifyMembershipProof(b *testing.B) {
+	fmt.Println("BenchmarkRootVerifyMembershipProof Running")
+	testAmount := 10 //Change if you change -benchtime=10000x
+	certsToTest := make([][]byte, testAmount)
+	witnesses := make([][]rootMembershipProof, len(rootTable))
+	start := time.Now()
+	for o := range witnesses {
+		witnesses[o] = make([]rootMembershipProof, testAmount)
+	}
+	elapsed := time.Since(start)
+	fmt.Println("Time spent after witness 1", elapsed)
+
+	//Get certs to test
+	for k := range testAmount {
+		randInt := rand.Intn(len(rootTestCerts.certs))
+		certsToTest[k] = rootTestCerts.certs[randInt]
+		//(0, len(testCerts.certs))
+	}
+	elapsed = time.Since(start)
+	fmt.Println("Time spent after witness 2", elapsed)
+	//get proofs from the different trees
+	for i, v := range rootTable {
+		for k := range testAmount {
+			witnesses[i][k] = rootCreateMembershipProof(certsToTest[k], v.tree)
+		}
+	}
+	elapsed = time.Since(start)
+	fmt.Println("Time spent after witness 3", elapsed)
+
+	b.ResetTimer()
+	for o, v := range rootTable {
+		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
+			//b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				rootVerifyMembershipProof(witnesses[o][i], v.tree.pk)
 			}
 		})
 	}

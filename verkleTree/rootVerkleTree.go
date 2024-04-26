@@ -3,9 +3,11 @@ package verkletree
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 	"math"
 	"slices"
 	"sync"
+
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
 
@@ -45,7 +47,7 @@ type rootMembershipProofPortable struct {
 // Function to call with error to avoid overloading methdods with error if statements
 
 // Creates a json from the witness, and returns it. Logs a fatal error if it fails.
-func rootCreateJsonOfMembershipProof(mp membershipProof) []byte {
+func rootCreateJsonOfMembershipProof(mp rootMembershipProof) []byte {
 	commits := make([][]byte, len(mp.Commitments))
 	for i, v := range mp.Commitments {
 		commits[i] = v.BytesCompressed()
@@ -66,7 +68,7 @@ func rootCreateJsonOfMembershipProof(mp membershipProof) []byte {
 }
 
 // Retrieves the membership proof from the provided json. Crashes everything otherwise.
-func rootRetrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
+func rootRetrieveMembershipProofFromJson(jsonFile []byte) rootMembershipProof {
 	var unMarshalled membershipProofPortable
 	json.Unmarshal(jsonFile, &unMarshalled)
 
@@ -75,7 +77,7 @@ func rootRetrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
 		commits[i].SetBytes(v)
 	}
 	length := len(unMarshalled.Index)
-	witnesss := make([]witnessStruct, length)
+	witnesss := make([]rootWitnessStruct, length)
 
 	for i := range length {
 		witnesss[i].Fx0.SetBytes(unMarshalled.Fx0[i])
@@ -84,12 +86,13 @@ func rootRetrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
 	}
 	//fmt.Println("witnesssss", witnesss)
 	//fmt.Println("Comits", commits)
-	return membershipProof{Witnesses: witnesss, Commitments: commits}
+	return rootMembershipProof{Witnesses: witnesss, Commitments: commits}
 }
 
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
 func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) *rootVerkleTree {
+	fmt.Println("BuildTree called with fanout", fanOut)
 	var verk rootVerkleTree
 
 	//Creates a leaf-node for each certificate.
@@ -318,20 +321,20 @@ func rootCreateMembershipProof(cert []byte, tree rootVerkleTree) rootMembershipP
 	for nod.parent != nil {
 
 		if nod.witness == witnessStructEmpty {
-			if isLeaf{
-				for i:= range childCommits{
+			if isLeaf {
+				for i := range childCommits {
 					childCommits[i].SetBytes(nod.parent.children[i].certificate)
 				}
 				isLeaf = false
-			}else {
-				for i:= range childCommits{
+			} else {
+				for i := range childCommits {
 					childCommits[i].SetBytes(nod.parent.children[i].ownCompressVectorCommit)
 				}
 			}
-			
+
 			nod.witness = rootWitnessStruct{W: rootProveGen(tree.pk, childCommits, nod.childNumb),
-											Index: uint64(nod.childNumb),
-											Fx0: childCommits[nod.childNumb]}
+				Index: uint64(nod.childNumb),
+				Fx0:   childCommits[nod.childNumb]}
 		}
 		witnessList = append(witnessList, nod.witness)
 		commitList = append(commitList, nod.parent.ownVectorCommit)
@@ -348,7 +351,7 @@ func rootVerifyMembershipProof(mp rootMembershipProof, pk pubParams) bool {
 		return false
 	}
 	for i := 0; i < len(mp.Witnesses); i++ {
-		witnessIsTrue := rootVerify(pk, mp.Commitments[i], mp.Witnesses[i].W,mp.Witnesses[i].Fx0, int(mp.Witnesses[i].Index))
+		witnessIsTrue := rootVerify(pk, mp.Commitments[i], mp.Witnesses[i].W, mp.Witnesses[i].Fx0, int(mp.Witnesses[i].Index))
 		if !witnessIsTrue {
 			return false
 		}
