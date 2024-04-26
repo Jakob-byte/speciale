@@ -344,14 +344,14 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime Running")
 	b.ResetTimer()
 	for _, v := range fanOuts.v { //Different fanouts
-		for _, o := range threads.v { //Different amount of threads
-			b.Run(fmt.Sprintf("fanOut: %d, threads: %d", v, o), func(b *testing.B) {
+	//	for _, o := range threads.v { //Different amount of threads
+			b.Run(fmt.Sprintf("fanOut: %d", v), func(b *testing.B) {
 				b.ResetTimer()
 				for i := 0; i < b.N; i++ {
-					BuildTree(testCerts.certs, v, o)
+					BuildTree(testCerts.certs, v, 6)
 				}
 			})
-		}
+	//	}
 	}
 }
 

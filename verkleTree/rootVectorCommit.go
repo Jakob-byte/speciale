@@ -28,7 +28,7 @@ type rootpoly struct {
 }
 
 // The witness struct which contains the necessary info for a witness to prove it is contained in a commitment.
-type rootwitnessStruct struct {
+type rootWitnessStruct struct {
 	Index uint64
 	Fx0   e.Scalar
 	W     e.G1
@@ -56,7 +56,7 @@ var rootmutexBuddy sync.Mutex
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
 // The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
 // It returns the public key.
-func rootsetup(security, t int) pubParams {
+func rootSetup(security, t int) pubParams {
 	//Sets up the generator elements, as well as the secret key a.
 	g1 := e.G1Generator()
 	g2 := e.G2Generator()

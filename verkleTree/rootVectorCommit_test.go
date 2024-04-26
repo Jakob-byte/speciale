@@ -14,14 +14,14 @@ var roottestCerts = struct {
 
 func TestSetup(t *testing.T) {
 	start := time.Now()
-	rootsetup(42, 1024)
+	rootSetup(42, 1024)
 	elapsed := time.Since(start)
 	fmt.Println("timed: ", elapsed)
 }
 
 func TestCommitRoot(t *testing.T) {
 
-	params := rootsetup(42, 10)
+	params := rootSetup(42, 10)
 
 	scalVect := certToScalarVector(testCerts.certs[:10])
 	commitment := rootCommit(params, scalVect)
@@ -30,7 +30,7 @@ func TestCommitRoot(t *testing.T) {
 }
 
 func TestProveRoot(t *testing.T) {
-	params := rootsetup(42, 10)
+	params := rootSetup(42, 10)
 	scalVect := certToScalarVector(testCerts.certs[:10])
 	//commitment := rootCommit(params, scalVect)
 	proof := rootProveGen(params, scalVect, 4)
@@ -40,7 +40,7 @@ func TestProveRoot(t *testing.T) {
 func TestVerifyRoot(t *testing.T) {
 	start := time.Now()
 	fanout := 512
-	params := rootsetup(42, fanout)
+	params := rootSetup(42, fanout)
 	elapsed := time.Since(start)
 	fmt.Println("Time setup:", elapsed)
 	start = time.Now()
