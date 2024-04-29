@@ -3,13 +3,16 @@ package verkletree
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
+
+	//"fmt"
 	"math"
 	"slices"
 	"sync"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
+
+// struct representing the nodes in the verkletree
 
 type rootNode struct {
 	parent                  *rootNode
@@ -37,14 +40,13 @@ type rootVerkleTree struct {
 	pk     pubParams
 }
 
+// Struct representing the membership proof as bytes/uint64 so we can transform it into JSON
 type rootMembershipProofPortable struct {
 	Commits [][]byte
 	Index   []uint64
 	Fx0     [][]byte
 	W       [][]byte
 }
-
-// Function to call with error to avoid overloading methdods with error if statements
 
 // Creates a json from the witness, and returns it. Logs a fatal error if it fails.
 func rootCreateJsonOfMembershipProof(mp rootMembershipProof) []byte {
@@ -62,9 +64,9 @@ func rootCreateJsonOfMembershipProof(mp rootMembershipProof) []byte {
 		w[i] = v.W.BytesCompressed()
 	}
 	memProofPort := membershipProofPortable{Commits: commits, Index: index, Fx0: fx0, W: w}
-	jSoooon, err := json.Marshal(memProofPort)
+	mpJson, err := json.Marshal(memProofPort)
 	check(err)
-	return jSoooon
+	return mpJson
 }
 
 // Retrieves the membership proof from the provided json. Crashes everything otherwise.
@@ -92,7 +94,7 @@ func rootRetrieveMembershipProofFromJson(jsonFile []byte) rootMembershipProof {
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
 func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) *rootVerkleTree {
-	fmt.Println("BuildTree called with fanout", fanOut)
+	//fmt.Println("BuildTree called with fanout", fanOut)
 	var verk rootVerkleTree
 
 	//Creates a leaf-node for each certificate.

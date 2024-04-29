@@ -7,24 +7,8 @@ import (
 	//"runtime"
 	"sync"
 
-	//combin "gonum.org/v1/gonum/stat/combin"
-	//	"math/big"
-
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
-
-// The public key struct which contains the g1's, alpha^i*g1. As well as g2 and alpha*g2
-type rootPK struct {
-	g1       e.G1
-	alphaG1s []e.G1
-	g2       e.G2
-	alphaG2  e.G2
-}
-
-// The struct which contains the polynomial stored as a slice.
-type rootpoly struct {
-	coefficients []e.Scalar
-}
 
 // The witness struct which contains the necessary info for a witness to prove it is contained in a commitment.
 type rootWitnessStruct struct {
@@ -33,12 +17,16 @@ type rootWitnessStruct struct {
 	W     e.G1
 }
 
+// A struct containing the precomputed values used for computing the commitment
+// TODO maybe rewrite after knowing what these values actually are
 type precompute struct {
 	invsub []e.Scalar
 	ta     [][]e.Scalar
 	tk     []e.Scalar
 }
 
+// the public key/public paramters containing the nessasary values for calculating the vectorcommit/prove
+// TODO ??? hvad er de her values faktisk, vi har bare skrevet dem ind
 type pubParams struct {
 	degree        int
 	lagrangeBasis []e.G1
@@ -53,8 +41,9 @@ type pubParams struct {
 var rootmutexBuddy sync.Mutex
 
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
+// setup from https://hackmd.io/@Evaldas/SJ9KHoDJF and https://github.com/lunfardo314/verkle
 // The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
-// It returns the public key.
+// It returns the public paramters.
 func rootSetup(security, t int) pubParams {
 	//Sets up the generator elements, as well as the secret key a.
 	g1 := e.G1Generator()
@@ -62,6 +51,7 @@ func rootSetup(security, t int) pubParams {
 	a := new(e.Scalar) //secretkey a, is forgotten and destroyed.
 	a.Random(rand.Reader)
 
+	// setups and defines the slices needed in the public parameters
 	var params pubParams
 	params.degree = t
 	params.lagrangeBasis = make([]e.G1, t)
@@ -73,7 +63,6 @@ func rootSetup(security, t int) pubParams {
 		params.aPrimeDomainI[i] = *new(e.Scalar)
 		params.lagrangeBasis[i] = *e.G1Generator()
 		params.diff2[i] = *e.G2Generator()
-
 	}
 
 	params.zeroG1.SetUint64(0)
@@ -84,31 +73,34 @@ func rootSetup(security, t int) pubParams {
 		params.domain[i].SetUint64(uint64(i))
 	}
 
+	// TODO Generator from aPrimeDomain  what is this domain?
 	for i := range params.aPrimeDomainI {
 		params.aPrimeDomainI[i] = rootaPrime(params, i, params.aPrimeDomainI[i])
 	}
-	// lagrange Basis magic
 
+	// lagrange Basis magic
+	// evaluate the lagrange basis for the given value up to the degree of the polynomial(size of vector to commit)
 	for i := range params.lagrangeBasis {
-		// make evalLagrange func
 		l := evalLagrangeValue(params, i, *a)
 		params.lagrangeBasis[i].ScalarMult(&l, g1)
 	}
-	var e2 e.Scalar
 
+	//TODO more precomupation what is this?
+	var e2 e.Scalar
 	for i := range params.diff2 {
 		e2.Sub(a, &params.domain[i])
 		params.diff2[i].ScalarMult(&e2, g2)
 	}
 
-	//Creates the public key
-
+	// TODO calls the preCalculate function that calculates the invsub,ta & tk
 	params = preCalculate(params)
 
+	//Returns the public key/paramters
 	return params
 }
 
-func evalLagrangeValue(params pubParams, i int, v e.Scalar) e.Scalar {
+// Function to evaluate the lagrange value in the secret value for the given index and secret key a
+func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 	var ret e.Scalar
 	ret.SetOne()
 	numer := new(e.Scalar)
@@ -118,7 +110,8 @@ func evalLagrangeValue(params pubParams, i int, v e.Scalar) e.Scalar {
 		if j == i {
 			continue
 		}
-		numer.Sub(&v, &params.domain[j])
+		// TODO does some magic
+		numer.Sub(&a, &params.domain[j])
 		denom.Sub(&params.domain[i], &params.domain[j])
 		denom.Inv(denom)
 		elem.Mul(numer, denom)
@@ -127,6 +120,7 @@ func evalLagrangeValue(params pubParams, i int, v e.Scalar) e.Scalar {
 	return ret
 }
 
+// TODO function to do some magic? in the public parameters
 func rootaPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
 	ret.SetOne()
 	var eScaler e.Scalar
@@ -141,6 +135,7 @@ func rootaPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
 	return ret
 }
 
+// TODO precalculates values used to find the quotient polynomial?
 func preCalculate(params pubParams) pubParams {
 	params.precalc = &precompute{
 		invsub: make([]e.Scalar, params.degree*2-1),
@@ -191,13 +186,13 @@ func preCalculate(params pubParams) pubParams {
 	return params
 }
 
+// TODO what does this do?
 func invSub(params pubParams, m, j int) e.Scalar {
-	//TODO maybe make nil case?
 	idx := params.degree - 1 + m - j
-	//TODO maybe make set if statement
 	return params.precalc.invsub[idx]
 }
 
+// Calculates the commitment given the pubParams for a given a slice of certs with type e.Scalar
 func rootCommit(params pubParams, certs []e.Scalar) e.G1 {
 
 	var elem e.G1
@@ -211,19 +206,10 @@ func rootCommit(params pubParams, certs []e.Scalar) e.G1 {
 	return ret
 }
 
-func diff(params pubParams, vi, vj, ret e.Scalar) e.Scalar {
-	//switch {
-	//case vi.IsZero() == nil && vj == nil:
-	//	ret.SetUint64(0)
-	//	return ret //TODO maybe remove, as it probably does nothing.. We just don't dare.
-	//case vi != nil && vj == nil:
-	//	ret.Set(&vi)
-	//case vi == nil && vj != nil:
-	//	ret.Set(&vj)
-	//	ret.Neg()
-	//default:
+// helper function to do subtraction
+// TODO Klemz refactored the call to this function out as it doesn't really do anything,
+func diff(vi, vj, ret e.Scalar) e.Scalar {
 	ret.Sub(&vi, &vj)
-	//}
 	return ret
 }
 
@@ -247,10 +233,12 @@ func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 	//return ret
 }
 
+// TODO calculates the quotient polynomial, used for calculating the proof
 func qPoly(params pubParams, certs []e.Scalar, i, m int, y, ret e.Scalar) e.Scalar {
 	var numer e.Scalar
 	if i != m {
-		numer = diff(params, certs[m], y, numer) // TODO skriv number.sub(certs[m],y) da dette er legacy fra det andet kode
+		//numer = diff(certs[m], y, numer) // TODO skriv number.sub(certs[m],y) da dette er legacy fra det andet kode
+		numer.Sub(&certs[m], &y)
 		if numer.IsEqual(&params.zeroG1) == 1 {
 			ret.SetUint64(0)
 			return ret
@@ -277,6 +265,7 @@ func qPoly(params pubParams, certs []e.Scalar, i, m int, y, ret e.Scalar) e.Scal
 
 }
 
+// generates the proof for a index in the given vector of e.Scalar values
 func rootProveGen(params pubParams, certs []e.Scalar, index int) e.G1 {
 
 	var ret e.G1
@@ -291,12 +280,15 @@ func rootProveGen(params pubParams, certs []e.Scalar, index int) e.G1 {
 	return ret
 }
 
-func rootVerify(params pubParams, commit, pi e.G1, v e.Scalar, index int) bool {
-	p1 := e.Pair(&pi, &params.diff2[index])
+// Verifies the commitment and proof
+// TODO refactored Pi to Proof, is that OK ? code makes more sense now
+// TODO refactored v to vi as it is the vector at index i
+func rootVerify(params pubParams, commit, proof e.G1, vi e.Scalar, index int) bool {
+	p1 := e.Pair(&proof, &params.diff2[index])
 
 	o := e.G1Generator()
 
-	o.ScalarMult(&v, o)
+	o.ScalarMult(&vi, o)
 	o.Neg()
 	o.Add(&commit, o)
 	g2Ident := e.G2Generator()

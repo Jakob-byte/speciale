@@ -12,6 +12,7 @@ var roottestCerts = struct {
 	certs: loadCertificates("AllCertsOneFIle20000", 10000),
 }
 
+// TODO rewrite these tests?
 func TestSetup(t *testing.T) {
 	start := time.Now()
 	rootSetup(42, 1024)
