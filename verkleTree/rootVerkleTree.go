@@ -22,8 +22,8 @@ type rootNode struct {
 	ownVectorCommit         e.G1
 	certificate             []byte
 	duplicate               bool
-	id                      int
-	witness                 rootWitnessStruct
+	//id                      int
+	witness rootWitnessStruct
 }
 
 // Membership proof struct containt the neccessary information to verify node belongs to tree.
@@ -38,14 +38,6 @@ type rootVerkleTree struct {
 	leafs  []*rootNode
 	fanOut int
 	pk     pubParams
-}
-
-// Struct representing the membership proof as bytes/uint64 so we can transform it into JSON
-type rootMembershipProofPortable struct {
-	Commits [][]byte
-	Index   []uint64
-	Fx0     [][]byte
-	W       [][]byte
 }
 
 // Creates a json from the witness, and returns it. Logs a fatal error if it fails.
@@ -104,7 +96,7 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 			certificate: certs[i],
 			childNumb:   i % fanOut,
 			duplicate:   false,
-			id:          i,
+			//id:          i,
 		}
 	}
 
@@ -120,11 +112,11 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 	for len(nodes)%fanOut > 0 {
 		appendNode := &rootNode{
 			certificate:     nodes[len(nodes)-1].certificate,
-			childNumb:       (nodes[len(nodes)-1].id + 1) % fanOut,
+			childNumb:       (nodes[len(nodes)-1].childNumb + 1) % fanOut,
 			ownVectorCommit: nodes[len(nodes)-1].ownVectorCommit,
 			children:        nodes[len(nodes)-1].children,
 			duplicate:       true,
-			id:              nodes[len(nodes)-1].id + 1,
+			//id:              nodes[len(nodes)-1].id + 1,
 		}
 		nodes = append(nodes, appendNode)
 	}
@@ -202,11 +194,11 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 	for len(nodes)%fanOut > 0 {
 		appendNode := &rootNode{
 			certificate:     nodes[len(nodes)-1].certificate,
-			childNumb:       (nodes[len(nodes)-1].id + 1) % fanOut,
+			childNumb:       (nodes[len(nodes)-1].childNumb + 1) % fanOut,
 			ownVectorCommit: nodes[len(nodes)-1].ownVectorCommit,
 			children:        nodes[len(nodes)-1].children,
 			duplicate:       true,
-			id:              nodes[len(nodes)-1].id + 1,
+			//id:              nodes[len(nodes)-1].id + 1,
 		}
 		nodes = append(nodes, appendNode)
 	}
@@ -248,7 +240,7 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 			ownCompressVectorCommit: commitment.BytesCompressed(),
 			childNumb:               i % fanOut,
 			children:                childrenList,
-			id:                      i + nodes[0].id/fanOut,
+			//id:                      i + nodes[0].id/fanOut,
 		}
 		//Sets the parent in each of the nodes children.
 		for _, v := range childrenList {
@@ -355,7 +347,7 @@ func rootVerifyMembershipProof(mp rootMembershipProof, pk pubParams) bool {
 	for i := 0; i < len(mp.Witnesses); i++ {
 		witnessIsTrue := rootVerify(pk, mp.Commitments[i], mp.Witnesses[i].W, mp.Witnesses[i].Fx0, int(mp.Witnesses[i].Index))
 		if !witnessIsTrue {
-			return false
+			return witnessIsTrue //refactored this to witnessIsTrue instead of false
 		}
 	}
 	return true

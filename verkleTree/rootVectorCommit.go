@@ -62,7 +62,7 @@ func rootSetup(security, t int) pubParams {
 		params.domain[i] = *new(e.Scalar)
 		params.aPrimeDomainI[i] = *new(e.Scalar)
 		params.lagrangeBasis[i] = *e.G1Generator()
-		params.diff2[i] = *e.G2Generator()
+		params.diff2[i] = *e.G2Generator() // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
 	}
 
 	params.zeroG1.SetUint64(0)
@@ -75,7 +75,7 @@ func rootSetup(security, t int) pubParams {
 
 	// TODO Generator from aPrimeDomain  what is this domain?
 	for i := range params.aPrimeDomainI {
-		params.aPrimeDomainI[i] = rootaPrime(params, i, params.aPrimeDomainI[i])
+		params.aPrimeDomainI[i] = rootAPrime(params, i, params.aPrimeDomainI[i])
 	}
 
 	// lagrange Basis magic
@@ -85,7 +85,7 @@ func rootSetup(security, t int) pubParams {
 		params.lagrangeBasis[i].ScalarMult(&l, g1)
 	}
 
-	//TODO more precomupation what is this?
+	//TODO more precompation what is this?
 	var e2 e.Scalar
 	for i := range params.diff2 {
 		e2.Sub(a, &params.domain[i])
@@ -121,7 +121,7 @@ func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 }
 
 // TODO function to do some magic? in the public parameters
-func rootaPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
+func rootAPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
 	ret.SetOne()
 	var eScaler e.Scalar
 
