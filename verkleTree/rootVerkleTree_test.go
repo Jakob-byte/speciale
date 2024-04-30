@@ -11,9 +11,21 @@ var numThreads = 5
 var rootTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000),
+	certs: loadCertificates("AllCertsOneFIle20000", 1000000),
 }
 
+var fanOuts = struct {
+	v []int
+}{
+	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+}
+
+// TODO edit this to some good amount of certAmount
+var certAmount = struct {
+	c []int
+}{
+	c: []int{10000, 20000, 40000, 80000, 160000, 240000, 480000, 1000000},
+}
 var rootTable = []struct {
 	fanOut int
 	tree   rootVerkleTree
@@ -29,12 +41,6 @@ var rootTable = []struct {
 	//{fanOut: 256, tree: *rootBuildTree(rootTestCerts.certs, 256, rootSetup(10, 256), numThreads)},
 	//{fanOut: 512, tree: *rootBuildTree(rootTestCerts.certs, 512, rootSetup(10, 512), numThreads)},
 	//{fanOut: 1024, tree: *rootBuildTree(rootTestCerts.certs, 1024, rootSetup(10, 1024), numThreads)},
-}
-
-var fanOuts = struct {
-	v []int
-}{
-	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 func TestRootBuildTreeAndVerifyTree(t *testing.T) {
@@ -310,6 +316,30 @@ func BenchmarkRootCreateMembershipProof(b *testing.B) {
 	}
 }
 
+// TODO NOT FINISHED JUST SAME AS ABOVE
+// TODO how do we make these trees do we build them all in this case or earlier??
+func BenchmarkRootCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
+	fmt.Println("BenchmarkRootCreateMembershipProof Running")
+	testAmount := 10 //Change if you change -benchtime=10000x
+
+	randomCerts := make([][]byte, testAmount)
+
+	for k := range randomCerts {
+		randInt := rand.Intn(len(testCerts.certs))
+		randomCerts[k] = rootTestCerts.certs[randInt]
+	}
+
+	b.ResetTimer()
+	for _, v := range rootTable {
+		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
+			//b.ResetTimer()
+			for i := 0; i < b.N; i++ {
+				rootCreateMembershipProof(randomCerts[i], v.tree)
+			}
+		})
+	}
+}
+
 // To run this test
 // go test -bench=BenchmarkRootVerifyMembershipProof -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee VerkRootVerifyWitnessBench.txt
 func BenchmarkRootVerifyMembershipProof(b *testing.B) {
@@ -328,7 +358,6 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 	for k := range testAmount {
 		randInt := rand.Intn(len(rootTestCerts.certs))
 		certsToTest[k] = rootTestCerts.certs[randInt]
-		//(0, len(testCerts.certs))
 	}
 	elapsed = time.Since(start)
 	fmt.Println("Time spent after witness 2", elapsed)
@@ -349,5 +378,23 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 				rootVerifyMembershipProof(witnesses[o][i], v.tree.pk)
 			}
 		})
+	}
+}
+
+// go test -bench=BenchmarkRootDifferentAmountOfCertsBuild -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee BenchmarkRootDifferentAmountOfCertsBuild.txt
+func BenchmarkRootDifferentAmountOfCertsBuild(b *testing.B) {
+	fmt.Println("BenchmarkRootDifferentAmountOfCertsBuild -  starting")
+	//fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
+
+	for _, fan := range fanOuts.v {
+		pk := rootSetup(4, fan)
+		for _, amountOfCerts := range certAmount.c {
+			b.Run(fmt.Sprintf("fanOut: %d and amountOfCerts %d", fan, amountOfCerts), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					rootBuildTree(testCerts.certs[:amountOfCerts], fan, pk, numThreads)
+
+				}
+			})
+		}
 	}
 }

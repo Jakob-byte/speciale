@@ -469,9 +469,9 @@ func BenchmarkDifferentAmountOfThreads(b *testing.B) {
 	}
 }
 
-// go test -bench=BenchmarkDifferentAmountOfCertsBuild -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfThreadsBench.txt
+// go test -bench=BenchmarkDifferentAmountOfCertsBuild -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfCertsBench.txt
 func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
-	fmt.Println("TestDifferentAmountOfThreads -  starting")
+	fmt.Println("BenchmarkRootDifferentAmountOfCertsBuild -  starting")
 	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, fan := range fanOuts {
