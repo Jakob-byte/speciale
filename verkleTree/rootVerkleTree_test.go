@@ -24,7 +24,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{10000, 20000, 40000, 80000, 160000, 240000, 480000, 1000000},
+	c: []int{10000, 20000, 40000, 80000, 160.000, 240000, 480000, 1000000},
 }
 var rootTable = []struct {
 	fanOut int
@@ -318,6 +318,7 @@ func BenchmarkRootCreateMembershipProof(b *testing.B) {
 
 // TODO NOT FINISHED JUST SAME AS ABOVE
 // TODO how do we make these trees do we build them all in this case or earlier??
+// build for fanouts for amountofCerts save in list then generate membershiproof and state what fanout/amount we are in?
 func BenchmarkRootCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
 	fmt.Println("BenchmarkRootCreateMembershipProof Running")
 	testAmount := 10 //Change if you change -benchtime=10000x

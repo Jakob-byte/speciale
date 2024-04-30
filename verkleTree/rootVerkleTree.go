@@ -235,7 +235,14 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 		//elapsed = time.Since(start)
 		//sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
+
+		//witness := rootWitnessStruct{W: rootProveGen(pk, commitment, i%fanOut),
+		//	Index: uint64(i % fanOut),
+		//	Fx0:   childCommits[i%fanOut]}
+
+		// TODO SHOULD WE TRY TO PROOF GEN WHILE BUILDING TREE?? TO SEE RUNTIME?
 		nextLayer[i/fanOut] = &rootNode{
+
 			ownVectorCommit:         commitment,
 			ownCompressVectorCommit: commitment.BytesCompressed(),
 			childNumb:               i % fanOut,
