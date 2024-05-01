@@ -211,7 +211,6 @@ func ta(params pubParams, m, j int, ret e.Scalar) e.Scalar {
 func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 	ret.Set(&params.precalc.tk[m])
 	return ret
-
 }
 
 // TODO calculates the quotient polynomial, used for calculating the proof
