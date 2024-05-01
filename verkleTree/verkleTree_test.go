@@ -10,7 +10,7 @@ import (
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000),
+	certs: loadCertificates("AllCertsOneFIle20000", 1000),
 }
 
 var table = []struct {

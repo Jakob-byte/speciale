@@ -85,7 +85,7 @@ func rootRetrieveMembershipProofFromJson(jsonFile []byte) rootMembershipProof {
 
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
-func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) *rootVerkleTree {
+func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, includeWitnesses bool, numThreads ...int) *rootVerkleTree {
 	//fmt.Println("BuildTree called with fanout", fanOut)
 	var verk rootVerkleTree
 
@@ -99,6 +99,7 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 			//id:          i,
 		}
 	}
+
 
 	//start := time.Now()
 	//fmt.Println("After div calc")
@@ -120,6 +121,7 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 		}
 		nodes = append(nodes, appendNode)
 	}
+	
 
 	//If numThreads not provided, set it to 1.
 	if len(numThreads) == 0 {
@@ -130,8 +132,10 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 	nextLayer := nodes
 	isLeafs := true
 
+
 	//While loop that keeps making layers of the tree until the length of the nextlayer is >1 which means we are at the root of the tree
 	for len(nextLayer) > 1 {
+
 
 		// Calculates how many nodes each thread will be assigned and makes a list for the threads to save their output in
 		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
@@ -156,12 +160,15 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 			wg.Add(1)
 			go func(index int, nodesToUse []*rootNode, isLeafs2 bool) {
 				defer wg.Done()
-				rootMakeLayer(nodesToUse, fanOut, isLeafs2, pk, index, &nextLayer2, &mu)
+				rootMakeLayer(nodesToUse, fanOut, isLeafs2, pk, index, &nextLayer2, &mu, includeWitnesses)
 			}(i/nodesPerThread, nodesForThread, isLeafs)
 
 			i = i + nodesPerThread
 		}
+		
+
 		wg.Wait()
+		
 
 		// collects each threads list of nodes into a single slice of nodes, for the next layer
 		nextLayer = []*rootNode{}
@@ -188,7 +195,7 @@ func rootBuildTree(certs [][]byte, fanOut int, pk pubParams, numThreads ...int) 
 
 // Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams, index int, nextlayerPointer *[][]*rootNode, mu *sync.Mutex) []*rootNode {
+func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams, index int, nextlayerPointer *[][]*rootNode, mu *sync.Mutex, includeWitnesses bool) []*rootNode {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
 	for len(nodes)%fanOut > 0 {
@@ -236,10 +243,6 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 		//sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
 
-		//witness := rootWitnessStruct{W: rootProveGen(pk, commitment, i%fanOut),
-		//	Index: uint64(i % fanOut),
-		//	Fx0:   childCommits[i%fanOut]}
-
 		// TODO SHOULD WE TRY TO PROOF GEN WHILE BUILDING TREE?? TO SEE RUNTIME?
 		nextLayer[i/fanOut] = &rootNode{
 
@@ -250,9 +253,14 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 			//id:                      i + nodes[0].id/fanOut,
 		}
 		//Sets the parent in each of the nodes children.
-		for _, v := range childrenList {
+		for j, v := range childrenList {
+			if includeWitnesses{
+				v.witness = rootWitnessStruct{W: 		rootProveGen(pk, vectToCommit, i%fanOut),
+												Index: 	uint64(i % fanOut),
+												Fx0:   	vectToCommit[j]} 
+			}
 			v.parent = nextLayer[i/fanOut]
-			//v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
+			
 		}
 		i = i + fanOut
 	}
@@ -270,7 +278,7 @@ func rootMakeLayer(nodes []*rootNode, fanOut int, firstLayer bool, pk pubParams,
 // This function takes the certificates, verkletree and public key as input. nIt verifies that the verkletree is built using the given certificates.
 // Returns true if the tree was correctly built and false if not.
 func rootVerifyTree(certs [][]byte, tree rootVerkleTree, pk pubParams, numThreads int) bool {
-	testTree := rootBuildTree(certs, tree.fanOut, pk, numThreads)
+	testTree := rootBuildTree(certs, tree.fanOut, pk,false, numThreads)
 
 	return testTree.Root.ownVectorCommit == tree.Root.ownVectorCommit
 }

@@ -8,6 +8,8 @@ require (
 )
 
 require (
-	golang.org/x/crypto v0.17.0 // indirect
-	golang.org/x/sys v0.15.0 // indirect
+	github.com/aclements/go-moremath v0.0.0-20210112150236-f10218a38794 // indirect
+	golang.org/x/crypto v0.22.0 // indirect
+	golang.org/x/perf v0.0.0-20240404204407-f3e401e020e4 // indirect
+	golang.org/x/sys v0.19.0 // indirect
 )

@@ -454,7 +454,7 @@ func BenchmarkVerifyWitness(b *testing.B) {
 
 // go test -bench=BenchmarkDifferentAmountOfThreads -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfThreadsBench.txt
 func BenchmarkDifferentAmountOfThreads(b *testing.B) {
-	fmt.Println("TestDifferentAmountOfThreads -  starting")
+	fmt.Println("BenchmarkDifferentAmountOfThreads -  starting")
 	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, fan := range fanOuts {
@@ -478,6 +478,7 @@ func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
 		for _, amountOfCerts := range certAmount.c {
 			b.Run(fmt.Sprintf("fanOut: %d and amountOfCerts %d", fan, amountOfCerts), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
+					fmt.Println("len of certs", len(testCerts.certs))
 					BuildTree(testCerts.certs[:amountOfCerts], fan, numThreads)
 
 				}

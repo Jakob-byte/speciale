@@ -156,8 +156,8 @@ func loadCertificates(input string, amount int) [][]byte {
 		}
 	}
 	//Sorts the certificates
-	sort.Slice(fileArray, func(i, j int) bool { return -1 == bytes.Compare(fileArray[i], fileArray[j]) })
-
+	sort.Slice(fileArray, func(i, j int) bool { return bytes.Compare(fileArray[i], fileArray[j]) == -1 })
+	fmt.Println("length of filearray: ", len(fileArray), " capacity of file Array: ", cap(fileArray))
 	return fileArray
 }
 
