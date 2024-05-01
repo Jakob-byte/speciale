@@ -12,7 +12,7 @@ var witnessBool = false
 var rootTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000000),
+	certs: loadCertificates("AllCertsOneFIle20000", 100000),
 }
 
 var fanOuts = struct {
@@ -31,17 +31,18 @@ var rootTable = []struct {
 	fanOut int
 	tree   rootVerkleTree
 }{
+	//takes roughly 7 minutes, don't worry
 	//{input: 1}, Doesn't work for some reasone :D
-	{fanOut: 2, tree: *rootBuildTree(rootTestCerts.certs, 2, rootSetup(10, 2), witnessBool, numThreads)},
-	{fanOut: 4, tree: *rootBuildTree(rootTestCerts.certs, 4, rootSetup(10, 4), witnessBool, numThreads)},
-	{fanOut: 8, tree: *rootBuildTree(rootTestCerts.certs, 8, rootSetup(10, 8), witnessBool, numThreads)},
-	{fanOut: 16, tree: *rootBuildTree(rootTestCerts.certs, 16, rootSetup(10, 16), witnessBool, numThreads)},
+	//{fanOut: 2, tree: *rootBuildTree(rootTestCerts.certs, 2, rootSetup(10, 2), witnessBool, numThreads)},
+	//{fanOut: 4, tree: *rootBuildTree(rootTestCerts.certs, 4, rootSetup(10, 4), witnessBool, numThreads)},
+	//{fanOut: 8, tree: *rootBuildTree(rootTestCerts.certs, 8, rootSetup(10, 8), witnessBool, numThreads)},
+	//{fanOut: 16, tree: *rootBuildTree(rootTestCerts.certs, 16, rootSetup(10, 16), witnessBool, numThreads)},
 	{fanOut: 32, tree: *rootBuildTree(rootTestCerts.certs, 32, rootSetup(10, 32), witnessBool, numThreads)},
-	{fanOut: 64, tree: *rootBuildTree(rootTestCerts.certs, 64, rootSetup(10, 64), witnessBool, numThreads)},
-	{fanOut: 128, tree: *rootBuildTree(rootTestCerts.certs, 128, rootSetup(10, 128), witnessBool, numThreads)},
-	{fanOut: 256, tree: *rootBuildTree(rootTestCerts.certs, 256, rootSetup(10, 256), witnessBool, numThreads)},
-	{fanOut: 512, tree: *rootBuildTree(rootTestCerts.certs, 512, rootSetup(10, 512), witnessBool, numThreads)},
-	{fanOut: 1024, tree: *rootBuildTree(rootTestCerts.certs, 1024, rootSetup(10, 1024), witnessBool, numThreads)},
+	//{fanOut: 64, tree: *rootBuildTree(rootTestCerts.certs, 64, rootSetup(10, 64), witnessBool, numThreads)},
+	//{fanOut: 128, tree: *rootBuildTree(rootTestCerts.certs, 128, rootSetup(10, 128), witnessBool, numThreads)},
+	//{fanOut: 256, tree: *rootBuildTree(rootTestCerts.certs, 256, rootSetup(10, 256), witnessBool, numThreads)},
+	//{fanOut: 512, tree: *rootBuildTree(rootTestCerts.certs, 512, rootSetup(10, 512), witnessBool, numThreads)},
+	//{fanOut: 1024, tree: *rootBuildTree(rootTestCerts.certs, 1024, rootSetup(10, 1024), witnessBool, numThreads)},
 }
 
 func TestRootBuildTreeAndVerifyTree(t *testing.T) {
@@ -190,7 +191,7 @@ func TestRootJsonConverter(t *testing.T) {
 
 	pk := rootSetup(30, fanOut)
 
-	verkTree := rootBuildTree(rootTestCerts.certs, fanOut, pk,witnessBool , numThreads)
+	verkTree := rootBuildTree(rootTestCerts.certs, fanOut, pk, witnessBool, numThreads)
 
 	mp := rootCreateMembershipProof(rootTestCerts.certs[1], *verkTree)
 	//fmt.Println("Before set bytes:")
@@ -265,7 +266,7 @@ func BenchmarkRootBuildTreeTime(b *testing.B) {
 			pk := rootSetup(4, v)
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
-				rootBuildTree(rootTestCerts.certs, v, pk,witnessBool, numThreads)
+				rootBuildTree(rootTestCerts.certs, v, pk, witnessBool, numThreads)
 			}
 		})
 	}

@@ -5,7 +5,6 @@ import (
 
 	//"fmt"
 	//"runtime"
-	"sync"
 
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
@@ -38,8 +37,6 @@ type pubParams struct {
 	oneG1         e.Scalar
 }
 
-var rootmutexBuddy sync.Mutex
-
 // type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
 // setup from https://hackmd.io/@Evaldas/SJ9KHoDJF and https://github.com/lunfardo314/verkle
 // The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
@@ -61,8 +58,8 @@ func rootSetup(security, t int) pubParams {
 	for i := range params.lagrangeBasis {
 		params.domain[i] = *new(e.Scalar)
 		params.aPrimeDomainI[i] = *new(e.Scalar)
-		params.lagrangeBasis[i] = *e.G1Generator()
-		params.diff2[i] = *e.G2Generator() // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
+		params.lagrangeBasis[i] = *g1
+		params.diff2[i] = *g2 // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
 	}
 
 	params.zeroG1.SetUint64(0)
@@ -206,13 +203,6 @@ func rootCommit(params pubParams, certs []e.Scalar) e.G1 {
 	return ret
 }
 
-// helper function to do subtraction
-// TODO Klemz refactored the call to this function out as it doesn't really do anything,
-func diff(vi, vj, ret e.Scalar) e.Scalar {
-	ret.Sub(&vi, &vj)
-	return ret
-}
-
 func ta(params pubParams, m, j int, ret e.Scalar) e.Scalar {
 	ret.Set(&params.precalc.ta[m][j])
 	return ret
@@ -221,16 +211,7 @@ func ta(params pubParams, m, j int, ret e.Scalar) e.Scalar {
 func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 	ret.Set(&params.precalc.tk[m])
 	return ret
-	//ret.SetUint64(0)
-	//var t e.Scalar
-	//for j := 0; j < params.degree; j++ {
-	//	if j == m {
-	//		continue
-	//	}
-	//	tempTA := ta(params, m, j, t)
-	//	ret.Add(&ret, &tempTA)
-	//}
-	//return ret
+
 }
 
 // TODO calculates the quotient polynomial, used for calculating the proof
