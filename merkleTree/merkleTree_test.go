@@ -12,7 +12,7 @@ var numThreads = 5
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000000), //TODO change back to 1 million
+	certs: loadCertificates("AllCertsOneFile20000", 1000000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {

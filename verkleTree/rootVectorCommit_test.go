@@ -9,7 +9,7 @@ import (
 var roottestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 1000),
+	certs: loadCertificates("AllCertsOneFile20000", 1000),
 }
 
 // TODO rewrite these tests?

@@ -12,7 +12,7 @@ var witnessBool = false
 var rootTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFIle20000", 100000),
+	certs: loadCertificates("AllCertsOneFile20000", 100000),
 }
 
 var fanOuts = struct {
