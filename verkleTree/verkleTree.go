@@ -2,15 +2,10 @@ package verkletree
 
 import (
 	"bytes"
-	"crypto/sha256"
 	"encoding/json"
-	"sort"
 
 	"math"
-	"regexp"
 	"slices"
-	"strconv"
-	"strings"
 	"sync"
 
 	//"runtime"
@@ -21,7 +16,6 @@ import (
 
 	"fmt"
 	"log"
-	"os"
 )
 
 // struct for representing a node in the tree
@@ -110,94 +104,6 @@ func retrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
 	//fmt.Println("witnesssss", witnesss)
 	//fmt.Println("Comits", commits)
 	return membershipProof{Witnesses: witnesss, Commitments: commits}
-}
-
-// Creates a json from the witness, and returns it. Logs a fatal error if it fails.
-func genJsonWitness(wit any) []byte {
-	json, err := json.Marshal(wit)
-	check(err)
-	return json
-
-}
-
-// function to load certificates given, input which is the directory and amount represented as a list of ints,
-// where [0] is the amount of certificates to load from said directory.
-// returns a [][]byte list/array of files
-func loadCertificates(input string, amount int) [][]byte {
-	var fileArray [][]byte
-	files := 1
-	stuffToRead := 20000
-	if amount > stuffToRead {
-		files = int(math.Ceil(float64(amount) / float64(stuffToRead)))
-	}
-
-	certThreadList := make([][][]byte, (amount/stuffToRead)+1)
-
-	var mu sync.Mutex
-	var wg sync.WaitGroup
-
-	for i := 0; i < files; i++ {
-		if i == files-1 {
-			stuffToRead = amount - i*stuffToRead
-		}
-		wg.Add(1)
-
-		go func(index int, amountToRead int) {
-			defer wg.Done()
-			loadCertificatesFromOneFile(input+"-"+strconv.Itoa(index)+".crt", index, &certThreadList, &mu, amountToRead)
-		}(i, stuffToRead)
-	}
-	wg.Wait()
-
-	for _, v := range certThreadList {
-
-		if len(v) > 0 {
-			fileArray = append(fileArray, v...)
-		}
-	}
-	//Sorts the certificates
-	sort.Slice(fileArray, func(i, j int) bool { return bytes.Compare(fileArray[i], fileArray[j]) == -1 })
-	fmt.Println("length of filearray: ", len(fileArray), " capacity of file Array: ", cap(fileArray))
-	return fileArray
-}
-
-func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte, mu *sync.Mutex, amount ...int) {
-
-	content, err := os.ReadFile("testCerts/" + input)
-	if err != nil {
-		panic(err)
-	}
-
-	// Convert byte slice to string
-	text := string(content)
-
-	// Define regular expression to extract certificates
-	certRegex := regexp.MustCompile(`(?s)-----BEGIN CERTIFICATE-----(.*?)-----END CERTIFICATE-----`)
-
-	// Find all matches of certificates
-	matches := certRegex.FindAllStringSubmatch(text, -1)
-
-	// Initialize slice to store certificates
-	var certificates [][]byte
-	if len(amount) == 0 {
-		certificates = make([][]byte, len(matches))
-	} else {
-		certificates = make([][]byte, amount[0])
-	}
-
-	// Extract certificates and store them in the slice
-	for i, match := range matches {
-		if len(amount) != 0 && i == amount[0] {
-			break
-		}
-		certificates[i] = []byte(strings.TrimSpace(match[0]))
-	}
-	//for i, cert := range certificates {
-	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
-	//}
-	mu.Lock()
-	defer mu.Unlock()
-	(*listPoint)[index] = certificates
 }
 
 // TODO Taken from combin, make proper cite
@@ -555,91 +461,6 @@ func verifyMembershipProof(mp membershipProof, pk PK) bool {
 	return true
 }
 
-func dumbUpdateLeaf(tree verkleTree, newCert []byte, oldCert []byte) (verkleTree, bool) {
-	var nod *node
-	notInList := true
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, oldCert) {
-			nod = v
-			notInList = false
-		}
-	}
-	if notInList {
-		return tree, false
-	}
-	nod.certificate = newCert
-	listlist := make([][]byte, tree.fanOut)
-	dumbBool := true
-	for nod.parent != nil {
-		//childNumber = nod.id % tree.fanOut
-		if dumbBool {
-			for i, v := range nod.parent.children {
-				listlist[i] = v.certificate
-			}
-			dumbBool = false
-		} else {
-			for i, v := range nod.parent.children {
-				listlist[i] = v.ownCompressVectorCommit
-			}
-		}
-
-		polyVector := certVectorToPolynomial(listlist, tree.lagrangeBasisList) //TODO what do we do with degComb and divList
-		commitment := commit(tree.pk, polyVector)
-		nod = nod.parent
-		nod.ownVectorCommit = commitment
-		nod.ownCompressVectorCommit = commitment.BytesCompressed()
-	}
-
-	return tree, true
-}
-
-// This function is NOT finished
-// This function updates a leaf in the tree. It takes the old certificate it replaces, the tree and a new certificate to replace the old with as input.
-// Returns the updated tree if the old certificates was in the tree. If it wasn't it just returns the inputted tree.
-func updateLeaf(oldCert []byte, tree verkleTree, newCert []byte) *verkleTree {
-	var nod *node
-	notInList := true
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, oldCert) {
-			nod = v
-			notInList = false
-		}
-	}
-	if notInList {
-		return &tree
-	}
-
-	var childNumber int
-	nod.certificate = newCert
-	sum := sha256.Sum256(newCert)
-
-	for nod.parent != nil {
-		childNumber = nod.id % tree.fanOut
-		var hashList [][32]byte
-		for _, v := range nod.parent.children {
-			if nod.id != v.id {
-				//hashList = append(hashList, v.ownVectorCommit)
-			}
-		}
-
-		// Bla bla
-		var byteToHash []byte
-		for j, v := range hashList {
-			if childNumber == j {
-				byteToHash = append(byteToHash, sum[:]...)
-			}
-			byteToHash = append(byteToHash, v[:]...)
-		}
-		if childNumber == tree.fanOut-1 {
-			byteToHash = append(byteToHash, sum[:]...)
-		}
-		sum = sha256.Sum256(byteToHash)
-		//nod.parent.ownVectorCommit = sum
-		nod = nod.parent
-	}
-	return &tree
-}
-
 // TODO Not finished, only works for certs%fanout != 0.
 func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 	fmt.Println("len of leafs", len(tree.leafs))
@@ -689,17 +510,11 @@ func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
 }
 
 // Not finished
+// TODO
 func deleteLeaf(cert []byte, tree verkleTree) *verkleTree {
 	//TODO: Insert a node or delete a node?
 	//How to do this, what is required??
 	//Diego said this is not required and will be done when rebuilding or somewhere else by the CA
 	fmt.Println("Sike! We cannot delete stuff.")
 	return &tree
-}
-
-// This function loads a single certificate and returns it.
-func loadOneCert(filePath string) []byte {
-	f, err := os.ReadFile(filePath)
-	check(err)
-	return f
 }

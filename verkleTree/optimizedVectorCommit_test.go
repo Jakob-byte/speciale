@@ -6,12 +6,6 @@ import (
 	"time"
 )
 
-var roottestCerts = struct {
-	certs [][]byte
-}{
-	certs: loadCertificates("AllCertsOneFile20000", 1000),
-}
-
 // TODO rewrite these tests?
 func TestSetup(t *testing.T) {
 	start := time.Now()
