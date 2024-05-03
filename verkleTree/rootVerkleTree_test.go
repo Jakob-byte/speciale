@@ -25,7 +25,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{10000}//, 20000, 40000, 80000, 160000, 240000, 480000, 1000000},
+	c: []int{10000}, //, 20000, 40000, 80000, 160000, 240000, 480000, 1000000},
 }
 var rootTable = []struct {
 	fanOut int
