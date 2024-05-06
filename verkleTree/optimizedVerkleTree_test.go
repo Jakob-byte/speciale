@@ -12,7 +12,7 @@ var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 51000),
+	certs: loadCertificates("AllCertsOneFile20000", 1000000),
 }
 
 var fanOuts = struct {
@@ -130,7 +130,7 @@ func TestOptimizedNegativeVerifyTree(t *testing.T) {
 	}
 }
 
-func TestOptimizedDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
+func TestOptimizedDifferentTreesAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees -  starting")
 	fanOut := 10
 	pk1 := optimizedSetup(10, fanOut)
@@ -141,16 +141,19 @@ func TestOptimizedDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
 	}
 }
-func TestOptimizedDifferentAmountOfThreads(t *testing.T) {
-	fmt.Println("TestDifferentAmountOfThreads -  starting")
-	fanOut := 10
+
+// This test is currently modified to see how long it takes to gen tress with/without proofs
+// Previously used to test how many threads were optimal for the CPU
+func TestOptimizedDifferentAmountOfCertsWithWithoutProofs(t *testing.T) {
+	fmt.Println("TestOptimizedDifferentAmountOfCertsWithWithoutProofs -  starting")
+	fanOut := 2
 	pk := optimizedSetup(42, fanOut)
 
-	for threads := 1; threads < 20; threads++ {
+	for amountOfCerts := 100000; amountOfCerts <= 1000000; amountOfCerts += 100000 {
 		start := time.Now()
-		optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk, witnessBool, threads)
+		optimizedBuildTree(optimizedTestCerts.certs[:amountOfCerts], fanOut, pk, true, 8)
 		elapsed := time.Since(start)
-		fmt.Println("Time elapsed making tree with fanout: ", fanOut, " and threads:", threads, "is: ", elapsed)
+		fmt.Println("Time elapsed making tree with fanout: ", fanOut, " and threads:", amountOfCerts, "is: ", elapsed, " and time now is: ", time.Now())
 	}
 }
 

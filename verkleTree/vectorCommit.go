@@ -100,28 +100,28 @@ func calcPoly(x uint64, poly poly) e.Scalar {
 // Calculates the divident used in buildtree. Takes the fanout and the unique combinations as input.
 // Returns the dividents as a list.
 // TODO redegør for det her med math!
-func dividentCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
-	dividentList := make([]e.Scalar, fanOut)
-	var divident e.Scalar
-	divident.SetOne()
+func dividendCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
+	dividendList := make([]e.Scalar, fanOut)
+	var dividend e.Scalar
+	dividend.SetOne()
 	var iScalar e.Scalar
 	for i := 0; i < fanOut; i++ {
 		if i != 0 {
 			iScalar.SetUint64(uint64(i))
-			divident.Mul(&divident, &iScalar)
+			dividend.Mul(&dividend, &iScalar)
 		}
 	}
-	divident.Inv(&divident)
-	dividentList[0] = divident
+	dividend.Inv(&dividend)
+	dividendList[0] = dividend
 
-	var dividentMinusI e.Scalar
+	var dividendMinusI e.Scalar
 	var divToBe e.Scalar
 	var sumDiv e.Scalar
 	var cScalar e.Scalar
 	var iInPowerOfJ e.Scalar
 	//TODO black magic
 	for i := 1; i < fanOut; i++ {
-		dividentMinusI.SetUint64(0)
+		dividendMinusI.SetUint64(0)
 		for j, combs := range degreeComb {
 			sumDiv.SetUint64(0)
 			for _, comb := range combs {
@@ -147,21 +147,21 @@ func dividentCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
 				sumDiv.Neg()
 			}
 			//dividentMinusI += sumDiv
-			dividentMinusI.Add(&dividentMinusI, &sumDiv)
+			dividendMinusI.Add(&dividendMinusI, &sumDiv)
 		}
 		// inverse it so when we multiply with it, it will work as division!!!
 
-		dividentMinusI.Inv(&dividentMinusI)
+		dividendMinusI.Inv(&dividendMinusI)
 
-		dividentList[i] = dividentMinusI
+		dividendList[i] = dividendMinusI
 	}
-	return dividentList
+	return dividendList
 }
 
-func lagrangeBasisForGivenI(indexI int, fanOut int, dividentList []e.Scalar, degreeComb [][][]int, lagrangeBasisList *[][]e.Scalar) []e.Scalar {
+func lagrangeBasisForGivenI(indexI int, fanOut int, dividendList []e.Scalar, degreeComb [][][]int, lagrangeBasisList *[][]e.Scalar) []e.Scalar {
 	var coefToBe e.Scalar
 	var combScalar e.Scalar
-	dividentMinusI := dividentList[indexI]
+	dividendMinusI := dividendList[indexI]
 	coefToBeList := make([]e.Scalar, fanOut-1)
 
 	// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
@@ -182,7 +182,7 @@ func lagrangeBasisForGivenI(indexI int, fanOut int, dividentList []e.Scalar, deg
 				if ((j) % 2) == 0 {
 					coefToBe.Neg()
 				}
-				coefToBe.Mul(&coefToBe, &dividentMinusI)
+				coefToBe.Mul(&coefToBe, &dividendMinusI)
 
 				coefToBeList[j].Add(&coefToBe, &coefToBeList[j])
 			}
@@ -195,16 +195,16 @@ func lagrangeBasisForGivenI(indexI int, fanOut int, dividentList []e.Scalar, deg
 	return coefToBeList
 }
 
-func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividentList []e.Scalar) [][]e.Scalar {
+func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividendList []e.Scalar) [][]e.Scalar {
 	// var lagrangeBasisList [][]e.Scalar
 	lagrangeBasisList := make([][]e.Scalar, fanOut)
 	var wg sync.WaitGroup
 	for i := 0; i < fanOut; i++ {
 		wg.Add(1)
-		go func() {
+		go func(index int) {
 			defer wg.Done()
-			lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList)
-		}()
+			lagrangeBasisForGivenI(index, fanOut, dividendList, degreeComb, &lagrangeBasisList)
+		}(i)
 		//numGoroutines := runtime.NumGoroutine()
 		//fmt.Println("Number of active goroutines:", numGoroutines)
 

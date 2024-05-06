@@ -1,18 +1,6 @@
-from OpenSSL import crypto, SSL
+from OpenSSL import crypto
 import random
 import string
-import os
-import sys
-
-def write_random_lowercase(n):
-    min_lc = ord(b'a')
-    len_lc = 26
-    ba = bytearray(os.urandom(n))
-    for i, b in enumerate(ba):
-        ba[i] = min_lc + b % len_lc # convert 0..255 to 97..122
-        
-    return ba
-    return sys.stdout.buffer.write(ba)
 
 
 def cert_gen(

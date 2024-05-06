@@ -218,7 +218,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	//Makes the combinations of integers needed to calculate divident and polynomial.
 	degreeComb := combCalculater(fanOut)
 
-	dividentList := dividentCalculator(fanOut, degreeComb)
+	dividentList := dividendCalculator(fanOut, degreeComb)
 	//start := time.Now()
 	//fmt.Println("After div calc")
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)

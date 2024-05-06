@@ -23,7 +23,7 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points), degreeComb)
+	dividentList := dividendCalculator(len(points), degreeComb)
 	lagrangeBasisList := lagrangeBasisCalc(3, degreeComb, dividentList)
 	thePoly := realVectorToPoly(scalVect, lagrangeBasisList)
 	//fmt.Println("the Coefs!!!:", thePoly.coefficients)
@@ -54,7 +54,7 @@ func TestQuotientPoly(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points), degreeComb)
+	dividentList := dividendCalculator(len(points), degreeComb)
 	lagrangeBasisList := lagrangeBasisCalc(4, degreeComb, dividentList)
 	thePoly := realVectorToPoly(scalVect, lagrangeBasisList)
 	quotientPoly := quotientOfPoly(thePoly, 2)
@@ -92,7 +92,7 @@ func TestCommit(t *testing.T) {
 	for k := len(points) - 1; k > 0; k-- {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
-	dividentList := dividentCalculator(len(points), degreeComb)
+	dividentList := dividendCalculator(len(points), degreeComb)
 	lagrangeBasisList := lagrangeBasisCalc(3, degreeComb, dividentList)
 
 	polynomial := certVectorToPolynomial(points, lagrangeBasisList)
