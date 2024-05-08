@@ -50,11 +50,11 @@ certs = ""
 certsToGen = 20000
 letters = string.ascii_lowercase
 
-for j in range(1,6):
+for j in range(51,500):
     certs = ""
     print("working on file: ", j)
     for i in range(certsToGen):
-        if i % 500 ==0:
+        if i % 1000 ==0:
             k.generate_key(crypto.TYPE_RSA, 4096)
         cName = str(random.randint(10,99))
         stName = str(random.randint(10,99))# write_random_lowercase(10).decode("utf-8")# ''.join(random.choice(letters) for i in range(10))

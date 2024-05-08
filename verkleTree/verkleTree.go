@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	"math"
 	"slices"
 	"sync"
 
@@ -226,19 +225,10 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	//fmt.Println("Time for langrangeBasis: ", elapsed)
 
 	// call to makeLayer to create next layer in the tree
-	nodes := leafs
 
 	//dup nodes
-	for len(nodes)%fanOut > 0 {
-		appendNode := &node{
-			certificate:     nodes[len(nodes)-1].certificate,
-			childNumb:       (nodes[len(nodes)-1].id + 1) % fanOut,
-			ownVectorCommit: nodes[len(nodes)-1].ownVectorCommit,
-			children:        nodes[len(nodes)-1].children,
-			duplicate:       true,
-			id:              nodes[len(nodes)-1].id + 1,
-		}
-		nodes = append(nodes, appendNode)
+	if len(leafs)%fanOut > 0 {
+		leafs = naiveDuplicateNodes(leafs, fanOut)
 	}
 
 	//New thread stuff, comment out to make code run -----------------------------------------------------------------------------------------
@@ -247,16 +237,14 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	}
 
 	//setup for starting to build tree setting nextLayer as the starting point, which is the leaf nodes, setting isLeafs to true.
-	nextLayer := nodes
+	nextLayer := leafs
 	isLeafs := true
 
 	//While loop that keeps making layers of the tree until the length of the nextlayer is >1 which means we are at the root of the tree
 	for len(nextLayer) > 1 {
 
-		// Calculates how many nodes each thread will be assigned and makes a list for the threads to save their output in
-		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
-		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
-		nodesPerThread := int(NodePerThreadcalc)
+		nodesPerThread := nodesPerThreadCalc(fanOut, len(nextLayer), numThreads[0])
+
 		var nodesForThread []*node
 		nextLayer2 := make([][]*node, numThreads[0])
 		var mu sync.Mutex
@@ -299,7 +287,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	verk = verkleTree{
 		fanOut:            fanOut,
 		Root:              nextLayer[0],
-		leafs:             nodes,
+		leafs:             leafs,
 		pk:                pk,
 		lagrangeBasisList: lagrangeBasisList,
 	}
@@ -307,11 +295,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	return &verk
 }
 
-// Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
-// Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
-func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisList [][]e.Scalar, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
-
-	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+func naiveDuplicateNodes(nodes []*node, fanOut int) []*node {
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate:     nodes[len(nodes)-1].certificate,
@@ -323,6 +307,18 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 		}
 		nodes = append(nodes, appendNode)
 	}
+	return nodes
+}
+
+// Handles the creation of the next layer of the verkle tree. Takes the nodes of the previous layer, the fanout, a bool specifying if it is the first layer and the public key as input.
+// Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
+func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisList [][]e.Scalar, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
+
+	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+	if len(nodes)%fanOut > 0 {
+		nodes = naiveDuplicateNodes(nodes, fanOut)
+	}
+
 	//Creates the slice for the next layer, which is len(nodes)/fanOut.
 	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is length of vectors
 

@@ -35,7 +35,7 @@ func TestCreatedPolyEvalsCorrectly(t *testing.T) {
 		answer := calcPoly(uint64(i), thePoly)
 		if answer.IsEqual(&k) == 0 {
 			fmt.Println("Was incorrect for ", i, "should have been", p, "but was", answer)
-			panic("The poly evals incorrectly")
+			t.Error("The poly evals incorrectly")
 		}
 	}
 }
@@ -72,7 +72,7 @@ func TestQuotientPoly(t *testing.T) {
 	//
 	if false {
 		fmt.Println(quotientPoly)
-		panic("it is very wrong")
+		t.Error("it is very wrong")
 	}
 	//fmt.Println("Succes")
 
@@ -99,13 +99,13 @@ func TestCommit(t *testing.T) {
 	commit := commit(pk, polynomial)
 	verifyBool := verifyPoly(pk, commit, polynomial)
 	if !verifyBool {
-		panic("verify Poly was very incorrect")
+		t.Error("verify Poly was very incorrect")
 	}
 
 	witness := createWitness(pk, polynomial, uint64(1))
 	verifyBool = verifyWitness(pk, commit, witness)
 	if !verifyBool {
-		panic("verify witness was very incorrect")
+		t.Error("verify witness was very incorrect")
 	}
 
 	open()

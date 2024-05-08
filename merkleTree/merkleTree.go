@@ -24,7 +24,6 @@ import (
 // struct for representing a node in the tree
 type node struct {
 	parent      *node
-	childNumb   int
 	children    []*node
 	ownHash     [32]byte
 	certificate []byte
@@ -145,46 +144,39 @@ func getWitnessFromJson(jsonWit []byte) witness {
 	return unMarshalled
 }
 
+func nodesPerThreadCalc(fanOut, lenNextLayer, numThreads int) int {
+	NodePerThreadcalc := float64(lenNextLayer) / float64(fanOut)
+	NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads)) * float64(fanOut)
+	nodesPerThread := int(NodePerThreadcalc)
+	return nodesPerThread
+}
+
 func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	var merk merkleTree
 
-	nodes := make([]*node, len(certs))
+	leafs := make([]*node, len(certs))
 
 	//build the leaf nodes of the tree
 	for i := 0; i < len(certs); i++ {
-		nodes[i] = &node{
+		leafs[i] = &node{
 			certificate: certs[i],
-			childNumb:   i % fanOut,
 			ownHash:     sha256.Sum256(certs[i]),
 			duplicate:   false,
 			id:          i,
 		}
 
 	}
-	for len(nodes)%fanOut > 0 {
-		appendNode := &node{
-			certificate: nodes[len(nodes)-1].certificate,
-			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
-			ownHash:     nodes[len(nodes)-1].ownHash,
-			duplicate:   true,
-			id:          nodes[len(nodes)-1].id + 1,
-		}
-		nodes = append(nodes, appendNode)
+	if len(leafs)%fanOut > 0 {
+		leafs = duplicateNodes(leafs, fanOut)
 	}
-
-	//function call to make the next layer
 
 	if len(numThreads) == 0 {
 		numThreads = append(numThreads, 1)
 	}
 
-	nextLayer := nodes
+	nextLayer := leafs
 	for len(nextLayer) > 1 {
-		NodePerThreadcalc := float64(len(nextLayer)) / float64(fanOut)
-		// 1000/3 = 333,333333
-		NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads[0])) * float64(fanOut)
-		//(3333,3333 / 4) * 3 => 84 * 3 =  252
-		nodesPerThread := int(NodePerThreadcalc)
+		nodesPerThread := nodesPerThreadCalc(fanOut, len(nextLayer), numThreads[0])
 		var nodesForThread []*node
 		nextLayer2 := make([][]*node, numThreads[0])
 		var mu sync.Mutex
@@ -233,19 +225,14 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	merk = merkleTree{
 		fanOut: fanOut,
 		Root:   nextLayer[0],
-		leafs:  nodes,
+		leafs:  leafs,
 	}
 	return &merk
 }
-
-func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
-
-	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
-	// hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
+func duplicateNodes(nodes []*node, fanOut int) []*node {
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
 			certificate: nodes[len(nodes)-1].certificate,
-			childNumb:   (nodes[len(nodes)-1].id + 1) % fanOut,
 			ownHash:     nodes[len(nodes)-1].ownHash,
 			children:    nodes[len(nodes)-1].children,
 			duplicate:   true,
@@ -253,7 +240,19 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 		}
 		nodes = append(nodes, appendNode)
 	}
-	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout which is 2 in this case
+
+	return nodes
+}
+
+func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
+
+	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+	// hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
+	if len(nodes)%fanOut > 0 {
+		nodes = duplicateNodes(nodes, fanOut)
+	}
+
+	nextLayer := make([]*node, len(nodes)/fanOut) // divided with fanout
 
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.

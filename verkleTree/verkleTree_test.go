@@ -206,29 +206,6 @@ func TestRealCertificatesTime(t *testing.T) {
 	}
 }
 
-//This test no longer works, as we now sort the certificates.
-//func TestDumbUpdateLeafButEvil(t *testing.T) {
-//	fmt.Println("TestDumbUpdateLeafButEvil Running")
-//	fanOut := 10
-//	pk := setup(4, fanOut)
-//	certArray := testCerts.certs
-//
-//	verkTree := BuildTree(certArray, fanOut, pk, 500)
-//
-//	oneCert := loadOneCert("baguetteCert.crt")
-//
-//	newVerkTree, succes := dumbUpdateLeaf(*verkTree, oneCert, certArray[10])
-//
-//	if !succes {
-//		t.Error("dumbUpdate func failed failed.")
-//	}
-//	certArray[10] = oneCert
-//	itWorked := verifyTree(certArray, newVerkTree, newVerkTree.pk, 500)
-//	if !itWorked {
-//		t.Error("Failed verifying dumb-updated tree")
-//	}
-//}
-
 // Tests whether the JSON converter works correctly, by comparing the membership proofs from before and after using it.
 func TestJsonConverter(t *testing.T) {
 	fmt.Println("TestJsonConverter Running")
@@ -267,26 +244,6 @@ func TestJsonConverter(t *testing.T) {
 		}
 	}
 }
-
-//Insert doesn't work as we have them sorted now.
-//func TestInsertSimple(t *testing.T) {
-//	fmt.Println("TestInsertSimple Running")
-//	fanOut := 3
-//	pk := setup(4, fanOut)
-//	certArray := loadCertificates("AllCertsOneFile20000", 1)
-//	verkTree := BuildTree(certArray, fanOut, pk, 500)
-//	baguetteCert := loadOneCert("baguetteCert.crt")
-//	newTree, itWorked := insertLeaf(baguetteCert, *verkTree)
-//	if !itWorked {
-//		t.Error("inserting baguette certificate into tree failed ")
-//	}
-//	certArray = append(certArray, baguetteCert)
-//	verifiedTree := verifyTree(certArray, newTree, pk, 500)
-//
-//	if !verifiedTree {
-//		t.Error("Somehow insertLeaf worked, but it was not added to the tree. At least not correctly. Have a nice day.")
-//	}
-//}
 
 // TODO is a bad test.
 //
@@ -400,10 +357,9 @@ func BenchmarkCreateMembershipProof(b *testing.B) {
 		randomCerts[k] = testCerts.certs[randInt]
 	}
 
-	b.ResetTimer()
 	for _, v := range table {
+		b.ResetTimer()
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
-			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				createMembershipProof(randomCerts[i], v.tree)
 			}
@@ -442,8 +398,8 @@ func BenchmarkVerifyMembershipProof(b *testing.B) {
 	elapsed = time.Since(start)
 	fmt.Println("Time spent after witness 3", elapsed)
 
-	b.ResetTimer()
 	for o, v := range table {
+		b.ResetTimer()
 		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
 			//b.ResetTimer()
 			for i := 0; i < b.N; i++ {

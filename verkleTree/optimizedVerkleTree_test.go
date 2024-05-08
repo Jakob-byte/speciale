@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-var numThreads = 13
+var numThreads = 8
 var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 1000000),
+	certs: loadCertificates("AllCertsOneFile20000", 50000),
 }
 
 var fanOuts = struct {
@@ -32,17 +32,16 @@ var optimizedTable = []struct {
 	tree   optimizedVerkleTree
 }{
 	//takes roughly 7 minutes, don't worry
-	//{input: 1}, Doesn't work for some reasone :D
-	//{fanOut: 2, tree: *rootBuildTree(rootTestCerts.certs, 2, rootSetup(10, 2), witnessBool, numThreads)},
-	//{fanOut: 4, tree: *rootBuildTree(rootTestCerts.certs, 4, rootSetup(10, 4), witnessBool, numThreads)},
-	//{fanOut: 8, tree: *rootBuildTree(rootTestCerts.certs, 8, rootSetup(10, 8), witnessBool, numThreads)},
-	//{fanOut: 16, tree: *rootBuildTree(rootTestCerts.certs, 16, rootSetup(10, 16), witnessBool, numThreads)},
-	{fanOut: 32, tree: *optimizedBuildTree(optimizedTestCerts.certs, 32, optimizedSetup(10, 32), witnessBool, numThreads)},
-	//{fanOut: 64, tree: *rootBuildTree(rootTestCerts.certs, 64, rootSetup(10, 64), witnessBool, numThreads)},
-	//{fanOut: 128, tree: *rootBuildTree(rootTestCerts.certs, 128, rootSetup(10, 128), witnessBool, numThreads)},
-	//{fanOut: 256, tree: *rootBuildTree(rootTestCerts.certs, 256, rootSetup(10, 256), witnessBool, numThreads)},
-	//{fanOut: 512, tree: *rootBuildTree(rootTestCerts.certs, 512, rootSetup(10, 512), witnessBool, numThreads)},
-	//{fanOut: 1024, tree: *rootBuildTree(rootTestCerts.certs, 1024, rootSetup(10, 1024), witnessBool, numThreads)},
+	//{fanOut: 2, tree: *optimizedBuildTree(optimizedTestCerts.certs, 2, optimizedSetup(10, 2), witnessBool, numThreads)},
+	//{fanOut: 4, tree: *optimizedBuildTree(optimizedTestCerts.certs, 4, optimizedSetup(10, 4), witnessBool, numThreads)},
+	//{fanOut: 8, tree: *optimizedBuildTree(optimizedTestCerts.certs, 8, optimizedSetup(10, 8), witnessBool, numThreads)},
+	{fanOut: 16, tree: *optimizedBuildTree(optimizedTestCerts.certs, 16, optimizedSetup(10, 16), witnessBool, numThreads)},
+	//{fanOut: 32, tree: *optimizedBuildTree(optimizedTestCerts.certs, 32, optimizedSetup(10, 32), witnessBool, numThreads)},
+	//{fanOut: 64, tree: *optimizedBuildTree(optimizedTestCerts.certs, 64, optimizedSetup(10, 64), witnessBool, numThreads)},
+	//{fanOut: 128, tree: *optimizedBuildTree(optimizedTestCerts.certs, 128, optimizedSetup(10, 128), witnessBool, numThreads)},
+	//{fanOut: 256, tree: *optimizedBuildTree(optimizedTestCerts.certs, 256, optimizedSetup(10, 256), witnessBool, numThreads)},
+	//{fanOut: 512, tree: *optimizedBuildTree(optimizedTestCerts.certs, 512, optimizedSetup(10, 512), witnessBool, numThreads)},
+	//{fanOut: 1024, tree: *optimizedBuildTree(optimizedTestCerts.certs, 1024, optimizedSetup(10, 1024), witnessBool, numThreads)},
 }
 
 func TestOptimizedBuildTreeAndVerifyTree(t *testing.T) {
@@ -287,10 +286,11 @@ func BenchmarkOptimizedVerifyNode(b *testing.B) {
 		randInt := rand.Intn(len(optimizedTestCerts.certs))
 		randomCerts[k] = optimizedTestCerts.certs[randInt]
 	}
-
+	b.ResetTimer()
 	for _, v := range optimizedTable {
+
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
-			//b.ResetTimer()
+
 			for i := 0; i < b.N; i++ {
 				optimizedVerifyNode(randomCerts[i], v.tree)
 			}
@@ -300,7 +300,7 @@ func BenchmarkOptimizedVerifyNode(b *testing.B) {
 
 // go test -bench=BenchmarkOptimizedCreateMembershipProof -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee verkRootVerifyMemProofBench.txt
 func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
-	fmt.Println("BenchmarkRootCreateMembershipProof Running")
+	fmt.Println("BenchmarkOptimizedCreateMembershipProof Running")
 	testAmount := 10 //Change if you change -benchtime=10000x
 
 	randomCerts := make([][]byte, testAmount)
@@ -324,8 +324,8 @@ func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 // TODO NOT FINISHED JUST SAME AS ABOVE
 // TODO how do we make these trees do we build them all in this case or earlier??
 // build for fanouts for amountofCerts save in list then generate membershiproof and state what fanout/amount we are in?
-// go test -bench=BenchmarkOptimizedCreateMembershipProofVaryingAmountOfCerts -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee VerkRootCreateMembershipProofBench.txt
-func BenchmarkOptimizedCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
+// go test -bench=BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee VerkRootCreateMembershipProofBench.txt
+func BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
 	fmt.Println("BenchmarkRootCreateMembershipProof Running")
 	testAmount := 10 //Change if you change -benchtime=10000x
 
@@ -344,6 +344,35 @@ func BenchmarkOptimizedCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
 				optimizedCreateMembershipProof(randomCerts[i], v.tree)
 			}
 		})
+	}
+}
+
+// This benchmark measures how the Create Membership proof time decreases after repeated queries.
+// go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=1x -benchmem  -timeout 99999s | tee BenchmarkOptimizedCreateMemProofOverTime.txt
+func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
+	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime Running")
+	averageAmount := 1
+	testAmount := 1000 * averageAmount //Change if you change -benchtime=10000x
+	fmt.Println("akakakkaka", testAmount)
+	randomCerts := make([][]byte, testAmount)
+	fmt.Println("akasdasdakakkaka", len(randomCerts))
+
+	for k := range randomCerts {
+		randInt := rand.Intn(len(optimizedTestCerts.certs))
+		randomCerts[k] = optimizedTestCerts.certs[randInt]
+	}
+
+	for _, v := range optimizedTable {
+		for j := 0; j < testAmount; j += averageAmount {
+			b.ResetTimer()
+			b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
+				//b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					optimizedCreateMembershipProof(randomCerts[j+i], v.tree)
+				}
+
+			})
+		}
 	}
 }
 

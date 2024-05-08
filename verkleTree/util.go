@@ -111,3 +111,10 @@ func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte,
 	defer mu.Unlock()
 	(*listPoint)[index] = certificates
 }
+
+func nodesPerThreadCalc(fanOut, lenNextLayer, numThreads int) int {
+	NodePerThreadcalc := float64(lenNextLayer) / float64(fanOut)
+	NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads)) * float64(fanOut)
+	nodesPerThread := int(NodePerThreadcalc)
+	return nodesPerThread
+}

@@ -294,51 +294,6 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 	}
 }
 
-//	func TestUpdateLeafVerifyLeaf(t *testing.T) {
-//		fmt.Println("TestUpdateLeafVerifyLeaf -  starting")
-//		certArray := loadCertificates("AllCertsOneFile20000", 20000)
-//		merkTree := BuildTree(certArray, 2, numThreads)
-//		newCert := loadOneCert("baguetteCert.crt")
-//		result := verifyNode(newCert, *merkTree)
-//
-//		if result != false {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-//		}
-//
-//		updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
-//
-//		result = verifyNode(certArray[10], *updatedTree)
-//		if result != false {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-//		}
-//
-//		result = verifyNode(newCert, *updatedTree)
-//		if result != true {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-//		}
-//
-// }
-//func TestUpdateLeafVerifyTree(t *testing.T) {
-//	fmt.Println("TestUpdateLeafVerifyTree -  starting")
-//	certArray := loadCertificates("AllCertsOneFile20000", 20000)
-//	merkTree := BuildTree(certArray, 2, numThreads)
-//	newCert := loadOneCert("baguetteCert.crt")
-//	updatedTree := updateLeaf(certArray[10], *merkTree, newCert)
-//
-//	result := verifyTree(certArray, *updatedTree)
-//	if result != false {
-//		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-//	}
-//
-//	certArray[10] = newCert
-//
-//	result = verifyTree(certArray, *updatedTree)
-//
-//	if result != true {
-//		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-//	}
-//}
-
 // Benchmark/party time!!!!!!!
 // Benchmark site https://blog.logrocket.com/benchmarking-golang-improve-function-performance/
 // Loads all certs, to use less for tests use testCerts.certs[:500] to pick the first 500 certs.
