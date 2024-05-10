@@ -301,22 +301,6 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 // To get memory alloc, run each test 100 times and avoid timeout use:
 // go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee old.txt
 
-// To run
-// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee merkBuildTreeBench.txt
-func BenchmarkBuildTreeTime(b *testing.B) {
-	fmt.Println("BenchmarkBuildTreeTime Running")
-	b.ResetTimer()
-	for _, v := range fanOuts.v { //Different fanouts
-		b.Run(fmt.Sprintf("fanOut: %d", v), func(b *testing.B) {
-			b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				BuildTree(testCerts.certs, v, numThreads)
-			}
-		})
-		//	}
-	}
-}
-
 // To run this test
 // go test -bench=BenchmarkVerifyNode -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkVerifyNodeBench.txt
 func BenchmarkVerifyNode(b *testing.B) {
@@ -340,70 +324,6 @@ func BenchmarkVerifyNode(b *testing.B) {
 			}
 		})
 
-	}
-}
-
-// To run this test
-// go test -bench=BenchmarkCreateWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkCreateWitnessBench.txt
-func BenchmarkCreateWitness(b *testing.B) {
-	fmt.Println("BenchmarkVerifyNode Running")
-	testAmount := 1000 //Change if you change -benchtime=10000x
-	randomCerts := make([][]byte, testAmount)
-
-	for k := range randomCerts {
-		randInt := rand.Intn(len(testCerts.certs))
-		randomCerts[k] = testCerts.certs[randInt]
-	}
-
-	b.ResetTimer()
-	for _, v := range table {
-		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
-			//b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				createWitness(randomCerts[i], v.tree)
-			}
-		})
-	}
-}
-
-// To run this test
-// go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=10000x -benchmem  -timeout 99999s | tee merkVerifyWitnessBench.txt
-func BenchmarkVerifyWitness(b *testing.B) {
-	fmt.Println("BenchmarkVerifyNode Running")
-	testAmount := 10000 //Change if you change -benchtime=10000x
-	certsToTest := make([][]byte, testAmount)
-	witnesses := make([][]witness, len(table))
-	start := time.Now()
-	for o := range witnesses {
-		witnesses[o] = make([]witness, testAmount)
-	}
-	elapsed := time.Since(start)
-	fmt.Println("Time spent after witness 1", elapsed)
-
-	//Get certs to test
-	for k := range testAmount {
-		randInt := rand.Intn(len(testCerts.certs))
-		certsToTest[k] = testCerts.certs[randInt]
-	}
-	elapsed = time.Since(start)
-	fmt.Println("Time spent after witness 2", elapsed)
-	//get proofs from the different trees
-	for i, v := range table {
-		for k := range testAmount {
-			witnesses[i][k] = createWitness(certsToTest[k], v.tree)
-		}
-	}
-	elapsed = time.Since(start)
-	fmt.Println("Time spent after witness 3", elapsed)
-
-	b.ResetTimer()
-	for o, v := range table {
-		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
-			//b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				verifyWitness(certsToTest[i], witnesses[o][i], v.tree)
-			}
-		})
 	}
 }
 
@@ -436,6 +356,78 @@ func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
 					fmt.Println("len of certs", len(testCerts.certs))
 					BuildTree(testCerts.certs[:amountOfCerts], fan, numThreads)
 
+				}
+			})
+		}
+	}
+}
+
+// TODO test on server
+// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 999999s | tee merkBuildTreeBench.txt
+func BenchmarkBuildTreeTime(b *testing.B) {
+	fmt.Println("BenchmarkBuildTreeTime - startingg")
+	b.ResetTimer()
+	for _, certs := range certAmount.c {
+		for _, f := range fanOuts.v { //Different fanouts
+			b.Run(fmt.Sprintf("fan-out: %d, certs: %d", f, certs), func(b *testing.B) {
+				b.ResetTimer()
+				for i := 0; i < b.N; i++ {
+					BuildTree(testCerts.certs[:certs], f, numThreads)
+				}
+			})
+		}
+	}
+}
+
+// TODO run benchmark on server
+// go test -bench=BenchmarkCreateWitness -run=^a -benchtime=200x -benchmem  -timeout 99999s | tee merkBenchmarkCreateWitness.txt
+func BenchmarkCreateWitness(b *testing.B) {
+	fmt.Println("BenchmarkCreateWitness Running")
+	testAmount := 200 //Change if you change -benchtime=10000x
+	randomCerts := make([][]byte, testAmount)
+
+	for _, certs := range certAmount.c {
+		for _, f := range fanOuts.v {
+			benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
+			for k := range randomCerts {
+				randInt := rand.Intn(len(testCerts.certs))
+				randomCerts[k] = testCerts.certs[randInt]
+			}
+			b.ResetTimer()
+			b.Run(fmt.Sprintf("fanOut: %d, certs: %d", f, certs), func(b *testing.B) {
+
+				for i := 0; i < b.N; i++ {
+					createWitness(randomCerts[i], *benchTree)
+				}
+			})
+		}
+	}
+}
+
+// TODO run benchmark on server
+// go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkBenchmarkVerifyWitness.txt
+func BenchmarkVerifyWitness(b *testing.B) {
+	fmt.Println("BenchmarkVerifyWitness - starting")
+	testAmount := 1000 //Change if you change -benchtime=1000x
+	certsToTest := make([][]byte, testAmount)
+	witnesses := make([]witness, testAmount)
+
+	//Get certs to test
+
+	b.ResetTimer()
+	for _, certs := range certAmount.c {
+		for _, f := range fanOuts.v {
+			benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
+			// Get random certs, and get witnesses for them in the generated tree.
+			for k := range testAmount {
+				randInt := rand.Intn(certs)
+				certsToTest[k] = testCerts.certs[randInt]
+				witnesses[k] = createWitness(certsToTest[k], *benchTree)
+
+			}
+			b.Run(fmt.Sprintf("fan-out: %d, certs: %d", f, certs), func(b *testing.B) {
+				for i := 0; i < b.N; i++ {
+					verifyWitness(certsToTest[i], witnesses[i], *benchTree)
 				}
 			})
 		}

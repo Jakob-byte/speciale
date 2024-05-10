@@ -374,7 +374,7 @@ func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
 			pubParams := optimizedSetup(10, f)
-			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pubParams, false, 8)
+			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pubParams, false, numThreads)
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fan-out: %d, Certs: %d", f, certs), func(b *testing.B) {
 				b.StopTimer() //Stop timer, and generate 200 new certs to create proof for, then starts timer again.
@@ -409,7 +409,7 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 	for _, certs := range certAmount.c {
 		for _, v := range fanOuts.v {
 			params := optimizedSetup(10, v)
-			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], v, params, false, 8)
+			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], v, params, false, numThreads)
 			//Get certs to test
 			//for k := range testAmount {
 			//	randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
@@ -448,7 +448,7 @@ func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
 			pk := optimizedSetup(10, f)
-			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pk, false, 8)
+			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pk, false, numThreads)
 			for o := range averageTimes {
 				for k := range testAmount {
 					randInt := rand.Intn(certs)
