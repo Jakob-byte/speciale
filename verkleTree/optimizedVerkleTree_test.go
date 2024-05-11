@@ -21,7 +21,6 @@ var fanOuts = struct {
 	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
-// TODO edit this to some good amount of certAmount Diego said this was fine
 var certAmount = struct {
 	c []int
 }{

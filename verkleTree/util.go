@@ -75,7 +75,7 @@ func loadCertificates(input string, amount int) [][]byte {
 
 func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte, mu *sync.Mutex, amount ...int) {
 
-	content, err := os.ReadFile("testCerts/" + input)
+	content, err := os.ReadFile("../testCerts/" + input)
 	if err != nil {
 		panic(err)
 	}
