@@ -12,7 +12,7 @@ var numThreads = 5
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 1000000), //TODO change back to 1 million
+	certs: loadCertificates("AllCertsOneFile20000", 10000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {
@@ -25,7 +25,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{10000, 20000, 40000, 80000, 160000, 240000, 480000, 1000000},
+	c: []int{1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 1000}, // TODO fix before server benchmarks
 }
 
 var threads = struct {
@@ -365,7 +365,7 @@ func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
 // TODO test on server
 // go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 999999s | tee merkBuildTreeBench.txt
 func BenchmarkBuildTreeTime(b *testing.B) {
-	fmt.Println("BenchmarkBuildTreeTime - startingg")
+	fmt.Println("BenchmarkBuildTreeTime - starting")
 	b.ResetTimer()
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v { //Different fanouts

@@ -12,7 +12,7 @@ var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 50000),
+	certs: loadCertificates("AllCertsOneFile20000", 50000), // TODO increase ALOT! :)
 }
 
 var fanOuts = struct {
@@ -24,7 +24,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{10000, 20000, 30000, 40000, 50000, 600000, 70000, 800000, 90000, 100000},
+	c: []int{1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000}, //TODO change back
 }
 var optimizedTable = []struct {
 	fanOut int
@@ -344,7 +344,7 @@ func BenchmarkOptimizedDifferentAmountOfThreads(b *testing.B) {
 }
 
 // TODO Run benchmark on server
-// go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedBuildTreeTime.txt
+// go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedBuildTreeTime.txt
 func BenchmarkOptimizedBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedBuildTreeTime - Starting")
 	b.ResetTimer()
@@ -435,7 +435,7 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 
 // TODO run on server
 // This benchmark measures how the Create Membership proof time decreases after repeated queries.
-// go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=1x -benchmem  -timeout 9999999s | tee BenchmarkRootVerifyMembershipProof.txt
+// go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=1x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedCreateMemProofOverTime.txt
 func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime - starting")
 	benchtime := 1                  //Should be same as benchtime
