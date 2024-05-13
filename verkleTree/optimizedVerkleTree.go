@@ -267,15 +267,15 @@ func optimizedVerifyTree(certs [][]byte, tree optimizedVerkleTree, pk pubParams,
 }
 
 // Verifes a specific certificate is in the tree, by first calling createMemberShipProof for the given certificate, and then returns a call to verifyMemberShipProof
-func optimizedVerifyNode(cert []byte, tree optimizedVerkleTree) bool {
-	mp := optimizedCreateMembershipProof(cert, tree)
+func optimizedVerifyNode(certificate []byte, tree optimizedVerkleTree) bool {
+	mp := optimizedCreateMembershipProof(certificate, tree)
 	return optimizedVerifyMembershipProof(mp, tree.pk)
 }
 
-// This function verifies the certificate cert is commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
+// This function verifies the certificate certificateis commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
 //
 //	It returns true if the certificate is in the tree and wrong if it isn't.
-func optimizedCreateMembershipProof(cert []byte, tree optimizedVerkleTree) optimizedMembershipProof {
+func optimizedCreateMembershipProof(certificate []byte, tree optimizedVerkleTree) optimizedMembershipProof {
 	var nod *optimizedNode
 
 	notInList := true
@@ -294,7 +294,7 @@ func optimizedCreateMembershipProof(cert []byte, tree optimizedVerkleTree) optim
 	}
 
 	//Performs binary search on the leafs, and returns if it found something and what it found.
-	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
+	n, found := slices.BinarySearchFunc(certs, certificate, func(a, b []byte) int {
 		return bytes.Compare(a, b)
 	})
 	notInList = !found

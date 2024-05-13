@@ -104,7 +104,7 @@ func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte,
 		}
 		certificates[i] = []byte(strings.TrimSpace(match[0]))
 	}
-	//for i, cert := range certificates {
+	//for i, certificate:= range certificates {
 	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
 	//}
 	mu.Lock()

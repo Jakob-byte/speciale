@@ -12,7 +12,7 @@ var numThreads = 5
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 10000), //TODO change back to 1 million
+	certs: loadCertificates("AllCertsOneFile20000", 100000), //TODO change back to 1 million
 }
 
 var fanOuts = struct {
@@ -148,7 +148,7 @@ func TestNegativeWitnessTestWithDifferentCerts(t *testing.T) {
 	tree2 := BuildTree(certsToTestOn2, 10, numThreads)
 	certToVerify := certsToTestOn1[2500]
 	witness := createWitness(certToVerify, *tree1)
-	if verifyWitness(certToVerify, witness, *tree2) {
+	if verifyWitness(certToVerify, witness, tree2.pubParams) {
 		t.Error("Should not have output true, should be false.")
 	}
 }
@@ -161,7 +161,7 @@ func TestNegativeWitnessTestWithDifferentFanout(t *testing.T) {
 	tree2 := BuildTree(certsToTestOn2, 4, numThreads)
 	certToVerify := certsToTestOn1[2500]
 	witness := createWitness(certToVerify, *tree1)
-	if verifyWitness(certToVerify, witness, *tree2) {
+	if verifyWitness(certToVerify, witness, tree2.pubParams) {
 		t.Error("Should not have output true, should be false.")
 	}
 }
@@ -237,13 +237,13 @@ func TestJsonConverterInTree(t *testing.T) {
 	fmt.Println("TestJsonConverter Running")
 	certToVerify := testCerts.certs[40123]
 	witness := createWitness(certToVerify, table[0].tree)
-	if !verifyWitness(certToVerify, witness, table[0].tree) {
+	if !verifyWitness(certToVerify, witness, table[0].tree.pubParams) {
 		t.Error("Should have been in the tree, what went wrong? (before conversion)")
 	}
 
 	jsooon := genJsonWitness(witness)
 	witnessAgain := getWitnessFromJson(jsooon)
-	if !verifyWitness(certToVerify, witnessAgain, table[0].tree) {
+	if !verifyWitness(certToVerify, witnessAgain, table[0].tree.pubParams) {
 		t.Error("Json conversion failed, does not recognize the witness?")
 	}
 }
@@ -252,28 +252,40 @@ func TestJsonConverterNotInTree(t *testing.T) {
 	certToVerify := testCerts.certs[50123]
 	tree := BuildTree(testCerts.certs[:50000], 2, numThreads)
 	witness := createWitness(certToVerify, *tree)
-	if verifyWitness(certToVerify, witness, *tree) {
+	if verifyWitness(certToVerify, witness, tree.pubParams) {
 		t.Error("Should not have been in the tree, found it before conversion though.")
 	}
 
 	jsooon := genJsonWitness(witness)
 	witnessAgain := getWitnessFromJson(jsooon)
-	if verifyWitness(certToVerify, witnessAgain, *tree) {
+	if verifyWitness(certToVerify, witnessAgain, tree.pubParams) {
 		t.Error("Should not have been in tree, found it after conversion though.")
 	}
 }
+
+// go test -run TestSizeOfWitnesses | tee proofSizesMerkle.txt
 func TestSizeOfWitnesses(t *testing.T) {
-	fmt.Println("TestSizeOfWitnesses Running")
+	fmt.Println("TestSizeOfWitnesses - starting")
 
 	randInt := rand.Intn(len(testCerts.certs))
-	randomCert := testCerts.certs[randInt]
+	randomcertificate := testCerts.certs[randInt]
 	witnessList := make([]witness, len(table))
 	for i, v := range table {
-		witnessList[i] = createWitness(randomCert, v.tree)
+		witnessList[i] = createWitness(randomcertificate, v.tree)
 	}
 
 	for i, v := range witnessList {
 		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the witness is", len(genJsonWitness(v)))
+	}
+
+	for _, w := range certAmount.c {
+		randInt := rand.Intn(w)
+		randomcertificate := testCerts.certs[randInt]
+		for _, v := range fanOuts.v {
+			testTree := BuildTree(testCerts.certs[:w], v, numThreads)
+			size := genJsonWitness(createWitness(randomcertificate, *testTree))
+			fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
+		}
 	}
 }
 
@@ -423,11 +435,10 @@ func BenchmarkVerifyWitness(b *testing.B) {
 				randInt := rand.Intn(certs)
 				certsToTest[k] = testCerts.certs[randInt]
 				witnesses[k] = createWitness(certsToTest[k], *benchTree)
-
 			}
 			b.Run(fmt.Sprintf("fan-out: %d, certs: %d", f, certs), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
-					verifyWitness(certsToTest[i], witnesses[i], *benchTree)
+					verifyWitness(certsToTest[i], witnesses[i], benchTree.pubParams)
 				}
 			})
 		}

@@ -225,22 +225,20 @@ func TestOptimizedJsonConverter(t *testing.T) {
 }
 
 // Function to test the size of the witness/proofs needed for different fanouts of the tree.
+// go test -run TestOptimizedSizeOfWitnesses | tee proofSizes.txt
 func TestOptimizedSizeOfWitnesses(t *testing.T) {
-	fmt.Println("TestSizeOfWitnesses Running")
+	fmt.Println("TestOptimizedSizeOfWitnesses - starting")
 
-	randInt := rand.Intn(len(optimizedTestCerts.certs))
-	randomCert := optimizedTestCerts.certs[randInt]
-	fmt.Println("Set the random cert")
-	witnessList := make([][]byte, len(optimizedTable))
-	fmt.Println("Made witness list")
-	for i, v := range optimizedTable {
-		witnessList[i] = optimizedCreateJsonOfMembershipProof(optimizedCreateMembershipProof(randomCert, v.tree))
+	for _, w := range certAmount.c {
+		randInt := rand.Intn(w)
+		randomcertificate := optimizedTestCerts.certs[randInt]
+		for _, v := range fanOuts.v {
+			setttup := optimizedSetup(10, v)
+			testTree := optimizedBuildTree(optimizedTestCerts.certs[:w], v, setttup, false, numThreads)
+			size := optimizedCreateJsonOfMembershipProof(optimizedCreateMembershipProof(randomcertificate, *testTree))
+			fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
+		}
 	}
-	fmt.Println("Finished making json proofs")
-	for i, v := range witnessList {
-		fmt.Println("At fanout ", optimizedTable[i].fanOut, " and ", len(optimizedTestCerts.certs), " certificates, the size of the witness is", len(v))
-	}
-
 }
 
 // go test -bench=BenchmarkRootSetupPkTime -run=^a -benchtime=10x -benchmem  -timeout 99999s | tee verkRootSetupPkBench.txt
@@ -390,13 +388,14 @@ func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 	}
 }
 
-// TODO Run on server
+// TODO Run on server, and divide result from this test with 1000 to get actual average
 // go test -bench=BenchmarkRootVerifyMembershipProof -run=^a -benchtime=1000x -benchmem  -timeout 9999999s | tee BenchmarkRootVerifyMembershipProof.txt
 func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 	fmt.Println("BenchmarkRootVerifyMembershipProof - starting")
 	start := time.Now()
 	testAmount := 1000 //Change if you change -benchtime=10000x
 	certsToTest := make([][]byte, testAmount)
+	amountToAverageOver := 1000
 	witnesses := make([]optimizedMembershipProof, testAmount)
 
 	elapsed := time.Since(start)
@@ -409,24 +408,20 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 		for _, v := range fanOuts.v {
 			params := optimizedSetup(10, v)
 			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], v, params, false, numThreads)
-			//Get certs to test
-			//for k := range testAmount {
-			//	randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
-			//	certsToTest[k] = optimizedTestCerts.certs[randInt]
-			//	witnesses[k] = optimizedCreateMembershipProof(certsToTest[k], *benchTree)
-			//}
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fan-out: %d, certs: %d", v, certs), func(b *testing.B) {
 				// TODO stops timer and gets new random certs for this test. Should we do this?
-				b.StopTimer()
-				for k := range testAmount {
-					randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
-					certsToTest[k] = optimizedTestCerts.certs[randInt]
-					witnesses[k] = optimizedCreateMembershipProof(certsToTest[k], *benchTree)
-				}
-				b.StartTimer()
-				for i := 0; i < b.N; i++ {
-					optimizedVerifyMembershipProof(witnesses[i], params)
+				for range amountToAverageOver {
+					b.StopTimer()
+					for k := range testAmount {
+						randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
+						certsToTest[k] = optimizedTestCerts.certs[randInt]
+						witnesses[k] = optimizedCreateMembershipProof(certsToTest[k], *benchTree)
+					}
+					b.StartTimer()
+					for i := 0; i < b.N; i++ {
+						optimizedVerifyMembershipProof(witnesses[i], params)
+					}
 				}
 			})
 		}

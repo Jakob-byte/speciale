@@ -13,7 +13,6 @@ import (
 
 	//	combin "gonum.org/v1/gonum/stat/combin"
 
-	"fmt"
 	"log"
 )
 
@@ -389,15 +388,15 @@ func verifyTree(certs [][]byte, tree verkleTree, pk PK, numThreads int) bool {
 }
 
 // Verifes a specific certificate is in the tree, by first calling createMemberShipProof for the given certificate, and then returns a call to verifyMemberShipProof
-func verifyNode(cert []byte, tree verkleTree) bool {
-	mp := createMembershipProof(cert, tree)
+func verifyNode(certificate []byte, tree verkleTree) bool {
+	mp := createMembershipProof(certificate, tree)
 	return verifyMembershipProof(mp, tree.pk)
 }
 
-// This function verifies the certificate cert is commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
+// This function verifies the certificate certificateis commited to in the verkle tree. It takes the certificate, verkle tree and public key as input.
 //
 //	It returns true if the certificate is in the tree and wrong if it isn't.
-func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
+func createMembershipProof(certificate []byte, tree verkleTree) membershipProof {
 	var nod *node
 
 	notInList := true
@@ -416,7 +415,7 @@ func createMembershipProof(cert []byte, tree verkleTree) membershipProof {
 	}
 
 	//Performs binary search on the leafs, and returns if it found something and what it found.
-	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
+	n, found := slices.BinarySearchFunc(certs, certificate, func(a, b []byte) int {
 		return bytes.Compare(a, b)
 	})
 	notInList = !found
@@ -455,62 +454,4 @@ func verifyMembershipProof(mp membershipProof, pk PK) bool {
 		}
 	}
 	return true
-}
-
-// TODO Not finished, only works for certs%fanout != 0.
-func insertLeaf(cert []byte, tree verkleTree) (verkleTree, bool) {
-	fmt.Println("len of leafs", len(tree.leafs))
-	var foundIt bool
-	var nextSibling *node
-	for i := len(tree.leafs) - 1; i >= 0; i-- {
-		fmt.Println("i", i)
-		if !tree.leafs[i].duplicate {
-			if i == len(tree.leafs)-1 {
-				break
-			}
-			fmt.Println("i found a duplicate leaf")
-			foundIt = true
-			nextSibling = tree.leafs[i].parent.children[(i+1)%tree.fanOut]
-			break
-		}
-	}
-
-	if foundIt {
-		nextSibling.certificate = cert
-		nextSibling.duplicate = false
-		firstLayer := true
-		listlist := make([][]byte, tree.fanOut)
-		for nextSibling.parent != nil {
-			if firstLayer {
-				for i, v := range nextSibling.parent.children {
-					listlist[i] = v.certificate
-				}
-				firstLayer = false
-			} else {
-				for i, v := range nextSibling.parent.children {
-					listlist[i] = v.ownCompressVectorCommit
-				}
-			}
-
-			polyVector := certVectorToPolynomial(listlist, tree.lagrangeBasisList) //TODO what do we do with degComb and divList
-			commitment := commit(tree.pk, polyVector)
-			nextSibling = nextSibling.parent
-			nextSibling.ownVectorCommit = commitment
-			nextSibling.ownCompressVectorCommit = commitment.BytesCompressed()
-		}
-		return tree, true
-
-	}
-
-	return tree, false
-}
-
-// Not finished
-// TODO
-func deleteLeaf(cert []byte, tree verkleTree) *verkleTree {
-	//TODO: Insert a node or delete a node?
-	//How to do this, what is required??
-	//Diego said this is not required and will be done when rebuilding or somewhere else by the CA
-	fmt.Println("Sike! We cannot delete stuff.")
-	return &tree
 }

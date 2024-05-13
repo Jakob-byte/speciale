@@ -1,6 +1,7 @@
 from OpenSSL import crypto
 import random
 import string
+import datetime
 
 
 def cert_gen(
@@ -21,24 +22,24 @@ def cert_gen(
     # create a key pair
    
     # create a self-signed cert
-    cert = crypto.X509()
+    certificate= crypto.X509()
 
 
 
-    cert.get_subject().C = countryName
-    cert.get_subject().ST = stateOrProvinceName
-    cert.get_subject().L = localityName
-    cert.get_subject().O = organizationName
-    cert.get_subject().OU = organizationUnitName
-    cert.get_subject().CN = commonName
-    cert.get_subject().emailAddress = emailAddress
-    cert.set_serial_number(serialNumber)
-    cert.gmtime_adj_notBefore(validityStartInSeconds)
-    cert.gmtime_adj_notAfter(validityEndInSeconds)
-    cert.set_issuer(cert.get_subject())
-    cert.set_pubkey(k)
-    cert.sign(k, 'sha512')
-    return crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("utf-8")
+    certificate.get_subject().C = countryName
+    certificate.get_subject().ST = stateOrProvinceName
+    certificate.get_subject().L = localityName
+    certificate.get_subject().O = organizationName
+    certificate.get_subject().OU = organizationUnitName
+    certificate.get_subject().CN = commonName
+    certificate.get_subject().emailAddress = emailAddress
+    certificate.set_serial_number(serialNumber)
+    certificate.gmtime_adj_notBefore(validityStartInSeconds)
+    certificate.gmtime_adj_notAfter(validityEndInSeconds)
+    certificate.set_issuer(certificate.get_subject())
+    certificate.set_pubkey(k)
+    certificate.sign(k, 'sha512')
+    return crypto.dump_certificate(crypto.FILETYPE_PEM, certificate).decode("utf-8")
     #with open(CERT_FILE, "wt") as f:
     #    f.write(crypto.dump_certificate(crypto.FILETYPE_PEM, cert).decode("utf-8"))
     #with open(KEY_FILE, "wt") as f:
@@ -50,9 +51,9 @@ certs = ""
 certsToGen = 20000
 letters = string.ascii_lowercase
 
-for j in range(51,500):
+for j in range(250,400):
     certs = ""
-    print("working on file: ", j)
+    print("working on file: ", j, datetime.datetime.now())
     for i in range(certsToGen):
         if i % 1000 ==0:
             k.generate_key(crypto.TYPE_RSA, 4096)

@@ -38,9 +38,15 @@ type witness struct {
 
 // Struct representing the merkle-tree
 type merkleTree struct {
-	Root   *node
-	leafs  []*node
-	fanOut int
+	Root      *node
+	leafs     []*node
+	fanOut    int
+	pubParams publicParameters
+}
+
+type publicParameters struct {
+	rootHash [32]byte
+	fanOut   int
 }
 
 // Function to call with error to avoid overloading methdods with error if statements
@@ -121,9 +127,6 @@ func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte,
 		}
 		certificates[i] = []byte(strings.TrimSpace(match[0]))
 	}
-	//for i, cert := range certificates {
-	//	fmt.Printf("Certificate %d:\n%s\n\n", i+1, cert)
-	//}
 
 	mu.Lock()
 	defer mu.Unlock()
@@ -223,9 +226,10 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 
 	// define the merkletree struct
 	merk = merkleTree{
-		fanOut: fanOut,
-		Root:   nextLayer[0],
-		leafs:  leafs,
+		fanOut:    fanOut,
+		Root:      nextLayer[0],
+		leafs:     leafs,
+		pubParams: publicParameters{fanOut: fanOut, rootHash: nextLayer[0].ownHash},
 	}
 	return &merk
 }
@@ -303,15 +307,15 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 }
 
 // Verifies a node is in the tree by creating witness and veryifing the witness
-func verifyNode(cert []byte, tree merkleTree) bool {
-	witness := createWitness(cert, tree)
+func verifyNode(certificate []byte, tree merkleTree) bool {
+	witness := createWitness(certificate, tree)
 	//fmt.Println("witness hashList: ", witness.hashList)
-	return verifyWitness(cert, witness, tree)
+	return verifyWitness(certificate, witness, tree.pubParams)
 }
 
 // Creates the witness for a given certificate, which is a witness struct consisting of a list of hashes and a childNumberList to know how to combine the hashes
-func createWitness(cert []byte, tree merkleTree) witness {
-	var nod *node
+func createWitness(certificate []byte, tree merkleTree) witness {
+	var node *node
 	//fanOut := tree.fanOut
 	notInList := true
 
@@ -322,7 +326,7 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	}
 
 	//Performs binary search on the leafs, and returns if it found something and what it found.
-	n, found := slices.BinarySearchFunc(certs, cert, func(a, b []byte) int {
+	n, found := slices.BinarySearchFunc(certs, certificate, func(a, b []byte) int {
 		return bytes.Compare(a, b)
 	})
 	notInList = !found
@@ -336,21 +340,21 @@ func createWitness(cert []byte, tree merkleTree) witness {
 	if notInList {
 		return witness{}
 	}
-	nod = tree.leafs[n]
+	node = tree.leafs[n]
 	var hashList [][][32]byte
 
 	var childNumberList []int
 
 	var counter int
-	for nod.parent != nil {
-		hashList0 := make([][32]byte, tree.fanOut-1)
+	for node.parent != nil {
+		tempHashList := make([][32]byte, tree.fanOut-1)
 
-		childNumberList = append(childNumberList, nod.id%tree.fanOut)
+		childNumberList = append(childNumberList, node.id%tree.fanOut)
 		counter = 0
-		for _, v := range nod.parent.children {
-			if nod.id != v.id {
+		for _, v := range node.parent.children {
+			if node.id != v.id {
 
-				hashList0[counter] = v.ownHash
+				tempHashList[counter] = v.ownHash
 				counter++
 			}
 		}
@@ -359,8 +363,8 @@ func createWitness(cert []byte, tree merkleTree) witness {
 
 		//fmt.Println("HashList0, should be equal to fanout", len(hashList0))
 
-		hashList = append(hashList, hashList0)
-		nod = nod.parent
+		hashList = append(hashList, tempHashList)
+		node = node.parent
 	}
 
 	witness := witness{
@@ -371,8 +375,8 @@ func createWitness(cert []byte, tree merkleTree) witness {
 }
 
 // if we wanna be cool we can fix stuff so we don't need to give the certificate to this function! by putting it in the hashlist somehow
-func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
-	sum := sha256.Sum256(cert)
+func verifyWitness(certificate []byte, witness witness, pubParams publicParameters) bool {
+	sum := sha256.Sum256(certificate)
 	for i := 0; i < len(witness.HashList); i++ {
 		var byteToHash []byte
 		for j, v := range witness.HashList[i] {
@@ -382,89 +386,16 @@ func verifyWitness(cert []byte, witness witness, tree merkleTree) bool {
 			}
 			byteToHash = append(byteToHash, v[:]...)
 		}
-		if witness.ChildNumberList[i] == tree.fanOut-1 {
+		if witness.ChildNumberList[i] == pubParams.fanOut-1 {
 			byteToHash = append(byteToHash, sum[:]...)
 		}
 		sum = sha256.Sum256(byteToHash)
 	}
 
-	return sum == tree.Root.ownHash
+	return sum == pubParams.rootHash
 
-}
-
-func updateLeaf(oldCert []byte, tree merkleTree, newCert []byte) *merkleTree {
-	var nod *node
-	notInList := true
-	for _, v := range tree.leafs {
-		if bytes.Equal(v.certificate, oldCert) {
-			nod = v
-			notInList = false
-		}
-	}
-	if notInList {
-		return &tree
-	}
-
-	var childNumber int
-	nod.certificate = newCert
-	sum := sha256.Sum256(newCert)
-
-	for nod.parent != nil {
-		childNumber = nod.id % tree.fanOut
-		var hashList [][32]byte
-		for _, v := range nod.parent.children {
-			if nod.id != v.id {
-				hashList = append(hashList, v.ownHash)
-			}
-		}
-
-		// Create the thing we want to hash
-		var byteToHash []byte
-		for j, v := range hashList {
-			if childNumber == j {
-				byteToHash = append(byteToHash, sum[:]...)
-			}
-			byteToHash = append(byteToHash, v[:]...)
-		}
-		if childNumber == tree.fanOut-1 {
-			byteToHash = append(byteToHash, sum[:]...)
-		}
-		sum = sha256.Sum256(byteToHash)
-		nod.parent.ownHash = sum
-		nod = nod.parent
-	}
-	return &tree
-}
-
-func insertLeaf(cert []byte, tree merkleTree) *merkleTree {
-	//TODO: Insert a node or delete a node?
-	//HOw to do this, what is required??
-	return &tree
-}
-
-func deleteLeaf(cert []byte, tree merkleTree) *merkleTree {
-	//TODO: Insert a node or delete a node?
-	//How to do this, what is required??
-	//Diego said this is not required and will be done when rebuilding or somewhere else by the CA
-	fmt.Println("Sike! We cannot delete stuff.")
-	return &tree
-}
-
-func loadOneCert(filePath string) []byte {
-	f, err := os.ReadFile(filePath)
-	check(err)
-	return f
 }
 
 func main() {
-	certArray := loadCertificates("AllCertsOneFile20000", 2)
-	merkTree := BuildTree(certArray, 2)
-	fmt.Println("Verify tree works for correct tree", verifyTree(certArray, *merkTree))
-	fmt.Println("Verify node works for correct node", verifyNode(certArray[5], *merkTree))
-	updatedTree := updateLeaf(certArray[5], *merkTree, certArray[3])
-	fmt.Println("We managed to overwrite a certificate", !verifyNode(certArray[5], *updatedTree))
-	insertLeaf(certArray[5], *merkTree)
-	deleteLeaf(certArray[5], *merkTree)
 
-	fmt.Println("Succes")
 }

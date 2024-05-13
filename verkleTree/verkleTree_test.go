@@ -304,10 +304,10 @@ func TestSizeOfWitnesses(t *testing.T) {
 	fmt.Println("TestSizeOfWitnesses Running")
 
 	randInt := rand.Intn(len(testCerts.certs))
-	randomCert := testCerts.certs[randInt]
+	randomcertificate := testCerts.certs[randInt]
 	witnessList := make([][]byte, len(table))
 	for i, v := range table {
-		witnessList[i] = createJsonOfMembershipProof(createMembershipProof(randomCert, v.tree))
+		witnessList[i] = createJsonOfMembershipProof(createMembershipProof(randomcertificate, v.tree))
 	}
 
 	for i, v := range witnessList {
