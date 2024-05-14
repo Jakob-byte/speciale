@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/sha256"
 	"encoding/json"
-	"runtime"
 	"slices"
 	"sort"
 
@@ -84,7 +83,7 @@ func loadCertificates(input string, amount int, numThreads int) [][]byte {
 			defer wg.Done()
 
 			loadCertificatesFromOneFile(input+"-"+strconv.Itoa(index)+".crt", index, &certThreadList, &mu, amountToRead)
-			fmt.Println("Threads going on: ", runtime.NumGoroutine())
+
 			<-guard
 		}(i, stuffToRead)
 	}
