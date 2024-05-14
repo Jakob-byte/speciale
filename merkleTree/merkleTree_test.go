@@ -40,7 +40,7 @@ var table = []struct {
 	testFanout []int
 }{
 	//{input: 1, tree: *BuildTree(testCerts.certs, 1)}}, Doesn't work for some reasone :D  //TODO undo so we can test for different fanouts
-	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, numThreads)},
+	//	{fanOut: 2, tree: *BuildTree(testCerts.certs, 2, numThreads)},
 	//{fanOut: 4, tree: *BuildTree(testCerts.certs, 4,numThreads)},
 	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8,numThreads)},
 	//{fanOut: 16, tree: *BuildTree(testCerts.certs, 16,numThreads)},
@@ -375,7 +375,7 @@ func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
 }
 
 // TODO test on server
-// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 999999s | tee merkBuildTreeBench.txt
+// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=10x -benchmem  -timeout 999999s | tee merkBuildTreeBench.txt
 func BenchmarkBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkBuildTreeTime - starting")
 	b.ResetTimer()

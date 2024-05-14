@@ -342,7 +342,7 @@ func BenchmarkOptimizedDifferentAmountOfThreads(b *testing.B) {
 }
 
 // TODO Run benchmark on server
-// go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedBuildTreeTime.txt
+// go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedBuildTreeTime.txt
 func BenchmarkOptimizedBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedBuildTreeTime - Starting")
 	b.ResetTimer()
