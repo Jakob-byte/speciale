@@ -8,11 +8,11 @@ import (
 	//"time"
 )
 
-var numThreads = 5
+var numThreads = 16
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 10000000), //TODO change back to 10 million
+	certs: loadCertificates("AllCertsOneFile20000", 10000000, numThreads), //TODO change back to 10 million
 }
 
 var fanOuts = struct {
@@ -55,7 +55,7 @@ var table = []struct {
 func TestLoadFunc(t *testing.T) {
 	fmt.Println("TestLoadFunc -  starting")
 	start := time.Now()
-	certArray := loadCertificates("AllCertsOneFile20000", 20000)
+	certArray := loadCertificates("AllCertsOneFile20000", 20000, numThreads)
 	elapsed := time.Since(start)
 	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 20000 {
@@ -63,7 +63,7 @@ func TestLoadFunc(t *testing.T) {
 	}
 
 	start = time.Now()
-	certArray = loadCertificates("AllCertsOneFile20000", 40000)
+	certArray = loadCertificates("AllCertsOneFile20000", 40000, numThreads)
 	elapsed = time.Since(start)
 	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 40000 {
@@ -71,7 +71,7 @@ func TestLoadFunc(t *testing.T) {
 	}
 
 	start = time.Now()
-	certArray = loadCertificates("AllCertsOneFile20000", 60000)
+	certArray = loadCertificates("AllCertsOneFile20000", 60000, numThreads)
 	elapsed = time.Since(start)
 	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 60000 {
@@ -79,7 +79,7 @@ func TestLoadFunc(t *testing.T) {
 	}
 
 	start = time.Now()
-	certArray = loadCertificates("AllCertsOneFile20000", 80000)
+	certArray = loadCertificates("AllCertsOneFile20000", 80000, numThreads)
 	elapsed = time.Since(start)
 	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 80000 {
@@ -87,7 +87,7 @@ func TestLoadFunc(t *testing.T) {
 	}
 
 	start = time.Now()
-	certArray = loadCertificates("AllCertsOneFile20000", 1000000)
+	certArray = loadCertificates("AllCertsOneFile20000", 1000000, numThreads)
 	elapsed = time.Since(start)
 	fmt.Println("Time spent loading ", len(certArray), " certificates, it took: ", elapsed)
 	if len(certArray) != 1000000 {
@@ -178,7 +178,7 @@ func TestTreeBuilder(t *testing.T) {
 		randNumb := rand.Intn(max-min) + min
 		randFan := rand.Intn(fanMax-fanMin) + fanMin
 		randThread := rand.Intn(threadMax-threadMin) + threadMin
-		certArray := loadCertificates("AllCertsOneFile20000", randNumb)
+		certArray := loadCertificates("AllCertsOneFile20000", randNumb, numThreads)
 		merkTree := BuildTree(certArray, randFan, randThread)
 		nodeToTest := rand.Intn(len(certArray))
 		result := verifyNode(certArray[nodeToTest], *merkTree)

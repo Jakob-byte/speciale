@@ -35,7 +35,7 @@ func loadOneCert(filePath string) []byte {
 // function to load certificates given, input which is the directory and amount represented as a list of ints,
 // where [0] is the amount of certificates to load from said directory.
 // returns a [][]byte list/array of files
-func loadCertificates(input string, amount int) [][]byte {
+func loadCertificates(input string, amount int, numThreads int) [][]byte {
 	var fileArray [][]byte
 	files := 1
 	stuffToRead := 20000
@@ -47,17 +47,22 @@ func loadCertificates(input string, amount int) [][]byte {
 
 	var mu sync.Mutex
 	var wg sync.WaitGroup
+	guard := make(chan struct{}, numThreads)
 
 	for i := 0; i < files; i++ {
+
 		if i == files-1 {
 			stuffToRead = amount - i*stuffToRead
 		}
 		wg.Add(1)
-
+		guard <- struct{}{}
 		go func(index int, amountToRead int) {
 			defer wg.Done()
+
 			loadCertificatesFromOneFile(input+"-"+strconv.Itoa(index)+".crt", index, &certThreadList, &mu, amountToRead)
+			<-guard
 		}(i, stuffToRead)
+
 	}
 	wg.Wait()
 

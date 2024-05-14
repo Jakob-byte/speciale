@@ -7,12 +7,12 @@ import (
 	"time"
 )
 
-var numThreads = 8
+var numThreads = 16
 var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 10000000), // TODO increase ALOT! :)
+	certs: loadCertificates("AllCertsOneFile20000", 10000000, numThreads), // TODO increase ALOT! :)
 }
 
 var fanOuts = struct {
