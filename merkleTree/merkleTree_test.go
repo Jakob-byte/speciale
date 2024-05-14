@@ -297,7 +297,7 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, fan := range fanOuts {
-		for threads := 1; threads < 20; threads++ {
+		for threads := 16; threads < 40; threads++ {
 			start := time.Now()
 			BuildTree(testCerts.certs, fan, threads)
 			elapsed := time.Since(start)
