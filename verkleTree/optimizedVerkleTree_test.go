@@ -12,7 +12,7 @@ var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 50000), // TODO increase ALOT! :)
+	certs: loadCertificates("AllCertsOneFile20000", 10000000), // TODO increase ALOT! :)
 }
 
 var fanOuts = struct {
@@ -24,7 +24,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 10000}, //TODO change back
+	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back
 }
 var optimizedTable = []struct {
 	fanOut int
@@ -359,12 +359,12 @@ func BenchmarkOptimizedBuildTreeTime(b *testing.B) {
 	}
 }
 
-// TODO Run on server
+// TODO Run on server, and divide result from this test with 1000 to get actual average
 // go test -bench=BenchmarkOptimizedCreateMembershipProof -run=^a -benchtime=200x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedCreateMembershipProof.txt
 func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMembershipProof - starting")
 	testAmount := 200 //Change if you change -benchtime=10000x
-
+	amountToAverageOver := 1000
 	randomCerts := make([][]byte, testAmount)
 
 	b.ResetTimer()
@@ -374,28 +374,29 @@ func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pubParams, false, numThreads)
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fan-out: %d, Certs: %d", f, certs), func(b *testing.B) {
-				b.StopTimer() //Stop timer, and generate 200 new certs to create proof for, then starts timer again.
-				for k := range randomCerts {
-					randInt := rand.Intn(len(optimizedTestCerts.certs[:certs]))
-					randomCerts[k] = optimizedTestCerts.certs[randInt]
-				}
-				b.StartTimer()
-				for i := 0; i < b.N; i++ {
-					optimizedCreateMembershipProof(randomCerts[i], *benchTree)
+				for range amountToAverageOver {
+					b.StopTimer() //Stop timer, and generate 200 new certs to create proof for, then starts timer again.
+					for k := range randomCerts {
+						randInt := rand.Intn(len(optimizedTestCerts.certs[:certs]))
+						randomCerts[k] = optimizedTestCerts.certs[randInt]
+					}
+					b.StartTimer()
+					for i := 0; i < b.N; i++ {
+						optimizedCreateMembershipProof(randomCerts[i], *benchTree)
+					}
 				}
 			})
 		}
 	}
 }
 
-// TODO Run on server, and divide result from this test with 1000 to get actual average
-// go test -bench=BenchmarkRootVerifyMembershipProof -run=^a -benchtime=1000x -benchmem  -timeout 9999999s | tee BenchmarkRootVerifyMembershipProof.txt
-func BenchmarkRootVerifyMembershipProof(b *testing.B) {
-	fmt.Println("BenchmarkRootVerifyMembershipProof - starting")
+// TODO Run on server
+// go test -bench=BenchmarkOptimizedVerifyMembershipProof -run=^a -benchtime=1000x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedVerifyMembershipProof.txt
+func BenchmarkOptimizedVerifyMembershipProof(b *testing.B) {
+	fmt.Println("BenchmarkOptimizedVerifyMembershipProof - starting")
 	start := time.Now()
 	testAmount := 1000 //Change if you change -benchtime=10000x
 	certsToTest := make([][]byte, testAmount)
-	amountToAverageOver := 1000
 	witnesses := make([]optimizedMembershipProof, testAmount)
 
 	elapsed := time.Since(start)
@@ -411,18 +412,17 @@ func BenchmarkRootVerifyMembershipProof(b *testing.B) {
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fan-out: %d, certs: %d", v, certs), func(b *testing.B) {
 				// TODO stops timer and gets new random certs for this test. Should we do this?
-				for range amountToAverageOver {
-					b.StopTimer()
-					for k := range testAmount {
-						randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
-						certsToTest[k] = optimizedTestCerts.certs[randInt]
-						witnesses[k] = optimizedCreateMembershipProof(certsToTest[k], *benchTree)
-					}
-					b.StartTimer()
-					for i := 0; i < b.N; i++ {
-						optimizedVerifyMembershipProof(witnesses[i], params)
-					}
+				b.StopTimer()
+				for k := range testAmount {
+					randInt := rand.Intn(certs) // rand.Intn(len(optimizedTestCerts.certs[:certs]))
+					certsToTest[k] = optimizedTestCerts.certs[randInt]
+					witnesses[k] = optimizedCreateMembershipProof(certsToTest[k], *benchTree)
 				}
+				b.StartTimer()
+				for i := 0; i < b.N; i++ {
+					optimizedVerifyMembershipProof(witnesses[i], params)
+				}
+
 			})
 		}
 	}

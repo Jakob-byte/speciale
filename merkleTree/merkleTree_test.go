@@ -25,7 +25,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{1000, 2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, 1000}, // TODO fix before server benchmarks
+	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
 }
 
 var threads = struct {
@@ -391,25 +391,29 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 	}
 }
 
-// TODO run benchmark on server
+// TODO run benchmark on server, remember to divide result by 1000!!!
 // go test -bench=BenchmarkCreateWitness -run=^a -benchtime=200x -benchmem  -timeout 99999s | tee merkBenchmarkCreateWitness.txt
 func BenchmarkCreateWitness(b *testing.B) {
 	fmt.Println("BenchmarkCreateWitness Running")
 	testAmount := 200 //Change if you change -benchtime=10000x
 	randomCerts := make([][]byte, testAmount)
+	amountToAverageOver := 1000
 
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
-			benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
-			for k := range randomCerts {
-				randInt := rand.Intn(len(testCerts.certs))
-				randomCerts[k] = testCerts.certs[randInt]
-			}
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fanOut: %d, certs: %d", f, certs), func(b *testing.B) {
-
-				for i := 0; i < b.N; i++ {
-					createWitness(randomCerts[i], *benchTree)
+				for range amountToAverageOver {
+					b.StopTimer()
+					benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
+					for k := range randomCerts {
+						randInt := rand.Intn(len(testCerts.certs))
+						randomCerts[k] = testCerts.certs[randInt]
+					}
+					b.StartTimer()
+					for i := 0; i < b.N; i++ {
+						createWitness(randomCerts[i], *benchTree)
+					}
 				}
 			})
 		}
