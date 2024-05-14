@@ -51,7 +51,7 @@ certs = ""
 certsToGen = 20000
 letters = string.ascii_lowercase
 
-for j in range(250,400):
+for j in range(293,400):
     certs = ""
     print("working on file: ", j, datetime.datetime.now())
     for i in range(certsToGen):
