@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-var numThreads = 16
+var numThreads = 32
 var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte

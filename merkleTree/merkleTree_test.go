@@ -8,7 +8,7 @@ import (
 	//"time"
 )
 
-var numThreads = 16
+var numThreads = 32
 var testCerts = struct {
 	certs [][]byte
 }{
