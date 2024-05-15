@@ -1,0 +1,32 @@
+length of filearray:  10000000  capacity of file Array:  10982400
+length of filearray:  50000  capacity of file Array:  50858
+BenchmarkOptimizedBuildTreeTime - Starting
+goos: linux
+goarch: amd64
+pkg: example/merkleTree/verkleTree
+cpu: AMD EPYC 9R14
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_1000000-32         	      10	15075576218 ns/op	5686641347 B/op	18001974 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_1000000-32         	      10	9909692250 ns/op	5064032078 B/op	10667628 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_1000000-32         	      10	8436508596 ns/op	4885150083 B/op	 8572148 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_1000000-32        	      10	7885349414 ns/op	4814384772 B/op	 7733955 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_32,_Certs:_1000000-32        	      10	7676685928 ns/op	4782234927 B/op	 7355357 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_64,_Certs:_1000000-32        	      10	7520758272 ns/op	4766831178 B/op	 7175537 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_128,_Certs:_1000000-32       	      10	7578243107 ns/op	4770834651 B/op	 7088311 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_256,_Certs:_1000000-32       	      10	7811552525 ns/op	4768087467 B/op	 7046926 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_512,_Certs:_1000000-32       	      10	8617659490 ns/op	4768722680 B/op	 7028007 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_1024,_Certs:_1000000-32      	      10	11102919734 ns/op	4769753681 B/op	 7014568 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_2000000-32         	      10	30044643587 ns/op	11379656735 B/op	36002025 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_2000000-32         	      10	19745979310 ns/op	10126595251 B/op	21334403 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_2000000-32         	      10	16840459798 ns/op	9771666724 B/op	17143605 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_2000000-32        	      10	15662611351 ns/op	9628364472 B/op	15467397 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_32,_Certs:_2000000-32        	      10	15252728586 ns/op	9564417740 B/op	14710555 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_64,_Certs:_2000000-32        	      10	14870803817 ns/op	9533845728 B/op	14350168 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_128,_Certs:_2000000-32       	      10	14933298058 ns/op	9520777955 B/op	14174153 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_256,_Certs:_2000000-32       	      10	14985297838 ns/op	9534390159 B/op	14089267 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_512,_Certs:_2000000-32       	      10	15762430346 ns/op	9533823639 B/op	14049574 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_1024,_Certs:_2000000-32      	      10	18650453926 ns/op	9536759832 B/op	14033859 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_3000000-32         	      10	45034155560 ns/op	17071478902 B/op	54002072 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_3000000-32         	      10	29590545565 ns/op	15195356799 B/op	32001050 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_3000000-32         	      10	25120303140 ns/op	14657062889 B/op	25715126 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_3000000-32        	      10	23434225035 ns/op	14443727508 B/op	23200673 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_32,_Certs:_3000000-32        	
