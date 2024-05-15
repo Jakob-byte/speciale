@@ -1,0 +1,28 @@
+length of file array 10000000
+BenchmarkVerifyWitness - starting
+goos: linux
+goarch: amd64
+pkg: example/merkleTree/merkleTree
+cpu: AMD EPYC 9R14
+BenchmarkVerifyWitness/fan-out:_2,_certs:_9000000-32         	    1000	      5372 ns/op	    2304 B/op	      48 allocs/op
+BenchmarkVerifyWitness/fan-out:_4,_certs:_9000000-32         	    1000	      4540 ns/op	    2688 B/op	      36 allocs/op
+BenchmarkVerifyWitness/fan-out:_8,_certs:_9000000-32         	    1000	      4676 ns/op	    3840 B/op	      32 allocs/op
+BenchmarkVerifyWitness/fan-out:_16,_certs:_9000000-32        	    1000	      5564 ns/op	    5952 B/op	      30 allocs/op
+BenchmarkVerifyWitness/fan-out:_32,_certs:_9000000-32        	    1000	     13325 ns/op	   16480 B/op	      35 allocs/op
+BenchmarkVerifyWitness/fan-out:_64,_certs:_9000000-32        	    1000	     18376 ns/op	   21376 B/op	      32 allocs/op
+BenchmarkVerifyWitness/fan-out:_128,_certs:_9000000-32       	    1000	     22692 ns/op	   50048 B/op	      40 allocs/op
+BenchmarkVerifyWitness/fan-out:_256,_certs:_9000000-32       	    1000	     34772 ns/op	  102816 B/op	      39 allocs/op
+BenchmarkVerifyWitness/fan-out:_512,_certs:_9000000-32       	    1000	     61975 ns/op	  188832 B/op	      45 allocs/op
+BenchmarkVerifyWitness/fan-out:_1024,_certs:_9000000-32      	    1000	    122560 ns/op	  463008 B/op	      54 allocs/op
+BenchmarkVerifyWitness/fan-out:_2,_certs:_10000000-32        	    1000	      5411 ns/op	    2304 B/op	      48 allocs/op
+BenchmarkVerifyWitness/fan-out:_4,_certs:_10000000-32        	    1000	      4577 ns/op	    2688 B/op	      36 allocs/op
+BenchmarkVerifyWitness/fan-out:_8,_certs:_10000000-32        	    1000	      4815 ns/op	    3840 B/op	      32 allocs/op
+BenchmarkVerifyWitness/fan-out:_16,_certs:_10000000-32       	    1000	      5641 ns/op	    5952 B/op	      30 allocs/op
+BenchmarkVerifyWitness/fan-out:_32,_certs:_10000000-32       	    1000	     13023 ns/op	   16480 B/op	      35 allocs/op
+BenchmarkVerifyWitness/fan-out:_64,_certs:_10000000-32       	    1000	     18056 ns/op	   21376 B/op	      32 allocs/op
+BenchmarkVerifyWitness/fan-out:_128,_certs:_10000000-32      	    1000	     42038 ns/op	   50048 B/op	      40 allocs/op
+BenchmarkVerifyWitness/fan-out:_256,_certs:_10000000-32      	    1000	     73819 ns/op	  102816 B/op	      39 allocs/op
+BenchmarkVerifyWitness/fan-out:_512,_certs:_10000000-32      	    1000	    138814 ns/op	  188832 B/op	      45 allocs/op
+BenchmarkVerifyWitness/fan-out:_1024,_certs:_10000000-32     	    1000	    310728 ns/op	  463008 B/op	      54 allocs/op
+PASS
+ok  	example/merkleTree/merkleTree	1754.714s
