@@ -25,7 +25,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
+	c: []int{9000000, 10000000},//1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
 }
 
 var threads = struct {
@@ -417,7 +417,7 @@ func BenchmarkCreateWitness(b *testing.B) {
 }
 
 // TODO run benchmark on server
-// go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkBenchmarkVerifyWitness.txt
+// sudo go test -bench=BenchmarkVerifyWitness -run=^a -benchtime=1000x -benchmem  -timeout 99999s | sudo tee merkBenchmarkVerifyWitnessV2.txt
 func BenchmarkVerifyWitness(b *testing.B) {
 	fmt.Println("BenchmarkVerifyWitness - starting")
 	testAmount := 1000 //Change if you change -benchtime=1000x
