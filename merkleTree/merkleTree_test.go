@@ -397,23 +397,19 @@ func BenchmarkCreateWitness(b *testing.B) {
 	fmt.Println("BenchmarkCreateWitness Running")
 	testAmount := 200 //Change if you change -benchtime=10000x
 	randomCerts := make([][]byte, testAmount)
-	amountToAverageOver := 1000
 
 	for _, certs := range certAmount.c {
+		for k := range randomCerts {
+			randInt := rand.Intn(len(testCerts.certs))
+			randomCerts[k] = testCerts.certs[randInt]
+		}
 		for _, f := range fanOuts.v {
+			benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
 			b.ResetTimer()
 			b.Run(fmt.Sprintf("fanOut: %d, certs: %d", f, certs), func(b *testing.B) {
-				for range amountToAverageOver {
-					b.StopTimer()
-					benchTree := BuildTree(testCerts.certs[:certs], f, numThreads)
-					for k := range randomCerts {
-						randInt := rand.Intn(len(testCerts.certs))
-						randomCerts[k] = testCerts.certs[randInt]
-					}
-					b.StartTimer()
-					for i := 0; i < b.N; i++ {
-						createWitness(randomCerts[i], *benchTree)
-					}
+				for i := 0; i < b.N; i++ {
+					createWitness(randomCerts[i], *benchTree)
+
 				}
 			})
 		}
