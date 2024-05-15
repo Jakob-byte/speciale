@@ -24,7 +24,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back
+	c: []int{3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back, 1000000, 2000000, 
 }
 var optimizedTable = []struct {
 	fanOut int
@@ -342,7 +342,7 @@ func BenchmarkOptimizedDifferentAmountOfThreads(b *testing.B) {
 }
 
 // TODO Run benchmark on server
-// go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedBuildTreeTime.txt
+// sudo go test -bench=BenchmarkOptimizedBuildTreeTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedBuildTreeTimeV3.txt
 func BenchmarkOptimizedBuildTreeTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedBuildTreeTime - Starting")
 	b.ResetTimer()
