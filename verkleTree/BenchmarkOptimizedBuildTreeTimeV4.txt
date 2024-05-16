@@ -1,0 +1,9 @@
+length of filearray:  10000000  capacity of file Array:  10982400
+length of filearray:  50000  capacity of file Array:  50858
+BenchmarkOptimizedBuildTreeTime - Starting
+goos: linux
+goarch: amd64
+pkg: example/merkleTree/verkleTree
+cpu: AMD EPYC 9R14
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_3000000-32         	      10	45092181013 ns/op	17071509655 B/op	54002136 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_3000000-32         	

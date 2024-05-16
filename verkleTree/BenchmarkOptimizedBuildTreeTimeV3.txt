@@ -18,4 +18,5 @@ BenchmarkOptimizedBuildTreeTime/fan-out:_1024,_Certs:_3000000-32      	      10	
 BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_4000000-32         	      10	59984393079 ns/op	22761786961 B/op	72002175 allocs/op
 BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_4000000-32         	      10	39489887943 ns/op	20261090067 B/op	42667796 allocs/op
 BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_4000000-32         	      10	33544201278 ns/op	19541856219 B/op	34286579 allocs/op
-BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_4000000-32        	
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_4000000-32        	signal: terminated
+FAIL	example/merkleTree/verkleTree	4755.716s
