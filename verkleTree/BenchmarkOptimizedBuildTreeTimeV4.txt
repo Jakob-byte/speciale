@@ -5,5 +5,14 @@ goos: linux
 goarch: amd64
 pkg: example/merkleTree/verkleTree
 cpu: AMD EPYC 9R14
-BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_3000000-32         	      10	45092181013 ns/op	17071509655 B/op	54002136 allocs/op
-BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_3000000-32         	
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_4000000-32         	      10	59817820361 ns/op	22761819261 B/op	72002240 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_4000000-32         	      10	39360340447 ns/op	20261090240 B/op	42667800 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_4000000-32         	      10	33673711445 ns/op	19541856179 B/op	34286579 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_4000000-32        	      10	31393464375 ns/op	19257706952 B/op	30934074 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_32,_Certs:_4000000-32        	      10	30285061022 ns/op	19128402423 B/op	29420245 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_64,_Certs:_4000000-32        	      10	29744303743 ns/op	19067501739 B/op	28699418 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_128,_Certs:_4000000-32       	      10	29579669772 ns/op	19041774498 B/op	28348054 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_256,_Certs:_4000000-32       	      10	29395688052 ns/op	19027099732 B/op	28175132 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_512,_Certs:_4000000-32       	      10	30175831733 ns/op	19063978856 B/op	28092691 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_1024,_Certs:_4000000-32      	      10	33090259044 ns/op	19064546512 B/op	28054966 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_5000000-32         	
