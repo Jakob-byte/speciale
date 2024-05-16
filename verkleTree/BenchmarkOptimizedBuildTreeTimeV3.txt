@@ -1,0 +1,21 @@
+length of filearray:  10000000  capacity of file Array:  10982400
+length of filearray:  50000  capacity of file Array:  50858
+BenchmarkOptimizedBuildTreeTime - Starting
+goos: linux
+goarch: amd64
+pkg: example/merkleTree/verkleTree
+cpu: AMD EPYC 9R14
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_3000000-32         	      10	44949112016 ns/op	17071507498 B/op	54002134 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_3000000-32         	      10	29583789298 ns/op	15195358646 B/op	32001054 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_3000000-32         	      10	25125407287 ns/op	14657062714 B/op	25715122 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_3000000-32        	      10	23294859980 ns/op	14443727619 B/op	23200675 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_32,_Certs:_3000000-32        	      10	22816409289 ns/op	14346456098 B/op	22065235 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_64,_Certs:_3000000-32        	      10	22267580962 ns/op	14300449537 B/op	21524797 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_128,_Certs:_3000000-32       	      10	22339597677 ns/op	14311665372 B/op	21262213 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_256,_Certs:_3000000-32       	      10	22310753333 ns/op	14300637234 B/op	21131532 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_512,_Certs:_3000000-32       	      10	23067403472 ns/op	14298887137 B/op	21071134 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_1024,_Certs:_3000000-32      	      10	25779016180 ns/op	14298216921 B/op	21040830 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_2,_Certs:_4000000-32         	      10	59984393079 ns/op	22761786961 B/op	72002175 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_4,_Certs:_4000000-32         	      10	39489887943 ns/op	20261090067 B/op	42667796 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_8,_Certs:_4000000-32         	      10	33544201278 ns/op	19541856219 B/op	34286579 allocs/op
+BenchmarkOptimizedBuildTreeTime/fan-out:_16,_Certs:_4000000-32        	
