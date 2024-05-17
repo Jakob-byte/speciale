@@ -359,12 +359,12 @@ func BenchmarkOptimizedBuildTreeTime(b *testing.B) {
 	}
 }
 
-// TODO Run on server, and divide result from this test with 1000 to get actual average
+// TODO Run on server, and divide result from this test with 10 to get actual average
 // go test -bench=BenchmarkOptimizedCreateMembershipProof -run=^a -benchtime=200x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedCreateMembershipProof.txt
 func BenchmarkOptimizedCreateMembershipProof(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMembershipProof - starting")
 	testAmount := 200 //Change if you change -benchtime=10000x
-	amountToAverageOver := 1000
+	amountToAverageOver := 10
 	randomCerts := make([][]byte, testAmount)
 
 	b.ResetTimer()
