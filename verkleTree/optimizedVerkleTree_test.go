@@ -18,13 +18,13 @@ var optimizedTestCerts = struct {
 var fanOuts = struct {
 	v []int
 }{
-	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+	v: []int{2, 64, 1024} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 var certAmount = struct {
 	c []int
 }{
-	c: []int{ 1000000, 2000000, 3000000, 4000000,5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back, 1000000, 2000000, 3000000, 4000000,
+	c: []int{10000000}//, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back, 1000000, 2000000, 3000000, 4000000,
 }
 var optimizedTable = []struct {
 	fanOut int
@@ -430,29 +430,29 @@ func BenchmarkOptimizedVerifyMembershipProof(b *testing.B) {
 
 // TODO run on server
 // This benchmark measures how the Create Membership proof time decreases after repeated queries.
-// go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=1x -benchmem  -timeout 9999999s | tee BenchmarkOptimizedCreateMemProofOverTime.txt
+// sudo go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedCreateMemProofOverTime.txt
 func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime - starting")
-	benchtime := 1                  //Should be same as benchtime
-	testAmount := 10000 * benchtime //Change if you change -benchtime=10000x
-	averageTimes := 100
+	benchtime := 10                //Should be same as benchtime
+	testAmount := 1000 //Change if you change -benchtime=10000x
+	averageTimes := 10
 
-	randomCerts := make([][]byte, testAmount)
+	randomCerts := make([][]byte, testAmount * benchtime)
 
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
 			pk := optimizedSetup(10, f)
-			benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pk, false, numThreads)
 			for o := range averageTimes {
+				benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pk, false, numThreads)
 				for k := range testAmount {
 					randInt := rand.Intn(certs)
 					randomCerts[k] = optimizedTestCerts.certs[randInt]
 				}
-				for j := range testAmount {
+				for j := 0; j < testAmount; j+=10 {
 					b.ResetTimer()
 					b.Run(fmt.Sprintf("fan-out: %d, certs: %d, iteration: %d", f, certs, o), func(b *testing.B) {
 						for i := 0; i < b.N; i++ {
-							optimizedCreateMembershipProof(randomCerts[j], *benchTree)
+							optimizedCreateMembershipProof(randomCerts[j+i], *benchTree)
 						}
 					})
 				}
