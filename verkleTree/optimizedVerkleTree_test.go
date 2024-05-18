@@ -441,8 +441,8 @@ func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
-			pk := optimizedSetup(10, f)
 			for o := range averageTimes {
+				pk := optimizedSetup(10, f)
 				benchTree := optimizedBuildTree(optimizedTestCerts.certs[:certs], f, pk, false, numThreads)
 				for k := range testAmount {
 					randInt := rand.Intn(certs)
