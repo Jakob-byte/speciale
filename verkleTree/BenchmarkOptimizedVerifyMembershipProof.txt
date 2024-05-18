@@ -1,0 +1,111 @@
+length of filearray:  10000000  capacity of file Array:  10982400
+length of filearray:  50000  capacity of file Array:  50858
+BenchmarkOptimizedVerifyMembershipProof - starting
+Time spent after witness 1 11.2µs
+Time spent after witness 2 19.89µs
+goos: linux
+goarch: amd64
+pkg: example/merkleTree/verkleTree
+cpu: AMD EPYC 9R14
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_1000000-32         	    1000	  81019557 ns/op	   26560 B/op	      80 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_1000000-32         	    1000	  40517476 ns/op	   13280 B/op	      40 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_1000000-32         	    1000	  28449145 ns/op	    9296 B/op	      28 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_1000000-32        	    1000	  20307555 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_1000000-32        	    1000	  16207299 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_1000000-32        	    1000	  16208506 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_1000000-32       	    1000	  12156085 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_1000000-32       	    1000	  12237904 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_1000000-32       	    1000	  12154995 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_1000000-32      	    1000	   8100756 ns/op	    2656 B/op	       8 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_2000000-32         	    1000	  85049598 ns/op	   27888 B/op	      84 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_2000000-32         	    1000	  44563763 ns/op	   14608 B/op	      44 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_2000000-32         	    1000	  28365736 ns/op	    9296 B/op	      28 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_2000000-32        	    1000	  24307748 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_2000000-32        	    1000	  20259810 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_2000000-32        	    1000	  16202218 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_2000000-32       	    1000	  12155082 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_2000000-32       	    1000	  12152614 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_2000000-32       	    1000	  12156774 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_2000000-32      	    1000	  12154093 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_3000000-32         	    1000	  89133683 ns/op	   29216 B/op	      88 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_3000000-32         	    1000	  44574753 ns/op	   14608 B/op	      44 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_3000000-32         	    1000	  32416018 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_3000000-32        	    1000	  24311241 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_3000000-32        	    1000	  20259678 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_3000000-32        	    1000	  16202639 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_3000000-32       	    1000	  16206912 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_3000000-32       	    1000	  12156345 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_3000000-32       	    1000	  12150918 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_3000000-32      	    1000	  12153350 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_4000000-32         	    1000	  89099368 ns/op	   29216 B/op	      88 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_4000000-32         	    1000	  44570169 ns/op	   14608 B/op	      44 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_4000000-32         	    1000	  32410783 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_4000000-32        	    1000	  24311308 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_4000000-32        	    1000	  20252617 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_4000000-32        	    1000	  16209110 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_4000000-32       	    1000	  16218254 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_4000000-32       	    1000	  12156290 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_4000000-32       	    1000	  12154138 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_4000000-32      	    1000	  12173488 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_5000000-32         	    1000	  93163791 ns/op	   30544 B/op	      92 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_5000000-32         	    1000	  48624693 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_5000000-32         	    1000	  32418835 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_5000000-32        	    1000	  24314006 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_5000000-32        	    1000	  20258876 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_5000000-32        	    1000	  16207848 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_5000000-32       	    1000	  16208173 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_5000000-32       	    1000	  12157613 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_5000000-32       	    1000	  12157621 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_5000000-32      	    1000	  12152659 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_6000000-32         	    1000	  93181084 ns/op	   30544 B/op	      92 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_6000000-32         	    1000	  48613721 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_6000000-32         	    1000	  32418207 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_6000000-32        	    1000	  24309456 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_6000000-32        	    1000	  20258430 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_6000000-32        	    1000	  16209074 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_6000000-32       	    1000	  16207518 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_6000000-32       	    1000	  12163388 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_6000000-32       	    1000	  12156010 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_6000000-32      	    1000	  12156745 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_7000000-32         	    1000	  93203624 ns/op	   30544 B/op	      92 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_7000000-32         	    1000	  48624396 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_7000000-32         	    1000	  32406628 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_7000000-32        	    1000	  24307823 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_7000000-32        	    1000	  20256341 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_7000000-32        	    1000	  16203002 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_7000000-32       	    1000	  16208800 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_7000000-32       	    1000	  12156360 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_7000000-32       	    1000	  12152184 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_7000000-32      	    1000	  12184006 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_8000000-32         	    1000	  93215748 ns/op	   30544 B/op	      92 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_8000000-32         	    1000	  48621516 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_8000000-32         	    1000	  32410272 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_8000000-32        	    1000	  24311245 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_8000000-32        	    1000	  20256837 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_8000000-32        	    1000	  16206643 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_8000000-32       	    1000	  16208177 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_8000000-32       	    1000	  12157017 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_8000000-32       	    1000	  12153762 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_8000000-32      	    1000	  12155980 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_9000000-32         	    1000	  97240228 ns/op	   31872 B/op	      96 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_9000000-32         	    1000	  48415451 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_9000000-32         	    1000	  32276084 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_9000000-32        	    1000	  24203328 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_9000000-32        	    1000	  20166967 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_9000000-32        	    1000	  16141542 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_9000000-32       	    1000	  16140335 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_9000000-32       	    1000	  12100168 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_9000000-32       	    1000	  12101610 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_9000000-32      	    1000	  12112412 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_2,_certs:_10000000-32        	    1000	  96835495 ns/op	   31872 B/op	      96 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_4,_certs:_10000000-32        	    1000	  48435420 ns/op	   15936 B/op	      48 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_8,_certs:_10000000-32        	    1000	  32280403 ns/op	   10624 B/op	      32 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_16,_certs:_10000000-32       	    1000	  24203120 ns/op	    7968 B/op	      24 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_32,_certs:_10000000-32       	    1000	  20176156 ns/op	    6640 B/op	      20 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_64,_certs:_10000000-32       	    1000	  16139263 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_128,_certs:_10000000-32      	    1000	  16133521 ns/op	    5312 B/op	      16 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_256,_certs:_10000000-32      	    1000	  12099487 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_512,_certs:_10000000-32      	    1000	  12103582 ns/op	    3984 B/op	      12 allocs/op
+BenchmarkOptimizedVerifyMembershipProof/fan-out:_1024,_certs:_10000000-32     	    1000	  12104251 ns/op	    3984 B/op	      12 allocs/op
+PASS
+ok  	example/merkleTree/verkleTree	38861.074s
