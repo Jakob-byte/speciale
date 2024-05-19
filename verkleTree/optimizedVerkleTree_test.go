@@ -450,7 +450,7 @@ func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 				}
 				for j := 0; j < testAmount; j += 10 {
 					b.ResetTimer()
-					b.Run(fmt.Sprintf("fan-out: %d, certs: %d, iteration: %d", f, certs, o), func(b *testing.B) {
+					b.Run(fmt.Sprintf("fan-out: %d, certs: %d, iteration: %d, testAmount: %d", f, certs, o, j), func(b *testing.B) {
 						for i := 0; i < b.N; i++ {
 							optimizedCreateMembershipProof(randomCerts[j+i], *benchTree)
 						}
