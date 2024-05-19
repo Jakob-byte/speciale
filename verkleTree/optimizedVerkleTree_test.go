@@ -433,11 +433,11 @@ func BenchmarkOptimizedVerifyMembershipProof(b *testing.B) {
 // sudo go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedCreateMemProofOverTime.txt
 func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime - starting")
-	benchtime := 10    //Should be same as benchtime
-	testAmount := 1000 //Change if you change -benchtime=10000x
+	benchtime := 10                 //Should be same as benchtime
+	testAmount := 10000 * benchtime //Change if you change -benchtime=10000x
 	averageTimes := 10
 
-	randomCerts := make([][]byte, testAmount*benchtime)
+	randomCerts := make([][]byte, testAmount)
 
 	for _, certs := range certAmount.c {
 		for _, f := range fanOuts.v {
