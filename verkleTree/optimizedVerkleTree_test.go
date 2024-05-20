@@ -18,7 +18,7 @@ var optimizedTestCerts = struct {
 var fanOuts = struct {
 	v []int
 }{
-	v: []int{2, 64, 1024}, //, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+	v: []int{64, 1024}, //, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 var certAmount = struct {
@@ -430,12 +430,12 @@ func BenchmarkOptimizedVerifyMembershipProof(b *testing.B) {
 
 // TODO run on server
 // This benchmark measures how the Create Membership proof time decreases after repeated queries.
-// sudo go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedCreateMemProofOverTime.txt
+// sudo go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedCreateMemProofOverTimeV4.txt
 func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime - starting")
 	benchtime := 10                 //Should be same as benchtime
 	testAmount := 10000 * benchtime //Change if you change -benchtime=10000x
-	averageTimes := 10
+	averageTimes := 1
 
 	randomCerts := make([][]byte, testAmount)
 
