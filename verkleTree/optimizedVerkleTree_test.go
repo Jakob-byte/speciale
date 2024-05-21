@@ -104,7 +104,7 @@ func TestOptimizedMembershipProofRealCerts(t *testing.T) {
 	}
 }
 
-func TestOptimizedNegativeMembershipProofWrongIndex(t *testing.T) {
+func TestOptimizedMembershipProofWrongIndex(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
 	max := len(optimizedTestCerts.certs)
 	fanOut := 10
