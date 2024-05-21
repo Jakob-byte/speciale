@@ -10,7 +10,7 @@ import (
 var testCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 50000, numThreads),
+	certs: loadCertificates("AllCertsOneFile20000", 100000, 8),
 }
 
 var table = []struct {
@@ -246,14 +246,21 @@ func TestJsonConverter(t *testing.T) {
 }
 
 // TODO is a bad test.
-//
-//	func TestMembershipProofTimes(t *testing.T) {
-//		fmt.Println("TestMemberShipProofTimes Running - bad test")
-//		start := time.Now()
-//		fanOut := 15
-//		pk := setup(4, fanOut)
-//		elapsed1 := time.Since(start)
-//
+func TestMembershipProofTimes(t *testing.T) {
+	fmt.Println("TestMemberShipProofTimes Running - bad test")
+	start := time.Now()
+	fanOut := 28
+	pk := setup(4, fanOut)
+
+	elapsed1 := time.Since(start)
+	fmt.Println("time to create pk", elapsed1)
+
+	start = time.Now()
+	BuildTree(testCerts.certs, fanOut, pk, 8)
+	elapsed1 = time.Since(start)
+	fmt.Println("time to build tree", elapsed1)
+}
+
 //		fmt.Println("time elapsed for loading certs, and setup : ", elapsed1)
 //
 //		start = time.Now()

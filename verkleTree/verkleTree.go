@@ -3,6 +3,9 @@ package verkletree
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
+
+	"time"
 
 	"slices"
 	"sync"
@@ -214,12 +217,24 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	}
 
 	//Makes the combinations of integers needed to calculate divident and polynomial.
+	start := time.Now()
 	degreeComb := combCalculater(fanOut)
+	elapsed := time.Since(start)
+	fmt.Println("degreeComb ", elapsed)
 
+	start = time.Now()
 	dividentList := dividendCalculator(fanOut, degreeComb)
+	elapsed = time.Since(start)
+	fmt.Println("divcalc ", elapsed)
+
 	//start := time.Now()
 	//fmt.Println("After div calc")
+	start = time.Now()
+
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
+	elapsed = time.Since(start)
+	fmt.Println("lagrangecalc ", elapsed)
+
 	//elapsed := time.Since(start)
 	//fmt.Println("Time for langrangeBasis: ", elapsed)
 

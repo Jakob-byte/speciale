@@ -18,13 +18,13 @@ var optimizedTestCerts = struct {
 var fanOuts = struct {
 	v []int
 }{
-	v: []int{2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
+	v: []int{128, 256, 512}, //2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
 }
 
 var certAmount = struct {
 	c []int
 }{
-	c: []int{1000000,2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back, 1000000, 2000000, 3000000, 4000000,
+	c: []int{10000000}, //1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, //TODO change back, 1000000, 2000000, 3000000, 4000000,
 }
 var optimizedTable = []struct {
 	fanOut int
@@ -456,8 +456,8 @@ func BenchmarkOptimizedVerifyMembershipProof(b *testing.B) {
 // sudo go test -bench=BenchmarkOptimizedCreateMemProofOverTime -run=^a -benchtime=10x -benchmem  -timeout 9999999s | sudo tee BenchmarkOptimizedCreateMemProofOverTimeV4.txt
 func BenchmarkOptimizedCreateMemProofOverTime(b *testing.B) {
 	fmt.Println("BenchmarkOptimizedCreateMemProofOverTime - starting")
-	benchtime := 10                 //Should be same as benchtime
-	testAmount := 10000 * benchtime //Change if you change -benchtime=10000x
+	//benchtime := 10                 //Should be same as benchtime
+	testAmount := 30000 //Change if you change -benchtime=10000x
 	averageTimes := 1
 
 	randomCerts := make([][]byte, testAmount)
