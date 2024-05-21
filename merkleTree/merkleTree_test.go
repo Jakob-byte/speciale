@@ -265,7 +265,7 @@ func TestJsonConverterNotInTree(t *testing.T) {
 
 // go test -run TestSizeOfWitnesses | tee proofSizesMerkle.txt
 func TestSizeOfWitnesses(t *testing.T) {
-    fmt.Println("TestSizeOfWitnesses Running")
+	fmt.Println("TestSizeOfWitnesses Running")
 
 
     for _, w := range certAmount.c {
