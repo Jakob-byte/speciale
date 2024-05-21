@@ -25,7 +25,7 @@ var fanOuts = struct {
 var certAmount = struct {
 	c []int
 }{
-	c: []int{9000000, 10000000},//1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
+	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
 }
 
 var threads = struct {
@@ -265,28 +265,18 @@ func TestJsonConverterNotInTree(t *testing.T) {
 
 // go test -run TestSizeOfWitnesses | tee proofSizesMerkle.txt
 func TestSizeOfWitnesses(t *testing.T) {
-	fmt.Println("TestSizeOfWitnesses - starting")
+    fmt.Println("TestSizeOfWitnesses Running")
 
-	randInt := rand.Intn(len(testCerts.certs))
-	randomcertificate := testCerts.certs[randInt]
-	witnessList := make([]witness, len(table))
-	for i, v := range table {
-		witnessList[i] = createWitness(randomcertificate, v.tree)
-	}
 
-	for i, v := range witnessList {
-		fmt.Println("At fanout ", table[i].fanOut, " and ", len(testCerts.certs), " certificates, the size of the witness is", len(genJsonWitness(v)))
-	}
-
-	for _, w := range certAmount.c {
-		randInt := rand.Intn(w)
-		randomcertificate := testCerts.certs[randInt]
-		for _, v := range fanOuts.v {
-			testTree := BuildTree(testCerts.certs[:w], v, numThreads)
-			size := genJsonWitness(createWitness(randomcertificate, *testTree))
-			fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
-		}
-	}
+    for _, w := range certAmount.c {
+        randInt := rand.Intn(w)
+        randomcertificate := testCerts.certs[randInt]
+        for _, v := range fanOuts.v {
+            testTree := BuildTree(testCerts.certs[:w], v, numThreads)
+            size := genJsonWitness(createWitness(randomcertificate,*testTree))
+            fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
+        }
+    }
 }
 
 // Testing for the best amount of threads depending on fanout for the pc building the tree.
