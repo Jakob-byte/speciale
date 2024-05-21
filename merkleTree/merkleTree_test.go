@@ -267,16 +267,15 @@ func TestJsonConverterNotInTree(t *testing.T) {
 func TestSizeOfWitnesses(t *testing.T) {
 	fmt.Println("TestSizeOfWitnesses Running")
 
-
-    for _, w := range certAmount.c {
-        randInt := rand.Intn(w)
-        randomcertificate := testCerts.certs[randInt]
-        for _, v := range fanOuts.v {
-            testTree := BuildTree(testCerts.certs[:w], v, numThreads)
-            size := genJsonWitness(createWitness(randomcertificate,*testTree))
-            fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
-        }
-    }
+for _, w := range certAmount.c {
+	randInt := rand.Intn(w)
+	randomcertificate := testCerts.certs[randInt]
+	for _, v := range fanOuts.v {
+		testTree := BuildTree(testCerts.certs[:w], v, numThreads)
+		size := genJsonWitness(createWitness(randomcertificate,*testTree))
+		fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
+	}
+	}
 }
 
 // Testing for the best amount of threads depending on fanout for the pc building the tree.
