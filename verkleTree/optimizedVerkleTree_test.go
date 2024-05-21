@@ -12,7 +12,7 @@ var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 10000000, numThreads), // TODO increase ALOT! :)
+	certs: loadCertificates("AllCertsOneFile20000", 10000, numThreads), // TODO increase ALOT! :)
 }
 
 var fanOuts = struct {
@@ -85,6 +85,7 @@ func TestOptimizedMembershipProof(t *testing.T) {
 		panic("point did not verify as expected")
 	}
 }
+
 func TestOptimizedMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
 	max := len(optimizedTestCerts.certs)
@@ -101,6 +102,28 @@ func TestOptimizedMembershipProofRealCerts(t *testing.T) {
 			break
 		}
 	}
+}
+
+func TestOptimizedMembershipProofWrongIndex(t *testing.T) {
+	fmt.Println("TestMembershipProofRealCerts Running")
+	max := len(optimizedTestCerts.certs)
+	fanOut := 10
+	pk := optimizedSetup(10, fanOut)
+	verkTree := optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk, witnessBool, numThreads)
+
+	randNumb := rand.Intn(max)
+	mp := optimizedCreateMembershipProof(optimizedTestCerts.certs[randNumb], *verkTree)
+	numbToSub := -1
+	if mp.Witnesses[0].Index != 0 {
+		numbToSub = 1
+	}
+	mp.Witnesses[0].Index -= uint64(numbToSub)
+
+	didPointVerify := optimizedVerifyMembershipProof(mp, pk)
+	if didPointVerify != false {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, false)
+	}
+
 }
 
 func TestOptimizedNegativeMembershipProofRealCerts(t *testing.T) {
