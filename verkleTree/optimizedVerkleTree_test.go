@@ -126,7 +126,7 @@ func TestOptimizedMembershipProofWrongIndex(t *testing.T) {
 
 }
 
-func TestOptimizedNegativeMembershipProofRealCerts(t *testing.T) {
+func TestOptimizedNegativeMembershipProof(t *testing.T) {
 	fmt.Println("TestNegativeMembershipProofRealCerts Running")
 	fanOut := 10
 	certToTest := optimizedTestCerts.certs[30242]
@@ -137,6 +137,27 @@ func TestOptimizedNegativeMembershipProofRealCerts(t *testing.T) {
 	memProof := optimizedCreateMembershipProof(certToTest, *verkTree1)
 	if optimizedVerifyMembershipProof(memProof, verkTree2.pk) {
 		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
+	}
+}
+
+func TestOptimizedNegativeMembershipProofWrongIndex(t *testing.T) {
+	fmt.Println("TestMembershipProofRealCerts Running")
+	max := len(optimizedTestCerts.certs)
+	fanOut := 10
+	pk := optimizedSetup(10, fanOut)
+	verkTree := optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk, witnessBool, numThreads)
+
+	randNumb := rand.Intn(max)
+	mp := optimizedCreateMembershipProof(optimizedTestCerts.certs[randNumb], *verkTree)
+	numbToSub := -1
+	if mp.Witnesses[0].Index != 0 {
+		numbToSub = 1
+	}
+	mp.Witnesses[0].Index -= uint64(numbToSub)
+
+	didPointVerify := optimizedVerifyMembershipProof(mp, pk)
+	if didPointVerify != false {
+		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, false)
 	}
 }
 
