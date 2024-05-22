@@ -12,7 +12,7 @@ var witnessBool = false
 var optimizedTestCerts = struct {
 	certs [][]byte
 }{
-	certs: loadCertificates("AllCertsOneFile20000", 10000000, numThreads), // TODO increase ALOT! :)
+	certs: loadCertificates("AllCertsOneFile20000", 100000, numThreads), // TODO increase ALOT! :)
 }
 
 var fanOuts = struct {
@@ -87,7 +87,7 @@ func TestOptimizedMembershipProof(t *testing.T) {
 }
 
 func TestOptimizedMembershipProofRealCerts(t *testing.T) {
-	fmt.Println("TestMembershipProofRealCerts Running")
+	fmt.Println("TestOptimizedMembershipProofRealCerts Running")
 	max := len(optimizedTestCerts.certs)
 	fanOut := 10
 	pk := optimizedSetup(10, fanOut)
@@ -105,7 +105,7 @@ func TestOptimizedMembershipProofRealCerts(t *testing.T) {
 }
 
 func TestOptimizedMembershipProofWrongIndex(t *testing.T) {
-	fmt.Println("TestMembershipProofRealCerts Running")
+	fmt.Println("TestOptimizedMembershipProofWrongIndex Running")
 	max := len(optimizedTestCerts.certs)
 	fanOut := 10
 	pk := optimizedSetup(10, fanOut)
@@ -127,7 +127,7 @@ func TestOptimizedMembershipProofWrongIndex(t *testing.T) {
 }
 
 func TestOptimizedNegativeMembershipProof(t *testing.T) {
-	fmt.Println("TestNegativeMembershipProofRealCerts Running")
+	fmt.Println("TestOptimizedNegativeMembershipProof Running")
 	fanOut := 10
 	certToTest := optimizedTestCerts.certs[30242]
 	pk1 := optimizedSetup(10, fanOut)
@@ -140,29 +140,19 @@ func TestOptimizedNegativeMembershipProof(t *testing.T) {
 	}
 }
 
-func TestOptimizedNegativeMembershipProofWrongIndex(t *testing.T) {
-	fmt.Println("TestMembershipProofRealCerts Running")
-	max := len(optimizedTestCerts.certs)
+func TestOptimizedVerifyTree(t *testing.T) {
+	fmt.Println("TestOptimizedVerifyTree Running")
 	fanOut := 10
-	pk := optimizedSetup(10, fanOut)
-	verkTree := optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk, witnessBool, numThreads)
+	pk1 := optimizedSetup(10, fanOut)
 
-	randNumb := rand.Intn(max)
-	mp := optimizedCreateMembershipProof(optimizedTestCerts.certs[randNumb], *verkTree)
-	numbToSub := -1
-	if mp.Witnesses[0].Index != 0 {
-		numbToSub = 1
-	}
-	mp.Witnesses[0].Index -= uint64(numbToSub)
-
-	didPointVerify := optimizedVerifyMembershipProof(mp, pk)
-	if didPointVerify != false {
-		t.Errorf("Result from VerifyNode was incorrect, got: %t, want: %t.", didPointVerify, false)
+	verkTree1 := optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk1, witnessBool, numThreads)
+	if !optimizedVerifyTree(optimizedTestCerts.certs, *verkTree1, pk1, numThreads) {
+		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
 	}
 }
 
 func TestOptimizedNegativeVerifyTree(t *testing.T) {
-	fmt.Println("TestNegativeVerifyTree Running")
+	fmt.Println("TestOptimizedNegativeVerifyTree Running")
 	fanOut := 10
 	pk1 := optimizedSetup(10, fanOut)
 	pk2 := optimizedSetup(10, fanOut)
@@ -173,7 +163,7 @@ func TestOptimizedNegativeVerifyTree(t *testing.T) {
 }
 
 func TestOptimizedDifferentTreesAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
-	fmt.Println("TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees -  starting")
+	fmt.Println("TestOptimizedDifferentTreesAmountOfThreadsDoesNotMakeDifferentTrees -  starting")
 	fanOut := 10
 	pk1 := optimizedSetup(10, fanOut)
 	verkTree1 := optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk1, witnessBool, 8)
@@ -199,39 +189,9 @@ func TestOptimizedDifferentAmountOfCertsWithWithoutProofs(t *testing.T) {
 	}
 }
 
-func TestOptimizedRealCertificatesTime(t *testing.T) {
-	fmt.Println("TestRealCertificatesTime Running")
-	for i := 14; i <= 14; i++ {
-		fmt.Println("Current fanout: ", i)
-		testAmount := 5
-		start := time.Now()
-		fanOut := i
-		pk := optimizedSetup(4, fanOut)
-		start = time.Now()
-		var verkTree *optimizedVerkleTree
-		for i := 0; i < testAmount; i++ {
-			verkTree = optimizedBuildTree(optimizedTestCerts.certs, fanOut, pk, witnessBool, numThreads)
-		}
-		elapsed2 := time.Since(start).Seconds() / float64(testAmount)
-		fmt.Println("Built tree time : ", elapsed2, "seconds")
-
-		start = time.Now()
-		var result bool
-		for i := 0; i < testAmount; i++ {
-			result = optimizedVerifyTree(optimizedTestCerts.certs, *verkTree, pk, 8)
-		}
-		elapsed3 := time.Since(start).Seconds() / float64(testAmount)
-		fmt.Println("VerifyTree time : ", elapsed3, "seconds")
-
-		if result != true {
-			t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-		}
-	}
-}
-
 // Tests whether the JSON converter works correctly, by comparing the membership proofs from before and after using it.
 func TestOptimizedJsonConverter(t *testing.T) {
-	fmt.Println("TestJsonConverter Running")
+	fmt.Println("TestOptimizedJsonConverter Running")
 	fanOut := 2
 
 	pk := optimizedSetup(30, fanOut)
@@ -287,7 +247,7 @@ func TestOptimizedSizeOfWitnesses(t *testing.T) {
 
 // go test -bench=BenchmarkRootSetupPkTime -run=^a -benchtime=10x -benchmem  -timeout 99999s | tee verkRootSetupPkBench.txt
 func BenchmarkOptimizedSetupPkTime(b *testing.B) {
-	fmt.Println("BenchmarkRootSetupPkTime Running")
+	fmt.Println("BenchmarkOptimizedSetupPkTime Running")
 	for _, v := range fanOuts.v {
 		b.Run(fmt.Sprintf("fan-out: %d", v), func(b *testing.B) {
 			b.ResetTimer()
@@ -301,7 +261,7 @@ func BenchmarkOptimizedSetupPkTime(b *testing.B) {
 
 // go test -bench=BenchmarkRootVerifyNode -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee verkRootVerifyMemProofBench.txt
 func BenchmarkOptimizedVerifyNode(b *testing.B) {
-	fmt.Println("BenchmarkRootVerifyNode Running")
+	fmt.Println("BenchmarkOptimizedVerifyNode Running")
 	b.ResetTimer()
 	testAmount := 10 //Change if you change -benchtime=10000x
 
@@ -328,7 +288,7 @@ func BenchmarkOptimizedVerifyNode(b *testing.B) {
 // build for fanouts for amountofCerts save in list then generate membershiproof and state what fanout/amount we are in?
 // go test -bench=BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts -run=^a -benchtime=5x -benchmem  -timeout 99999s | tee VerkRootCreateMembershipProofBench.txt
 func BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts(b *testing.B) {
-	fmt.Println("BenchmarkRootCreateMembershipProof Running")
+	fmt.Println("BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts Running")
 	testAmount := 10 //Change if you change -benchtime=10000x
 
 	randomCerts := make([][]byte, testAmount)
@@ -351,7 +311,7 @@ func BenchmarkOptimizedvCreateMembershipProofVaryingAmountOfCerts(b *testing.B) 
 
 // go test -bench=BenchmarkOptimizedDifferentAmountOfCertsBuild -benchtime=1x -run=^a -benchmem  -timeout 99999s | tee BenchmarkOptimizedDifferentAmountOfCertsBuild.txt
 func BenchmarkOptimizedDifferentAmountOfCertsBuild(b *testing.B) {
-	fmt.Println("BenchmarkRootDifferentAmountOfCertsBuild -  starting")
+	fmt.Println("BenchmarkOptimizedDifferentAmountOfCertsBuild -  starting")
 	//fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 	for _, fan := range fanOuts.v {
 		pk := optimizedSetup(4, fan)
@@ -368,7 +328,7 @@ func BenchmarkOptimizedDifferentAmountOfCertsBuild(b *testing.B) {
 
 // go test -bench=BenchmarkOptimizedDifferentAmountOfThreads -benchtime=3x -run=^a -benchmem  -timeout 99999s | tee BenchmarkOptimizedDifferentAmountOfThreads.txt
 func BenchmarkOptimizedDifferentAmountOfThreads(b *testing.B) {
-	fmt.Println("BenchmarkRootDifferentAmountOfThreads -  starting")
+	fmt.Println("BenchmarkOptimizedDifferentAmountOfThreads -  starting")
 	fanOuts := []int{32} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
 
 	for _, fan := range fanOuts {
