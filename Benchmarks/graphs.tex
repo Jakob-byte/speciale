@@ -1,0 +1,62 @@
+% !TEX root = graphs.tex
+\documentclass[twoside,11pt,openright]{report}
+\usepackage{mathtools}
+
+\usepackage{filecontents}
+\usepackage[utf8]{inputenc}
+\usepackage{pdfpages}
+
+\usepackage[american]{babel}
+\usepackage{a4}
+\usepackage{pgfplots}
+\usepackage{svg}
+\usepgfplotslibrary{external} 
+\tikzexternalize
+\pgfplotsset{width=10cm,compat=1.9}
+\usepgfplotslibrary{external}
+\usepackage{latexsym}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{epsfig}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx}
+\usepackage{color}
+\usepackage{epstopdf}
+\usepackage{microtype}
+ \usepackage{url}
+ \usepackage{hyperref}
+%%% Code environment
+
+
+
+\usepackage{lipsum}
+
+\renewcommand*\sfdefault{lmss}
+\renewcommand*\ttdefault{txtt}
+
+\newcommand{\todo}[1]{{\color[rgb]{.5,0,0}\textbf{$\blacktriangleright$#1$\blacktriangleleft$}}}
+
+\begin{document}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{tikzpicture}
+    \begin{axis}[
+    title={Cert generation time over time},
+    xlabel={iteration},
+    ylabel={time in ms},
+    legend pos=north east,
+    xmax=30000,
+    mark=none,
+    ]
+    \addplot table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot table [y=fan-64, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot table [y=fan-128, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot table [y=fan-1024, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-2,fan-64, fan-128, fan-256, fan-512, fan-1024}   
+\end{axis}
+\end{tikzpicture}
+
+
+\end{document}
