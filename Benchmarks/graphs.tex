@@ -1,11 +1,11 @@
 % !TEX root = graphs.tex
-\documentclass[twoside,11pt,openright]{report}
-\usepackage{mathtools}
+\documentclass{article}
 
 \usepackage{filecontents}
 \usepackage[utf8]{inputenc}
 \usepackage{pdfpages}
-
+%\pgfplotsset{compat=1.11}
+\usepackage[dvipsnames]{xcolor}
 \usepackage[american]{babel}
 \usepackage{a4}
 \usepackage{pgfplots}
@@ -39,24 +39,143 @@
 \begin{document}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+%\resizebox*{15cm}{5cm}{%
+\pgfplotsset{%
+    %compat=1.18,
+    every x tick scale label/.style={at={(rel axis cs:1,0)},anchor=south west,inner sep=1pt},
+    ymajorgrids=true,
+
+ %   legend style={
+ %       at={(0.01,0.01)},
+ %       anchor=south west,
+ %       
+ %   },
+}
+
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+   % title={Cert generation time over time},
+    xlabel={iteration},
+    ylabel={time in ms},
+    width=4.5cm,
+    legend pos=north east,
+    xmax=30000,
+    mark=none,
+    ]
+    \addplot[cyan] table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-2}   
+\end{axis}
+\end{tikzpicture}
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+    %title={Cert generation time over time},
+    xlabel={iteration},
+    %ylabel={time in ms},
+    width=4.5cm,
+    legend pos=north east,
+    xmax=30000,
+    %mark=none,
+    ]
+    \addplot[magenta] table [y=fan-64, col sep=semicolon, mark=none, style{fill=red}] {data/myData3.csv};
+        \legend{fan-64}   
+\end{axis}
+\end{tikzpicture}
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+    %title={Cert generation time over time},
+    width=4.5cm,
+    xlabel={iteration},
+   % ylabel={time in ms},
+    legend pos=north east,
+    xmax=30000,
+    mark=none,
+    ]
+    %\addplot table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-64, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[teal] table [y=fan-128, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-1024, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-128}   
+\end{axis}
+\end{tikzpicture}
+
+
+
+
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+   % title={Cert generation time over time},
+    xlabel={iteration},
+    ylabel={time in ms},
+    legend pos=north east,
+    width=4.5cm,
+    xmax=30000,
+    mark=none,
+    %ymajorgrids=true,
+    ]
+    \addplot[brown] table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
+
+        \legend{fan-256}   
+\end{axis}
+\end{tikzpicture}
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+    %title={Cert generation time over time},
+    xlabel={iteration},
+    %ylabel={time in ms},
+    legend pos=north east,
+    xmax=30000,
+    width=4.5cm,
+    mark=none,
+    ]
+    \addplot[blue] table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-512}   
+\end{axis}
+\end{tikzpicture}
+\begin{tikzpicture}[baseline]
+    \begin{axis}[
+    %title={Cert generation time over time},
+    xlabel={iteration},
+   % ylabel={time in ms},
+    legend pos=north east,
+    xmax=30000,
+    mark=none,
+    width=4.5cm,
+    ]
+    %\addplot table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-64, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-128, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
+    %\addplot table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[Bittersweet] table [y=fan-1024, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-1024}   
+\end{axis}
+\end{tikzpicture}
+
+
+
+
 \begin{tikzpicture}
     \begin{axis}[
-    title={Cert generation time over time},
+   % title={Cert generation time over time},
     xlabel={iteration},
     ylabel={time in ms},
     legend pos=north east,
     xmax=30000,
     mark=none,
     ]
-    \addplot table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
-    \addplot table [y=fan-64, col sep=semicolon, mark=none] {data/myData3.csv};
-    \addplot table [y=fan-128, col sep=semicolon, mark=none] {data/myData3.csv};
-    \addplot table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
-    \addplot table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
-    \addplot table [y=fan-1024, col sep=semicolon, mark=none] {data/myData3.csv};
-        \legend{fan-2,fan-64, fan-128, fan-256, fan-512, fan-1024}   
+    \addplot[cyan] table [y=fan-2, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[magenta] table [y=fan-64, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[teal] table [y=fan-128, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[brown] table [y=fan-256, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[blue] table [y=fan-512, col sep=semicolon, mark=none] {data/myData3.csv};
+    \addplot[Bittersweet] table [y=fan-1024, col sep=semicolon, mark=none] {data/myData3.csv};
+        \legend{fan-2, fan-64, fan-128, fan-256, fan-512, fan-1024}
 \end{axis}
 \end{tikzpicture}
+
 
 
 \end{document}
