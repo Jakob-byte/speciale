@@ -27,7 +27,7 @@ type precompute struct {
 // the public key/public paramters containing the nessasary values for calculating the vectorcommit/prove
 // TODO ??? hvad er de her values faktisk, vi har bare skrevet dem ind
 type pubParams struct {
-	degree        int
+	fanOut        int
 	lagrangeBasis []e.G1
 	diff2         []e.G2
 	domain        []e.Scalar
@@ -50,7 +50,7 @@ func optimizedSetup(security, t int) pubParams {
 
 	// setups and defines the slices needed in the public parameters
 	var params pubParams
-	params.degree = t
+	params.fanOut = t
 	params.lagrangeBasis = make([]e.G1, t)
 	params.diff2 = make([]e.G2, t)
 	params.domain = make([]e.Scalar, t)
@@ -76,7 +76,7 @@ func optimizedSetup(security, t int) pubParams {
 	}
 
 	// lagrange Basis magic
-	// evaluate the lagrange basis for the given value up to the degree of the polynomial(size of vector to commit)
+	// evaluate the lagrange basis for the given value up to the fanOut of the polynomial(size of vector to commit)
 	for i := range params.lagrangeBasis {
 		l := evalLagrangeValue(params, i, *a)
 		params.lagrangeBasis[i].ScalarMult(&l, g1)
@@ -103,7 +103,7 @@ func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 	numer := new(e.Scalar)
 	denom := new(e.Scalar)
 	elem := new(e.Scalar)
-	for j := 0; j < params.degree; j++ {
+	for j := 0; j < params.fanOut; j++ {
 		if j == i {
 			continue
 		}
@@ -135,23 +135,23 @@ func optimizedAPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
 // TODO precalculates values used to find the quotient polynomial?
 func preCalculate(params pubParams) pubParams {
 	params.precalc = &precompute{
-		invsub: make([]e.Scalar, params.degree*2-1),
-		ta:     make([][]e.Scalar, params.degree),
-		tk:     make([]e.Scalar, params.degree),
+		invsub: make([]e.Scalar, params.fanOut*2-1),
+		ta:     make([][]e.Scalar, params.fanOut),
+		tk:     make([]e.Scalar, params.fanOut),
 	}
 
 	for i := range params.precalc.ta {
-		params.precalc.ta[i] = make([]e.Scalar, params.degree)
+		params.precalc.ta[i] = make([]e.Scalar, params.fanOut)
 	}
 
 	tj := new(e.Scalar)
-	for j := 0; j < params.degree; j++ {
+	for j := 0; j < params.fanOut; j++ {
 		tj.SetUint64(uint64(j))
-		for m := 0; m < params.degree; m++ {
+		for m := 0; m < params.fanOut; m++ {
 			if j == m {
 				continue
 			}
-			idx := params.degree - 1 + m - j
+			idx := params.fanOut - 1 + m - j
 			params.precalc.invsub[idx].SetUint64(uint64(m))
 			params.precalc.invsub[idx].Sub(&params.precalc.invsub[idx], tj)
 			params.precalc.invsub[idx].Inv(&params.precalc.invsub[idx])
@@ -185,7 +185,7 @@ func preCalculate(params pubParams) pubParams {
 
 // TODO what does this do?
 func invSub(params pubParams, m, j int) e.Scalar {
-	idx := params.degree - 1 + m - j
+	idx := params.fanOut - 1 + m - j
 	return params.precalc.invsub[idx]
 }
 
