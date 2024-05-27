@@ -59,7 +59,7 @@ func optimizedSetup(security, t int) pubParams {
 		params.domain[i] = *new(e.Scalar)
 		params.aPrimeDomainI[i] = *new(e.Scalar)
 		params.lagrangeBasis[i] = *g1
-		params.diff2[i] = *g2 // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
+		//params.diff2[i] = *g2 // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
 	}
 
 	params.zeroG1.SetUint64(0)
