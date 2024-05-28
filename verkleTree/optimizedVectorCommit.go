@@ -214,11 +214,11 @@ func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 }
 
 // TODO calculates the quotient polynomial, used for calculating the proof
-func qPoly(params pubParams, certs []e.Scalar, i, m int, y, quotient e.Scalar) e.Scalar {
+func qPoly(params pubParams, certs []e.Scalar, i, m int, quotient e.Scalar) e.Scalar {
 	var numer e.Scalar
 	if i != m {
 		//numer = diff(certs[m], y, numer) // TODO skriv number.sub(certs[m],y) da dette er legacy fra det andet kode
-		numer.Sub(&certs[m], &y)
+		numer.Sub(&certs[m], &certs[i])
 		if numer.IsEqual(&params.zeroG1) == 1 {
 			quotient.SetUint64(0)
 			return quotient
@@ -246,18 +246,18 @@ func qPoly(params pubParams, certs []e.Scalar, i, m int, y, quotient e.Scalar) e
 }
 
 // generates the proof for a index in the given vector of e.Scalar values
-func optimizedProveGen(params pubParams, certs []e.Scalar, index int) e.G1 {
+func optimizedProofGen(params pubParams, certs []e.Scalar, index int) e.G1 {
 
-	var prove e.G1
-	prove.SetIdentity()
+	var proof e.G1
+	proof.SetIdentity()
 	var o e.G1
 	var qij e.Scalar
 	for j := range params.domain {
-		qij = qPoly(params, certs, index, j, certs[index], qij)
+		qij = qPoly(params, certs, index, j, qij)
 		o.ScalarMult(&qij, &params.lagrangeBasis[j])
-		prove.Add(&prove, &o)
+		proof.Add(&proof, &o)
 	}
-	return prove
+	return proof
 }
 
 // Verifies the commitment and proof

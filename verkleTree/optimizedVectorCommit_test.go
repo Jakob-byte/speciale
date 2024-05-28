@@ -12,7 +12,7 @@ func TestOptimizedAllInVectorCommit(t *testing.T) {
 	scalVect := certToScalarVector(testCerts.certs[:fanout])
 
 	commitment := optimizedCommit(params, scalVect)
-	proof := optimizedProveGen(params, scalVect, 4)
+	proof := optimizedProofGen(params, scalVect, 4)
 
 	didItWork := optimizedVerify(params, commitment, proof, scalVect[4], 4)
 

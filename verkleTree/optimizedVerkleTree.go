@@ -238,7 +238,7 @@ func optimizedMakeLayer(nodes []*optimizedNode, fanOut int, firstLayer bool, pk 
 		//Sets the parent in each of the nodes children.
 		for j, v := range childrenList {
 			if includeWitnesses {
-				v.witness = optimizedWitnessStruct{W: optimizedProveGen(pk, vectToCommit, i%fanOut),
+				v.witness = optimizedWitnessStruct{W: optimizedProofGen(pk, vectToCommit, i%fanOut),
 					Index: uint64(i % fanOut),
 					Fx0:   vectToCommit[j]}
 			}
@@ -324,7 +324,7 @@ func optimizedCreateMembershipProof(certificate []byte, tree optimizedVerkleTree
 				}
 			}
 
-			nod.witness = optimizedWitnessStruct{W: optimizedProveGen(tree.pk, childCommits, nod.childNumb),
+			nod.witness = optimizedWitnessStruct{W: optimizedProofGen(tree.pk, childCommits, nod.childNumb),
 				Index: uint64(nod.childNumb),
 				Fx0:   childCommits[nod.childNumb]}
 		}
