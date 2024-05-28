@@ -98,8 +98,8 @@ func optimizedSetup(security, t int) pubParams {
 
 // Function to evaluate the lagrange value in the secret value for the given index and secret key a
 func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
-	var ret e.Scalar
-	ret.SetOne()
+	var lagrangeValue e.Scalar
+	lagrangeValue.SetOne()
 	numer := new(e.Scalar)
 	denom := new(e.Scalar)
 	elem := new(e.Scalar)
@@ -112,14 +112,14 @@ func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 		denom.Sub(&params.domain[i], &params.domain[j])
 		denom.Inv(denom)
 		elem.Mul(numer, denom)
-		ret.Mul(&ret, elem)
+		lagrangeValue.Mul(&lagrangeValue, elem)
 	}
-	return ret
+	return lagrangeValue
 }
 
 // TODO function to do some magic? in the public parameters
-func optimizedAPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
-	ret.SetOne()
+func optimizedAPrime(params pubParams, m int, aPrimeM e.Scalar) e.Scalar {
+	aPrimeM.SetOne()
 	var eScaler e.Scalar
 
 	for i := range params.domain {
@@ -127,9 +127,9 @@ func optimizedAPrime(params pubParams, m int, ret e.Scalar) e.Scalar {
 			continue
 		}
 		eScaler.Sub(&params.domain[m], &params.domain[i])
-		ret.Mul(&ret, &eScaler)
+		aPrimeM.Mul(&aPrimeM, &eScaler)
 	}
-	return ret
+	return aPrimeM
 }
 
 // TODO precalculates values used to find the quotient polynomial?
@@ -193,14 +193,14 @@ func invSub(params pubParams, m, j int) e.Scalar {
 func optimizedCommit(params pubParams, certs []e.Scalar) e.G1 {
 
 	var elem e.G1
-	var ret e.G1
-	ret.SetIdentity()
+	var commit e.G1
+	commit.SetIdentity()
 
 	for i, e := range certs {
 		elem.ScalarMult(&e, &params.lagrangeBasis[i])
-		ret.Add(&ret, &elem)
+		commit.Add(&commit, &elem)
 	}
-	return ret
+	return commit
 }
 
 func ta(params pubParams, m, j int, ret e.Scalar) e.Scalar {
@@ -214,20 +214,20 @@ func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 }
 
 // TODO calculates the quotient polynomial, used for calculating the proof
-func qPoly(params pubParams, certs []e.Scalar, i, m int, y, ret e.Scalar) e.Scalar {
+func qPoly(params pubParams, certs []e.Scalar, i, m int, y, quotient e.Scalar) e.Scalar {
 	var numer e.Scalar
 	if i != m {
 		//numer = diff(certs[m], y, numer) // TODO skriv number.sub(certs[m],y) da dette er legacy fra det andet kode
 		numer.Sub(&certs[m], &y)
 		if numer.IsEqual(&params.zeroG1) == 1 {
-			ret.SetUint64(0)
-			return ret
+			quotient.SetUint64(0)
+			return quotient
 		}
 		tempInvSub := invSub(params, m, i)
-		ret.Mul(&numer, &tempInvSub)
-		return ret
+		quotient.Mul(&numer, &tempInvSub)
+		return quotient
 	}
-	ret.SetUint64(0)
+	quotient.SetUint64(0)
 	var t e.Scalar
 	var t1 e.Scalar
 	for j := range certs {
@@ -236,28 +236,28 @@ func qPoly(params pubParams, certs []e.Scalar, i, m int, y, ret e.Scalar) e.Scal
 		}
 		tempTA := ta(params, m, j, t1)
 		t.Mul(&certs[j], &tempTA)
-		ret.Add(&ret, &t)
+		quotient.Add(&quotient, &t)
 	}
 	tempTK := tk(params, m, t1)
 	t.Mul(&certs[m], &tempTK)
-	ret.Sub(&ret, &t)
-	return ret
+	quotient.Sub(&quotient, &t)
+	return quotient
 
 }
 
 // generates the proof for a index in the given vector of e.Scalar values
 func optimizedProveGen(params pubParams, certs []e.Scalar, index int) e.G1 {
 
-	var ret e.G1
-	ret.SetIdentity()
+	var prove e.G1
+	prove.SetIdentity()
 	var o e.G1
 	var qij e.Scalar
 	for j := range params.domain {
 		qij = qPoly(params, certs, index, j, certs[index], qij)
 		o.ScalarMult(&qij, &params.lagrangeBasis[j])
-		ret.Add(&ret, &o)
+		prove.Add(&prove, &o)
 	}
-	return ret
+	return prove
 }
 
 // Verifies the commitment and proof
