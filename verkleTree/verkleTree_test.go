@@ -110,6 +110,16 @@ func TestNegativeMembershipProofRealCerts(t *testing.T) {
 	}
 }
 
+func TestVerifyTree(t *testing.T) {
+	fmt.Println("TestNegativeVerifyTree Running")
+	fanOut := 10
+	pk := setup(10, fanOut)
+	verkTree1 := BuildTree(testCerts.certs, fanOut, pk, 8)
+	if !verifyTree(testCerts.certs, *verkTree1, pk, 8) {
+		t.Error("Did not verify tree as expected!")
+	}
+}
+
 func TestNegativeVerifyTree(t *testing.T) {
 	fmt.Println("TestNegativeVerifyTree Running")
 	fanOut := 10
@@ -117,7 +127,7 @@ func TestNegativeVerifyTree(t *testing.T) {
 	pk2 := setup(10, fanOut)
 	verkTree1 := BuildTree(testCerts.certs, fanOut, pk1, 8)
 	if verifyTree(testCerts.certs, *verkTree1, pk2, 8) {
-		t.Error("Accepted the memebershipproof, even though the pk was wrong. Send assitance!")
+		t.Error("Verified tree although the public paramters provided were wrong!")
 	}
 }
 
