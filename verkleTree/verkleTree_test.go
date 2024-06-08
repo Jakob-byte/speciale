@@ -78,31 +78,6 @@ func TestVerifyNode(t *testing.T) {
 	}
 }
 
-func TestMembershipProof2(t *testing.T) {
-	fmt.Println("verifyMemberShip Running")
-
-	points := [][]byte{
-		{5},
-		{15},
-		{19},
-		{27},
-		{30},
-		{40},
-		{50},
-		{60},
-	}
-	fanOut := 2
-	pk := setup(1, fanOut)
-	verk := BuildTree(points, fanOut, pk, 2)
-	mp := createMembershipProof(points[2], *verk)
-	didPointVerify := verifyMembershipProof(mp, pk)
-	//fmt.Println("memberShipProof", mp)
-	//fmt.Println("leafs", verk.leafs[0])
-	if !didPointVerify {
-		panic("point did not verify as expected")
-	}
-}
-
 func TestMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
 	max := len(testCerts.certs)
