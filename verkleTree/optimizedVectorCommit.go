@@ -3,9 +3,6 @@ package verkletree
 import (
 	"crypto/rand"
 
-	//"fmt"
-	//"runtime"
-
 	e "github.com/cloudflare/circl/ecc/bls12381"
 )
 
@@ -17,15 +14,13 @@ type optimizedWitnessStruct struct {
 }
 
 // A struct containing the precomputed values used for computing the commitment
-// TODO maybe rewrite after knowing what these values actually are
 type precompute struct {
 	invsub []e.Scalar
 	ta     [][]e.Scalar
 	tk     []e.Scalar
 }
 
-// the public key/public paramters containing the nessasary values for calculating the vectorcommit/prove
-// TODO ??? hvad er de her values faktisk, vi har bare skrevet dem ind
+// the public key/public paramters containing the nessasary values for calculating the vectorcommit and proof
 type pubParams struct {
 	fanOut        int
 	lagrangeBasis []e.G1
@@ -37,11 +32,10 @@ type pubParams struct {
 	oneG1         e.Scalar
 }
 
-// type 3 kzg setting https://www.zkdocs.com/docs/zkdocs/commitments/kzg_polynomial_commitment/
 // setup from https://hackmd.io/@Evaldas/SJ9KHoDJF and https://github.com/lunfardo314/verkle
 // The setup function handles det setup of the crypto part of the the VerkleTree with the elliptic curves and fields, takes as input a security parameter.
 // It returns the public paramters.
-func optimizedSetup(security, t int) pubParams {
+func optimizedSetup(t int) pubParams {
 	//Sets up the generator elements, as well as the secret key a.
 	g1 := e.G1Generator()
 	g2 := e.G2Generator()
@@ -59,7 +53,6 @@ func optimizedSetup(security, t int) pubParams {
 		params.domain[i] = *new(e.Scalar)
 		params.aPrimeDomainI[i] = *new(e.Scalar)
 		params.lagrangeBasis[i] = *g1
-		//params.diff2[i] = *g2 // TODO må vi sætte dem her til g1 og g2 variablerne vi har lavet tidligere er ødelægger det noget med pointer magi?
 	}
 
 	params.zeroG1.SetUint64(0)
@@ -70,26 +63,25 @@ func optimizedSetup(security, t int) pubParams {
 		params.domain[i].SetUint64(uint64(i))
 	}
 
-	// TODO Generator from aPrimeDomain  what is this domain?
+	// Generator for the aPrimeDomain
 	for i := range params.aPrimeDomainI {
 		params.aPrimeDomainI[i] = optimizedAPrime(params, i, params.aPrimeDomainI[i])
 	}
 
-	// lagrange Basis magic
-	// evaluate the lagrange basis for the given value up to the fanOut of the polynomial(size of vector to commit)
+	// evaluate the lagrange basis over the secret for the given domain value i up to the fanOut of the polynomial(size of vector to commit)
 	for i := range params.lagrangeBasis {
 		l := evalLagrangeValue(params, i, *a)
 		params.lagrangeBasis[i].ScalarMult(&l, g1)
 	}
 
-	//TODO more precompation what is this?
+	//precalculates diff2
 	var e2 e.Scalar
 	for i := range params.diff2 {
 		e2.Sub(a, &params.domain[i])
 		params.diff2[i].ScalarMult(&e2, g2)
 	}
 
-	// TODO calls the preCalculate function that calculates the invsub,ta & tk
+	// calls the preCalculate function that calculates the invsub, ta & tk
 	params = preCalculate(params)
 
 	//Returns the public key/paramters
@@ -107,7 +99,6 @@ func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 		if j == i {
 			continue
 		}
-		// TODO does some magic
 		numer.Sub(&a, &params.domain[j])
 		denom.Sub(&params.domain[i], &params.domain[j])
 		denom.Inv(denom)
@@ -117,7 +108,7 @@ func evalLagrangeValue(params pubParams, i int, a e.Scalar) e.Scalar {
 	return lagrangeValue
 }
 
-// TODO function to do some magic? in the public parameters
+// calculates the aPrime domain for a specific index m
 func optimizedAPrime(params pubParams, m int, aPrimeM e.Scalar) e.Scalar {
 	aPrimeM.SetOne()
 	var eScaler e.Scalar
@@ -132,7 +123,7 @@ func optimizedAPrime(params pubParams, m int, aPrimeM e.Scalar) e.Scalar {
 	return aPrimeM
 }
 
-// TODO precalculates values used to find the quotient polynomial?
+// Precalculates the invsub, TA and TK values.
 func preCalculate(params pubParams) pubParams {
 	params.precalc = &precompute{
 		invsub: make([]e.Scalar, params.fanOut*2-1),
@@ -183,7 +174,7 @@ func preCalculate(params pubParams) pubParams {
 	return params
 }
 
-// TODO what does this do?
+// lookup function for the precalculated invSub
 func invSub(params pubParams, m, j int) e.Scalar {
 	idx := params.fanOut - 1 + m - j
 	return params.precalc.invsub[idx]
@@ -203,21 +194,22 @@ func optimizedCommit(params pubParams, certs []e.Scalar) e.G1 {
 	return commit
 }
 
+// lookup in the precalculated TA
 func ta(params pubParams, m, j int, ret e.Scalar) e.Scalar {
 	ret.Set(&params.precalc.ta[m][j])
 	return ret
 }
 
+// lookup in the precalculate TK
 func tk(params pubParams, m int, ret e.Scalar) e.Scalar {
 	ret.Set(&params.precalc.tk[m])
 	return ret
 }
 
-// TODO calculates the quotient polynomial, used for calculating the proof
+// calculates the quotient polynomial, used for calculating the proof
 func qPoly(params pubParams, certs []e.Scalar, i, m int, quotient e.Scalar) e.Scalar {
 	var numer e.Scalar
 	if i != m {
-		//numer = diff(certs[m], y, numer) // TODO skriv number.sub(certs[m],y) da dette er legacy fra det andet kode
 		numer.Sub(&certs[m], &certs[i])
 		if numer.IsEqual(&params.zeroG1) == 1 {
 			quotient.SetUint64(0)
@@ -261,8 +253,6 @@ func optimizedProofGen(params pubParams, certs []e.Scalar, index int) e.G1 {
 }
 
 // Verifies the commitment and proof
-// TODO refactored Pi to Proof, is that OK ? code makes more sense now
-// TODO refactored v to vi as it is the vector at index i
 func optimizedVerify(params pubParams, commit, proof e.G1, vi e.Scalar, index int) bool {
 	p1 := e.Pair(&proof, &params.diff2[index])
 

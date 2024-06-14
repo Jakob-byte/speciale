@@ -8,7 +8,7 @@ import (
 
 func TestOptimizedAllInVectorCommit(t *testing.T) {
 	fanout := 512
-	params := optimizedSetup(42, fanout)
+	params := optimizedSetup(fanout)
 	scalVect := certToScalarVector(testCerts.certs[:fanout])
 
 	commitment := optimizedCommit(params, scalVect)

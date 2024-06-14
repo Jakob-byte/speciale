@@ -7,12 +7,8 @@ import (
 	"slices"
 	"sort"
 
-	//"errors"
-	"fmt"
-	//"sort"
 	"strconv"
 
-	//"hash"
 	"log"
 	"math"
 	"os"
@@ -97,12 +93,11 @@ func loadCertificates(input string, amount int, numThreads int) [][]byte {
 	}
 	//Sorts the certificates
 	sort.Slice(fileArray, func(i, j int) bool { return (bytes.Compare(fileArray[i], fileArray[j]) == -1) })
-	fmt.Println("length of file array", len(fileArray))
 	return fileArray
 }
 
+// Loads the specified amount of certificates.
 func loadCertificatesFromOneFile(input string, index int, listPoint *[][][]byte, mu *sync.Mutex, amount ...int) {
-
 	content, err := os.ReadFile("../testCerts/" + input)
 	if err != nil {
 		panic(err)
@@ -146,12 +141,14 @@ func genJsonWitness(wit witness) []byte {
 
 }
 
+// Retrieves the witness from the json.
 func getWitnessFromJson(jsonWit []byte) witness {
 	var unMarshalled witness
 	json.Unmarshal(jsonWit, &unMarshalled)
 	return unMarshalled
 }
 
+// Calculates the amount of nodes that should be given to each thread
 func nodesPerThreadCalc(fanOut, lenNextLayer, numThreads int) int {
 	NodePerThreadcalc := float64(lenNextLayer) / float64(fanOut)
 	NodePerThreadcalc = math.Ceil(NodePerThreadcalc/float64(numThreads)) * float64(fanOut)
@@ -159,6 +156,7 @@ func nodesPerThreadCalc(fanOut, lenNextLayer, numThreads int) int {
 	return nodesPerThread
 }
 
+// This function builds the merkle tree from the provided certificates with the desired fan-out.
 func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	var merk merkleTree
 
@@ -209,25 +207,13 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 		}
 		wg.Wait()
 
-		//fmt.Println("layer done -----------------------------------------------")
-
 		nextLayer = []*node{}
 
 		for _, v := range nextLayer2 {
 			nextLayer = append(nextLayer, v...)
 		}
-		//for _, v := range nextLayer{
-		//	fmt.Println("Look an important id:", v.id)
-		//}
-		//		fmt.Println("layer START -----------------------------------------------")
 
 	}
-
-	//nextLayer := makeLayer(leafs, fanOut)
-	//// Checks if nextlayer it the root by checking the length, if not root call nextlayer again
-	//for len(nextLayer) > 1 {
-	//	nextLayer = makeLayer(nextLayer, fanOut)
-	//}
 
 	// define the merkletree struct
 	merk = merkleTree{
@@ -238,6 +224,8 @@ func BuildTree(certs [][]byte, fanOut int, numThreads ...int) *merkleTree {
 	}
 	return &merk
 }
+
+// This function duplicates the nodes.
 func duplicateNodes(nodes []*node, fanOut int) []*node {
 	for len(nodes)%fanOut > 0 {
 		appendNode := &node{
@@ -253,10 +241,10 @@ func duplicateNodes(nodes []*node, fanOut int) []*node {
 	return nodes
 }
 
+// This function handles the creation of each layer.
 func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node, mu *sync.Mutex) []*node {
 
 	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
-	// hvis forskellige threads gør det her?? så er det jo forskellige id i sidste? eller samme
 	if len(nodes)%fanOut > 0 {
 		nodes = duplicateNodes(nodes, fanOut)
 	}
@@ -273,11 +261,6 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 			childrenList = append(childrenList, nodes[i+k])
 			allChildrenHashes = append(allChildrenHashes, nodes[i+k].ownHash[:]...)
 		}
-		//for _, a := range childrenList {
-		//	fmt.Println("THese id's are wrong I hope", a.id)
-		//}
-		//Creates the hash of the children of the node.
-
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownHash:  sha256.Sum256(allChildrenHashes),
@@ -295,8 +278,6 @@ func makeLayer(nodes []*node, fanOut int, index int, nextlayerPointer *[][]*node
 
 	mu.Lock()
 	defer mu.Unlock()
-	//fmt.Println("Index:", index)
-	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
 
 	return nextLayer
@@ -314,14 +295,12 @@ func verifyTree(certs [][]byte, tree merkleTree) bool {
 // Verifies a node is in the tree by creating witness and veryifing the witness
 func verifyNode(certificate []byte, tree merkleTree) bool {
 	witness := createWitness(certificate, tree)
-	//fmt.Println("witness hashList: ", witness.hashList)
 	return verifyWitness(certificate, witness, tree.pubParams)
 }
 
 // Creates the witness for a given certificate, which is a witness struct consisting of a list of hashes and a childNumberList to know how to combine the hashes
 func createWitness(certificate []byte, tree merkleTree) witness {
 	var node *node
-	//fanOut := tree.fanOut
 	notInList := true
 
 	//Retrieves all the certificates from the leaf nodes
@@ -336,12 +315,6 @@ func createWitness(certificate []byte, tree merkleTree) witness {
 	})
 	notInList = !found
 
-	///for _, v := range tree.leafs {
-	///	if bytes.Equal(v.certificate, cert) {
-	///		nod = v
-	///		notInList = false
-	///	}
-	///}
 	if notInList {
 		return witness{}
 	}
@@ -363,10 +336,6 @@ func createWitness(certificate []byte, tree merkleTree) witness {
 				counter++
 			}
 		}
-		//fmt.Printf("NONWORKINGLIST: %T\n",(hashList0))
-		//fmt.Printf("workingLIST: %T\n",(hashList0working))
-
-		//fmt.Println("HashList0, should be equal to fanout", len(hashList0))
 
 		hashList = append(hashList, tempHashList)
 		node = node.parent
@@ -379,7 +348,7 @@ func createWitness(certificate []byte, tree merkleTree) witness {
 	return witness
 }
 
-// if we wanna be cool we can fix stuff so we don't need to give the certificate to this function! by putting it in the hashlist somehow
+// verifies the witness given a initial certificate
 func verifyWitness(certificate []byte, witness witness, pubParams publicParameters) bool {
 	sum := sha256.Sum256(certificate)
 	for i := 0; i < len(witness.HashList); i++ {

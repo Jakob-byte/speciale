@@ -86,7 +86,7 @@ func TestCommit(t *testing.T) {
 		{9},
 		//{27},
 	}
-	pk := setup(3, 3)
+	pk := setup(3)
 
 	var degreeComb [][][]int
 	for k := len(points) - 1; k > 0; k-- {
@@ -107,7 +107,4 @@ func TestCommit(t *testing.T) {
 	if !verifyBool {
 		t.Error("verify witness was very incorrect")
 	}
-
-	open()
-
 }

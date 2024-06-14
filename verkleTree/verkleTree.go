@@ -3,18 +3,11 @@ package verkletree
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
-
-	"time"
 
 	"slices"
 	"sync"
 
-	//"runtime"
-
 	e "github.com/cloudflare/circl/ecc/bls12381"
-
-	//	combin "gonum.org/v1/gonum/stat/combin"
 
 	"log"
 )
@@ -102,12 +95,9 @@ func retrieveMembershipProofFromJson(jsonFile []byte) membershipProof {
 		witnesss[i].Index = unMarshalled.Index[i]
 		witnesss[i].W.SetBytes(unMarshalled.W[i])
 	}
-	//fmt.Println("witnesssss", witnesss)
-	//fmt.Println("Comits", commits)
 	return membershipProof{Witnesses: witnesss, Commitments: commits}
 }
 
-// TODO Taken from combin, make proper cite
 // Calculates the unique combination of the integers in the range of 0 to k-1, 0 to k-2, ..., 0.
 // Returns the combinations as [][][]int list.
 func combinations(n, k int) [][]int {
@@ -121,9 +111,6 @@ func combinations(n, k int) [][]int {
 		data[0][i] = i
 	}
 	next2 := data[0]
-	//fmt.Println("len before", len(data[0]))
-	//data[0] = data[0][1:]
-	//fmt.Println("len after", len(data[0]))
 	counter := 1
 	for i := 1; i < combins; i++ {
 		next := make([]int, k)
@@ -136,7 +123,6 @@ func combinations(n, k int) [][]int {
 			data[counter] = next
 			counter++
 		}
-		//data[i] = next
 	}
 	stopIndex := len(data)
 	for i := 0; i < len(data); i++ {
@@ -145,18 +131,13 @@ func combinations(n, k int) [][]int {
 			break
 		}
 	}
-	//fmt.Println("len before", len(data))
-	//fmt.Println("fær", data)
 	data = data[:stopIndex]
 	if len(data) > 0 {
 		data = data[1:]
 	}
-	//fmt.Println("efter", data)
-	//fmt.Println("len after", len(data))
 	return data
 }
 
-// TODO Taken from combin, make proper cite
 // nextCombination generates the combination after s, overwriting the input value.
 func nextCombination(s []int, n, k int) {
 	for j := k - 1; j >= 0; j-- {
@@ -178,7 +159,6 @@ func Binomial(n, k int) int {
 	if n < k {
 		panic("Second panic in Binomial")
 	}
-	// (n,k) = (n, n-k)
 	if k > n/2 {
 		k = n - k
 	}
@@ -194,7 +174,6 @@ func combCalculater(fanOut int) [][][]int {
 	var degreeComb [][][]int
 	for k := fanOut - 1; k > 0; k-- {
 		combinationten := combinations(fanOut, k-1)
-		//fmt.Println("len of comb to add:", len(combinationten))
 		degreeComb = append(degreeComb, combinationten)
 	}
 	return degreeComb
@@ -217,26 +196,11 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	}
 
 	//Makes the combinations of integers needed to calculate divisor and polynomial.
-	start := time.Now()
 	degreeComb := combCalculater(fanOut)
-	elapsed := time.Since(start)
-	fmt.Println("degreeComb ", elapsed)
 
-	start = time.Now()
 	divisorList := divisorCalculator(fanOut, degreeComb)
-	elapsed = time.Since(start)
-	fmt.Println("divcalc ", elapsed)
-
-	//start := time.Now()
-	//fmt.Println("After div calc")
-	start = time.Now()
 
 	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, divisorList)
-	elapsed = time.Since(start)
-	fmt.Println("lagrangecalc ", elapsed)
-
-	//elapsed := time.Since(start)
-	//fmt.Println("Time for langrangeBasis: ", elapsed)
 
 	// call to makeLayer to create next layer in the tree
 
@@ -338,9 +302,6 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 
 	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.
-	//var sumTimer int64
-	//var sumTimer2 int64
-
 	for i := 0; i < len(nodes); {
 		//The loop starts by finding the children for the current node in the 'nextlayer'
 
@@ -358,15 +319,9 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		//start := time.Now()
 		polynomial := certVectorToPolynomial(vectToCommit, lagrangeBasisList)
-		//elapsed := time.Since(start)
-		//sumTimer += elapsed.Milliseconds()
 
-		//start = time.Now()
 		commitment := commit(pk, polynomial)
-		//elapsed = time.Since(start)
-		//sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
 		nextLayer[i/fanOut] = &node{
 			ownVectorCommit:         commitment,
@@ -379,17 +334,12 @@ func makeLayer(nodes []*node, fanOut int, firstLayer bool, pk PK, lagrangeBasisL
 		//Sets the parent in each of the nodes children.
 		for _, v := range childrenList {
 			v.parent = nextLayer[i/fanOut]
-			//v.witness = createWitness(pk, polynomial, uint64(v.childNumb))
 		}
 		i = i + fanOut
 	}
-	//fmt.Println("sumTimer for vector to poly", sumTimer)
-	//fmt.Println("sumTimer for commit", sumTimer2)
 	// Locks the mutex for the nextLayer slice so that the thread can correctly input its nodes to the slice and defers the unlock so it unlocks when finished
 	mu.Lock()
 	defer mu.Unlock()
-	//fmt.Println("Index:", index)
-	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
 	return nextLayer
 }
@@ -415,13 +365,6 @@ func createMembershipProof(certificate []byte, tree verkleTree) membershipProof 
 	var nod *node
 
 	notInList := true
-	//Finds the node which has the certificate. If it doesn't exist we return false.
-	//for _, v := range tree.leafs {
-	//	if bytes.Equal(v.certificate, cert) {
-	//		nod = v
-	//		notInList = false
-	//	}
-	//}
 
 	//Retrieves all the certificates from the leaf nodes, to make them searchable with binary search
 	certs := make([][]byte, len(tree.leafs))

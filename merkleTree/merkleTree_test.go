@@ -28,12 +28,6 @@ var certAmount = struct {
 	c: []int{1000000, 2000000, 3000000, 4000000, 5000000, 6000000, 7000000, 8000000, 9000000, 10000000}, // TODO fix before server benchmarks
 }
 
-var threads = struct {
-	v []int
-}{
-	v: []int{1, 2, 4, 8, 16, 32, 64, 128, 256, 512, 1024},
-}
-
 var table = []struct {
 	fanOut     int
 	tree       merkleTree
@@ -111,14 +105,10 @@ func TestVerifyCert(t *testing.T) {
 	certArray := testCerts.certs
 
 	merkTree := BuildTree(certArray, 2, numThreads)
-	//for i:= 0 ; i<10; i++ {
-	//	fmt.Println(i, "hash at index , merkTree.leafs[i].parent.parent.ownHash)
-	//}
 	result := verifyNode(certArray[2], *merkTree)
 
 	if result != true {
 		t.Errorf("Result was incorrect, got: %t, want: %t.", result, true)
-		//fmt.Println(certArray[3204043959346])
 	}
 
 }
@@ -129,14 +119,10 @@ func TestNegativeVerifyCert(t *testing.T) {
 	certArray := testCerts.certs[:10000]
 
 	merkTree := BuildTree(certArray, 2, numThreads)
-	//for i:= 0 ; i<10; i++ {
-	//	fmt.Println(i, "hash at index , merkTree.leafs[i].parent.parent.ownHash)
-	//}
 	result := verifyNode(testCerts.certs[10001], *merkTree)
 
 	if result {
 		t.Errorf("Result was incorrect, got: %t, want: %t.", result, false)
-		//fmt.Println(certArray[3204043959346])
 	}
 }
 
@@ -205,7 +191,6 @@ func TestNegativeTreeVerify(t *testing.T) {
 	}
 }
 
-// Hej - goddav
 func TestDifferentFanOuts(t *testing.T) {
 	fmt.Println("TestDifferentFanOuts -  starting")
 	max := 500
@@ -267,14 +252,14 @@ func TestJsonConverterNotInTree(t *testing.T) {
 func TestSizeOfWitnesses(t *testing.T) {
 	fmt.Println("TestSizeOfWitnesses Running")
 
-for _, w := range certAmount.c {
-	randInt := rand.Intn(w)
-	randomcertificate := testCerts.certs[randInt]
-	for _, v := range fanOuts.v {
-		testTree := BuildTree(testCerts.certs[:w], v, numThreads)
-		size := genJsonWitness(createWitness(randomcertificate,*testTree))
-		fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
-	}
+	for _, w := range certAmount.c {
+		randInt := rand.Intn(w)
+		randomcertificate := testCerts.certs[randInt]
+		for _, v := range fanOuts.v {
+			testTree := BuildTree(testCerts.certs[:w], v, numThreads)
+			size := genJsonWitness(createWitness(randomcertificate, *testTree))
+			fmt.Println("fan-out: ", v, ", certificates: ", w, ". Witness/membershipProof size in bytes: ", len(size))
+		}
 	}
 }
 
@@ -295,39 +280,10 @@ func TestDifferentAmountOfThreads(t *testing.T) {
 	}
 }
 
-// Benchmark/party time!!!!!!!
 // Benchmark site https://blog.logrocket.com/benchmarking-golang-improve-function-performance/
 // Loads all certs, to use less for tests use testCerts.certs[:500] to pick the first 500 certs.
+
 // run benchmarks: go test -bench=benchmarkName -run=^a
-// To get memory alloc, run each test 100 times and avoid timeout use:
-// go test -bench=BenchmarkBuildTreeTime -run=^a -benchtime=100x -benchmem  -timeout 99999s | tee old.txt
-
-// To run this test
-// go test -bench=BenchmarkVerifyNode -run=^a -benchtime=1000x -benchmem  -timeout 99999s | tee merkVerifyNodeBench.txt
-func BenchmarkVerifyNode(b *testing.B) {
-	fmt.Println("BenchmarkVerifyNode Running")
-	b.ResetTimer()
-	testAmount := 1000 //Change if you change -benchtime=10000x
-
-	randomCerts := make([][]byte, testAmount)
-
-	for k := range randomCerts {
-		randInt := rand.Intn(len(testCerts.certs))
-		randomCerts[k] = testCerts.certs[randInt]
-		//(0, len(testCerts.certs))
-	}
-
-	for _, v := range table {
-		b.Run(fmt.Sprintf("fanOut: %d", v.fanOut), func(b *testing.B) {
-			//b.ResetTimer()
-			for i := 0; i < b.N; i++ {
-				verifyNode(randomCerts[i], v.tree)
-			}
-		})
-
-	}
-}
-
 // go test -bench=BenchmarkDifferentAmountOfThreads -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfThreadsBench.txt
 func BenchmarkDifferentAmountOfThreads(b *testing.B) {
 	fmt.Println("BenchmarkDifferentAmountOfThreads -  starting")
@@ -338,24 +294,6 @@ func BenchmarkDifferentAmountOfThreads(b *testing.B) {
 			b.Run(fmt.Sprintf("fanOut: %d and threads %d", fan, threads), func(b *testing.B) {
 				for i := 0; i < b.N; i++ {
 					BuildTree(testCerts.certs, fan, threads)
-
-				}
-			})
-		}
-	}
-}
-
-// go test -bench=BenchmarkDifferentAmountOfCertsBuild -benchtime=10x -run=^a -benchmem  -timeout 99999s | tee merkBenchmarkDifferentAmountOfCertsBench.txt
-func BenchmarkDifferentAmountOfCertsBuild(b *testing.B) {
-	fmt.Println("BenchmarkRootDifferentAmountOfCertsBuild -  starting")
-	fanOuts := []int{2} //, 4, 8, 16, 32, 64, 128, 256, 512, 1024}
-
-	for _, fan := range fanOuts {
-		for _, amountOfCerts := range certAmount.c {
-			b.Run(fmt.Sprintf("fanOut: %d and amountOfCerts %d", fan, amountOfCerts), func(b *testing.B) {
-				for i := 0; i < b.N; i++ {
-					fmt.Println("len of certs", len(testCerts.certs))
-					BuildTree(testCerts.certs[:amountOfCerts], fan, numThreads)
 
 				}
 			})

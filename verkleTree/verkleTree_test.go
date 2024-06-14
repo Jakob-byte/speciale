@@ -26,7 +26,7 @@ var table = []struct {
 	//{fanOut: 7, tree: *BuildTree(testCerts.certs, 7, setup(10, 7), 8)},
 	//{fanOut: 8, tree: *BuildTree(testCerts.certs, 8, setup(10, 8), 8)},
 	//{fanOut: 9, tree: *BuildTree(testCerts.certs, 9, setup(10, 9), 8)},
-	{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10, 10), 8)},
+	{fanOut: 10, tree: *BuildTree(testCerts.certs, 10, setup(10), 8)},
 	//{fanOut: 11, tree: *BuildTree(testCerts.certs, 11, setup(10, 11), 8)},
 	//{fanOut: 12, tree: *BuildTree(testCerts.certs, 12, setup(10, 12), 8)},
 	//{fanOut: 13, tree: *BuildTree(testCerts.certs, 13, setup(10, 13), 8)},
@@ -49,7 +49,7 @@ func TestBuildTreeAndVerifyTree(t *testing.T) {
 		{27},
 	}
 	fanOut := 2
-	pk := setup(1, fanOut)
+	pk := setup(fanOut)
 	verk := BuildTree(points, fanOut, pk, 1)
 
 	didItVerify := verifyTree(points, *verk, pk, 8)
@@ -68,7 +68,7 @@ func TestVerifyNode(t *testing.T) {
 		{27},
 	}
 	fanOut := 2
-	pk := setup(1, fanOut)
+	pk := setup(fanOut)
 	verk := BuildTree(points, fanOut, pk)
 	membershipProof := createMembershipProof(points[2], *verk)
 	didNodeVerify := verifyMembershipProof(membershipProof, pk)
@@ -82,7 +82,7 @@ func TestMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestMembershipProofRealCerts Running")
 	max := len(testCerts.certs)
 	fanOut := 10
-	pk := setup(10, fanOut)
+	pk := setup(fanOut)
 	verkTree := BuildTree(testCerts.certs, fanOut, pk, 8)
 
 	for i := 0; i < 10; i++ {
@@ -100,8 +100,8 @@ func TestNegativeMembershipProofRealCerts(t *testing.T) {
 	fmt.Println("TestNegativeMembershipProofRealCerts Running")
 	fanOut := 10
 	certToTest := testCerts.certs[30242]
-	pk1 := setup(10, fanOut)
-	pk2 := setup(10, fanOut)
+	pk1 := setup(fanOut)
+	pk2 := setup(fanOut)
 	verkTree1 := BuildTree(testCerts.certs[:50000], fanOut, pk1, 8)
 	verkTree2 := BuildTree(testCerts.certs[:50000], fanOut, pk2, 8)
 	memProof := createMembershipProof(certToTest, *verkTree1)
@@ -113,7 +113,7 @@ func TestNegativeMembershipProofRealCerts(t *testing.T) {
 func TestVerifyTree(t *testing.T) {
 	fmt.Println("TestNegativeVerifyTree Running")
 	fanOut := 10
-	pk := setup(10, fanOut)
+	pk := setup(fanOut)
 	verkTree1 := BuildTree(testCerts.certs, fanOut, pk, 8)
 	if !verifyTree(testCerts.certs, *verkTree1, pk, 8) {
 		t.Error("Did not verify tree as expected!")
@@ -123,8 +123,8 @@ func TestVerifyTree(t *testing.T) {
 func TestNegativeVerifyTree(t *testing.T) {
 	fmt.Println("TestNegativeVerifyTree Running")
 	fanOut := 10
-	pk1 := setup(10, fanOut)
-	pk2 := setup(10, fanOut)
+	pk1 := setup(fanOut)
+	pk2 := setup(fanOut)
 	verkTree1 := BuildTree(testCerts.certs, fanOut, pk1, 8)
 	if verifyTree(testCerts.certs, *verkTree1, pk2, 8) {
 		t.Error("Verified tree although the public paramters provided were wrong!")
@@ -134,7 +134,7 @@ func TestNegativeVerifyTree(t *testing.T) {
 func TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees -  starting")
 	fanOut := 10
-	pk1 := setup(10, fanOut)
+	pk1 := setup(fanOut)
 	verkTree1 := BuildTree(testCerts.certs, fanOut, pk1, 8)
 	verkTree2 := BuildTree(testCerts.certs, fanOut, pk1, 800)
 
@@ -150,7 +150,7 @@ func TestDifferentAmountOfThreadsDoesNotMakeDifferentTrees(t *testing.T) {
 func TestDifferentAmountOfThreads(t *testing.T) {
 	fmt.Println("TestDifferentAmountOfThreads -  starting")
 	fanOut := 10
-	pk := setup(42, fanOut)
+	pk := setup(fanOut)
 
 	for threads := 1; threads < 20; threads++ {
 		start := time.Now()
@@ -168,7 +168,7 @@ func TestRealCertificatesTime(t *testing.T) {
 		testAmount := 5
 		start := time.Now()
 		fanOut := i
-		pk := setup(4, fanOut)
+		pk := setup(fanOut)
 		start = time.Now()
 		var verkTree *verkleTree
 		for i := 0; i < testAmount; i++ {
@@ -196,7 +196,7 @@ func TestJsonConverter(t *testing.T) {
 	fmt.Println("TestJsonConverter Running")
 	fanOut := 10
 
-	pk := setup(30, fanOut)
+	pk := setup(fanOut)
 
 	verkTree := BuildTree(testCerts.certs, fanOut, pk, 8)
 
@@ -235,7 +235,7 @@ func TestMembershipProofTimes(t *testing.T) {
 	fmt.Println("TestMemberShipProofTimes Running - bad test")
 	start := time.Now()
 	fanOut := 28
-	pk := setup(4, fanOut)
+	pk := setup(fanOut)
 
 	elapsed1 := time.Since(start)
 	fmt.Println("time to create pk", elapsed1)
@@ -245,51 +245,6 @@ func TestMembershipProofTimes(t *testing.T) {
 	elapsed1 = time.Since(start)
 	fmt.Println("time to build tree", elapsed1)
 }
-
-//		fmt.Println("time elapsed for loading certs, and setup : ", elapsed1)
-//
-//		start = time.Now()
-//		verkTree := BuildTree(testCerts.certs, fanOut, pk, 500)
-//		elapsed2 := time.Since(start)
-//		fmt.Println("Built tree time : ", elapsed2)
-//
-//		var success bool
-//		indexToTime := 5342
-//		certToWitness := testCerts.certs[indexToTime]
-//
-//		start = time.Now()
-//		membershipProof := createMembershipProof(certToWitness, *verkTree)
-//		success = verifyMembershipProof(membershipProof, verkTree.pk)
-//		elapsed3 := time.Since(start).Milliseconds()
-//		if success != true {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
-//		}
-//
-//		start = time.Now()
-//		membershipProof = createMembershipProof(certToWitness, *verkTree)
-//		success = verifyMembershipProof(membershipProof, verkTree.pk)
-//		elapsed4 := time.Since(start).Milliseconds()
-//		if success != true {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
-//		}
-//
-//		start = time.Now()
-//		membershipProof = createMembershipProof(certToWitness, *verkTree)
-//		success = verifyMembershipProof(membershipProof, verkTree.pk)
-//		elapsed5 := time.Since(start).Milliseconds()
-//		if success != true {
-//			t.Errorf("Result was incorrect, got: %t, want: %t.", success, true)
-//		}
-//
-//		if elapsed3 < elapsed4 {
-//			t.Errorf("Result was incorrect, got: ") //%t, want: %t.", elapsed3, elapsed4)
-//		}
-//		//fmt.Println("MembereshipProof", membershipProof)
-//		fmt.Println("VerifyTree time First time: ", elapsed3, "ms")
-//		fmt.Println("VerifyTree time Second time: ", elapsed4, "ms")
-//		fmt.Println("VerifyTree time third time: ", elapsed5, "ms")
-//
-// }
 
 // Function to test the size of the witness/proofs needed for different fanouts of the tree.
 func TestSizeOfWitnesses(t *testing.T) {
@@ -314,7 +269,7 @@ func BenchmarkBuildTreeTime(b *testing.B) {
 	for _, v := range table {
 		b.Run(fmt.Sprintf("input_size %d", v.fanOut), func(b *testing.B) {
 			fanOut := v.fanOut
-			pk := setup(4, fanOut)
+			pk := setup(fanOut)
 			b.ResetTimer()
 			for i := 0; i < b.N; i++ {
 				BuildTree(testCerts.certs, fanOut, pk, 8)

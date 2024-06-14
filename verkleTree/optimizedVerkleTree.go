@@ -4,8 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 
-	//"fmt"
-
 	"slices"
 	"sync"
 
@@ -13,7 +11,6 @@ import (
 )
 
 // struct representing the nodes in the verkletree
-
 type optimizedNode struct {
 	parent                  *optimizedNode
 	childNumb               int
@@ -22,8 +19,7 @@ type optimizedNode struct {
 	ownVectorCommit         e.G1
 	certificate             []byte
 	duplicate               bool
-	//id                      int
-	witness optimizedWitnessStruct
+	witness                 optimizedWitnessStruct
 }
 
 // Membership proof struct containt the neccessary information to verify node belongs to tree.
@@ -52,7 +48,7 @@ func optimizedCreateJsonOfMembershipProof(mp optimizedMembershipProof) []byte {
 
 	for i, v := range mp.Witnesses {
 		index[i] = v.Index
-		fx0[i], _ = v.Fx0.MarshalBinary() //TODO fix
+		fx0[i], _ = v.Fx0.MarshalBinary()
 		w[i] = v.W.BytesCompressed()
 	}
 	memProofPort := membershipProofPortable{Commits: commits, Index: index, Fx0: fx0, W: w}
@@ -61,7 +57,7 @@ func optimizedCreateJsonOfMembershipProof(mp optimizedMembershipProof) []byte {
 	return mpJson
 }
 
-// Retrieves the membership proof from the provided json. Crashes everything otherwise.
+// Retrieves the membership proof from the provided json. Crashes if the JSON doesn't contain optimizedWitnessStruct.
 func optimizedRetrieveMembershipProofFromJson(jsonFile []byte) optimizedMembershipProof {
 	var unMarshalled membershipProofPortable
 	json.Unmarshal(jsonFile, &unMarshalled)
@@ -78,15 +74,12 @@ func optimizedRetrieveMembershipProofFromJson(jsonFile []byte) optimizedMembersh
 		witnesss[i].Index = unMarshalled.Index[i]
 		witnesss[i].W.SetBytes(unMarshalled.W[i])
 	}
-	//fmt.Println("witnesssss", witnesss)
-	//fmt.Println("Comits", commits)
 	return optimizedMembershipProof{Witnesses: witnesss, Commitments: commits}
 }
 
 // This function takes the certificates as bytes, the fanout and public key as input.
 // Outputs the finished verkle-tree, with the specified fanout.
 func optimizedBuildTree(certs [][]byte, fanOut int, pk pubParams, includeWitnesses bool, numThreads ...int) *optimizedVerkleTree {
-	//fmt.Println("BuildTree called with fanout", fanOut)
 	var verk optimizedVerkleTree
 
 	//Creates a leaf-node for each certificate.
@@ -96,7 +89,6 @@ func optimizedBuildTree(certs [][]byte, fanOut int, pk pubParams, includeWitness
 			certificate: certs[i],
 			childNumb:   i % fanOut,
 			duplicate:   false,
-			//id:          i,
 		}
 	}
 
@@ -169,6 +161,7 @@ func optimizedBuildTree(certs [][]byte, fanOut int, pk pubParams, includeWitness
 	return &verk
 }
 
+// Function dedicated to duplicate nodes in buildTree and makeLayer
 func optimizedDuplicateNodes(nodes []*optimizedNode, fanOut int) []*optimizedNode {
 	for len(nodes)%fanOut > 0 {
 		appendNode := &optimizedNode{
@@ -177,7 +170,6 @@ func optimizedDuplicateNodes(nodes []*optimizedNode, fanOut int) []*optimizedNod
 			ownVectorCommit: nodes[len(nodes)-1].ownVectorCommit,
 			children:        nodes[len(nodes)-1].children,
 			duplicate:       true,
-			//id:              nodes[len(nodes)-1].id + 1,
 		}
 		nodes = append(nodes, appendNode)
 	}
@@ -188,21 +180,17 @@ func optimizedDuplicateNodes(nodes []*optimizedNode, fanOut int) []*optimizedNod
 // Outputs the next layer in the verkle-tree, with size ⌈len(nodes)/fanout⌉. While also adding the witness that each of the layers children belongs to their parents vector commitments.
 func optimizedMakeLayer(nodes []*optimizedNode, fanOut int, firstLayer bool, pk pubParams, index int, nextlayerPointer *[][]*optimizedNode, mu *sync.Mutex, includeWitnesses bool) []*optimizedNode {
 
-	//makes the tree balanced according to the fanout, by duplicating the last node until it is balanced
+	//Ensures that the parent nodes have fanOut children each.
 	if len(nodes)%fanOut > 0 {
 		nodes = optimizedDuplicateNodes(nodes, fanOut)
 	}
 	//Creates the slice for the next layer, which is len(nodes)/fanOut.
 	nextLayer := make([]*optimizedNode, len(nodes)/fanOut) // divided with fanout which is length of vectors
 
-	//The for loop which creates the next layer by create the vector commit for each of the new nodes.
+	//The for loop which creates the next layer by creating the vector commit for each of the new nodes.
 	//And adding the corresponding children to each of their parents in the tree.
-	//var sumTimer int64
-	//var sumTimer2 int64
-
 	for i := 0; i < len(nodes); {
 		//The loop starts by finding the children for the current node in the 'nextlayer'
-
 		childrenList := make([]*optimizedNode, fanOut)
 		vectToCommit := make([]e.Scalar, fanOut)
 		if firstLayer {
@@ -217,23 +205,16 @@ func optimizedMakeLayer(nodes []*optimizedNode, fanOut int, firstLayer bool, pk 
 			}
 		}
 		//Creates the vectorcommit to the children of the node.
-		//start := time.Now()
-		//elapsed := time.Since(start)
-		//sumTimer += elapsed.Milliseconds()
-		//start = time.Now()
+
 		commitment := optimizedCommit(pk, vectToCommit)
-		//elapsed = time.Since(start)
-		//sumTimer2 += elapsed.Milliseconds()
 		//Creates the node with children and vectorcommit.
 
-		// TODO SHOULD WE TRY TO PROOF GEN WHILE BUILDING TREE?? TO SEE RUNTIME?
 		nextLayer[i/fanOut] = &optimizedNode{
 
 			ownVectorCommit:         commitment,
 			ownCompressVectorCommit: commitment.BytesCompressed(),
 			childNumb:               i % fanOut,
 			children:                childrenList,
-			//id:                      i + nodes[0].id/fanOut,
 		}
 		//Sets the parent in each of the nodes children.
 		for j, v := range childrenList {
@@ -247,13 +228,9 @@ func optimizedMakeLayer(nodes []*optimizedNode, fanOut int, firstLayer bool, pk 
 		}
 		i = i + fanOut
 	}
-	//fmt.Println("sumTimer for vector to poly", sumTimer)
-	//fmt.Println("sumTimer for commit", sumTimer2)
 	// Locks the mutex for the nextLayer slice so that the thread can correctly input its nodes to the slice and defers the unlock so it unlocks when finished
 	mu.Lock()
 	defer mu.Unlock()
-	//fmt.Println("Index:", index)
-	//fmt.Println("length of next layer", len(*nextlayerPointer))
 	(*nextlayerPointer)[index] = nextLayer
 	return nextLayer
 }
@@ -279,13 +256,6 @@ func optimizedCreateMembershipProof(certificate []byte, tree optimizedVerkleTree
 	var nod *optimizedNode
 
 	notInList := true
-	//Finds the node which has the certificate. If it doesn't exist we return false.
-	//for _, v := range tree.leafs {
-	//	if bytes.Equal(v.certificate, cert) {
-	//		nod = v
-	//		notInList = false
-	//	}
-	//}
 
 	//Retrieves all the certificates from the leaf nodes, to make them searchable with binary search
 	certs := make([][]byte, len(tree.leafs))
@@ -345,7 +315,7 @@ func optimizedVerifyMembershipProof(mp optimizedMembershipProof, pk pubParams) b
 	for i := 0; i < len(mp.Witnesses); i++ {
 		witnessIsTrue := optimizedVerify(pk, mp.Commitments[i], mp.Witnesses[i].W, mp.Witnesses[i].Fx0, int(mp.Witnesses[i].Index))
 		if !witnessIsTrue {
-			return witnessIsTrue //refactored this to witnessIsTrue instead of false
+			return witnessIsTrue
 		}
 	}
 	return true
