@@ -46,7 +46,7 @@ type verkleTree struct {
 	fanOut            int
 	pk                PK
 	degreeComb        [][][]int
-	dividentList      []e.Scalar
+	divisorList       []e.Scalar
 	lagrangeBasisList [][]e.Scalar
 }
 
@@ -216,14 +216,14 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 		}
 	}
 
-	//Makes the combinations of integers needed to calculate divident and polynomial.
+	//Makes the combinations of integers needed to calculate divisor and polynomial.
 	start := time.Now()
 	degreeComb := combCalculater(fanOut)
 	elapsed := time.Since(start)
 	fmt.Println("degreeComb ", elapsed)
 
 	start = time.Now()
-	dividentList := dividendCalculator(fanOut, degreeComb)
+	divisorList := divisorCalculator(fanOut, degreeComb)
 	elapsed = time.Since(start)
 	fmt.Println("divcalc ", elapsed)
 
@@ -231,7 +231,7 @@ func BuildTree(certs [][]byte, fanOut int, pk PK, numThreads ...int) *verkleTree
 	//fmt.Println("After div calc")
 	start = time.Now()
 
-	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, dividentList)
+	lagrangeBasisList := lagrangeBasisCalc(fanOut, degreeComb, divisorList)
 	elapsed = time.Since(start)
 	fmt.Println("lagrangecalc ", elapsed)
 

@@ -72,7 +72,7 @@ func newRealvVectorToPoly(points []float64) poly {
 	var answer poly
 	coefs := make([]float64, len(points))
 	coefs[0] = points[0] // first value in list of points, this is constant coefficient
-	divident := 1.0
+	divisor := 1.0
 	superX := 1
 
 	//superCoefs := make([][]float64, len(points))
@@ -91,7 +91,7 @@ func newRealvVectorToPoly(points []float64) poly {
 		//	coefs[0] = 0
 		//}
 		//fmt.Println("v: ", v)
-		divident = newDividentCalc(v, points, superX)
+		divisor = newdivisorCalc(v, points, superX)
 		sumsum := 0.0
 		for lambda := 1; lambda < len(points)-1; lambda++ {
 
@@ -150,8 +150,8 @@ func newRealvVectorToPoly(points []float64) poly {
 				//	fmt.Println("lambda: ", lambda)
 				//	fmt.Println("sumj: ", sumj)
 				//	fmt.Println("sumk: ", sumk)
-				//	fmt.Println("divident: ", divident)
-				sumsum += (sumj * float64(sumk)) / (divident)
+				//	fmt.Println("divisor: ", divisor)
+				sumsum += (sumj * float64(sumk)) / (divisor)
 				//	fmt.Println("sumsum: ", sumsum)
 				if lambda == len(points)-2 {
 					//			fmt.Println("Vi er her, dudes!")
@@ -203,13 +203,13 @@ func newRealvVectorToPoly(points []float64) poly {
 			if lambda%2 == 1 {
 				sumsum *= -1
 			}
-			coefs[lambda] += (float64(sumsum) * points[v]) // divident
+			coefs[lambda] += (float64(sumsum) * points[v]) // divisor
 			//	fmt.Println("new coefs: ", points[v], lambda, coefs[lambda])
 		}
 		if len(points)%2 == 1 {
-			coefs[len(coefs)-1] += points[v] / divident
+			coefs[len(coefs)-1] += points[v] / divisor
 		} else {
-			coefs[len(coefs)-1] -= points[v] / divident
+			coefs[len(coefs)-1] -= points[v] / divisor
 		}
 		//	fmt.Println("checkThis Out now: ", coefs[len(coefs)-1])
 		//superCoefs[v] = coefs
@@ -217,7 +217,7 @@ func newRealvVectorToPoly(points []float64) poly {
 	//coefs[len(coefs)-1] = 1
 	// -2.5+0.20
 	//fmt.Println(answer.coefficients)
-	//fmt.Println(divident)
+	//fmt.Println(divisor)
 	//finalCoef := make([]float64, len(points))
 	//finalCoef[0] = points[0]
 	//fmt.Println("superCoefs: ", superCoefs)
@@ -236,7 +236,7 @@ func newRealvVectorToPoly(points []float64) poly {
 	return answer
 }
 
-func newDividentCalc(x int, points []float64, superX int) float64 {
+func newdivisorCalc(x int, points []float64, superX int) float64 {
 
 	for i := 1; i <= x; i++ {
 		superX = superX * 1 / (len(points) - i) * -(i) //Nice and fast.
@@ -248,12 +248,12 @@ func realVectorToPoly(points []float64) poly {
 	var answer poly
 	coefs := make([]float64, len(points))
 	coefs[0] = points[0] // first value in list of points, this is constant coefficient
-	divident := 1.0
+	divisor := 1.0
 
-	//divident Finder loop
+	//divisor Finder loop
 	for i := range points {
 		if i != 0 {
-			divident = divident * float64(i)
+			divisor = divisor * float64(i)
 		}
 	}
 	var degreeComb [][][]int
@@ -261,13 +261,13 @@ func realVectorToPoly(points []float64) poly {
 		degreeComb = append(degreeComb, combin.Combinations(len(points), k-1))
 	}
 	//flipBool := true
-	var dividentMinusI float64
+	var divisorMinusI float64
 	var divToBe float64
 	var sumDiv float64
 	for i, y := range points {
-		dividentMinusI = 0
+		divisorMinusI = 0
 		if i == 0 {
-			dividentMinusI = divident
+			divisorMinusI = divisor
 		} else {
 
 			for j, combs := range degreeComb {
@@ -290,7 +290,7 @@ func realVectorToPoly(points []float64) poly {
 				if ((j) % 2) == 0 {
 					sumDiv *= -1
 				}
-				dividentMinusI += sumDiv
+				divisorMinusI += sumDiv
 			}
 
 		}
@@ -306,8 +306,8 @@ func realVectorToPoly(points []float64) poly {
 					if ((j) % 2) == 0 {
 						coefToBe *= -1
 					}
-					//fmt.Println("Working coef: ", y, j+1, (coefToBe*y)/dividentMinusI)
-					coefs[j+1] += (coefToBe * y) / dividentMinusI
+					//fmt.Println("Working coef: ", y, j+1, (coefToBe*y)/divisorMinusI)
+					coefs[j+1] += (coefToBe * y) / divisorMinusI
 					//fmt.Println("coef[j+1]: ", coefs[j+1])
 				}
 				//

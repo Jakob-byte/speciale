@@ -97,31 +97,31 @@ func calcPoly(x uint64, poly poly) e.Scalar {
 	return answer
 }
 
-// Calculates the divident used in buildtree. Takes the fanout and the unique combinations as input.
-// Returns the dividents as a list.
+// Calculates the divisor used in buildtree. Takes the fanout and the unique combinations as input.
+// Returns the divisors as a list.
 // TODO redegør for det her med math!
-func dividendCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
-	dividendList := make([]e.Scalar, fanOut)
-	var dividend e.Scalar
-	dividend.SetOne()
+func divisorCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
+	divisorList := make([]e.Scalar, fanOut)
+	var divisor e.Scalar
+	divisor.SetOne()
 	var iScalar e.Scalar
 	for i := 0; i < fanOut; i++ {
 		if i != 0 {
 			iScalar.SetUint64(uint64(i))
-			dividend.Mul(&dividend, &iScalar)
+			divisor.Mul(&divisor, &iScalar)
 		}
 	}
-	dividend.Inv(&dividend)
-	dividendList[0] = dividend
+	divisor.Inv(&divisor)
+	divisorList[0] = divisor
 
-	var dividendMinusI e.Scalar
+	var divisorMinusI e.Scalar
 	var divToBe e.Scalar
 	var sumDiv e.Scalar
 	var cScalar e.Scalar
 	var iInPowerOfJ e.Scalar
 	//TODO black magic
 	for i := 1; i < fanOut; i++ {
-		dividendMinusI.SetUint64(0)
+		divisorMinusI.SetUint64(0)
 		for j, combs := range degreeComb {
 			sumDiv.SetUint64(0)
 			for _, comb := range combs {
@@ -146,22 +146,22 @@ func dividendCalculator(fanOut int, degreeComb [][][]int) []e.Scalar {
 				//sumDiv *= -1
 				sumDiv.Neg()
 			}
-			//dividentMinusI += sumDiv
-			dividendMinusI.Add(&dividendMinusI, &sumDiv)
+			//divisorMinusI += sumDiv
+			divisorMinusI.Add(&divisorMinusI, &sumDiv)
 		}
 		// inverse it so when we multiply with it, it will work as division!!!
 
-		dividendMinusI.Inv(&dividendMinusI)
+		divisorMinusI.Inv(&divisorMinusI)
 
-		dividendList[i] = dividendMinusI
+		divisorList[i] = divisorMinusI
 	}
-	return dividendList
+	return divisorList
 }
 
-func lagrangeBasisForGivenI(indexI int, fanOut int, dividendList []e.Scalar, degreeComb [][][]int, lagrangeBasisList *[][]e.Scalar) []e.Scalar {
+func lagrangeBasisForGivenI(indexI int, fanOut int, divisorList []e.Scalar, degreeComb [][][]int, lagrangeBasisList *[][]e.Scalar) []e.Scalar {
 	var coefToBe e.Scalar
 	var combScalar e.Scalar
-	dividendMinusI := dividendList[indexI]
+	divisorMinusI := divisorList[indexI]
 	coefToBeList := make([]e.Scalar, fanOut-1)
 
 	// The loop starts by looking at the first length of unique combinations. E.g. combinations of 0, 1, 2, 3, 4, 5. Then the next will be 0, 1, 2, 3, 4 and so on.
@@ -182,7 +182,7 @@ func lagrangeBasisForGivenI(indexI int, fanOut int, dividendList []e.Scalar, deg
 				if ((j) % 2) == 0 {
 					coefToBe.Neg()
 				}
-				coefToBe.Mul(&coefToBe, &dividendMinusI)
+				coefToBe.Mul(&coefToBe, &divisorMinusI)
 
 				coefToBeList[j].Add(&coefToBe, &coefToBeList[j])
 			}
@@ -195,7 +195,7 @@ func lagrangeBasisForGivenI(indexI int, fanOut int, dividendList []e.Scalar, deg
 	return coefToBeList
 }
 
-func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividendList []e.Scalar) [][]e.Scalar {
+func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, divisorList []e.Scalar) [][]e.Scalar {
 	// var lagrangeBasisList [][]e.Scalar
 	lagrangeBasisList := make([][]e.Scalar, fanOut)
 	var wg sync.WaitGroup
@@ -203,19 +203,19 @@ func lagrangeBasisCalc(fanOut int, degreeComb [][][]int, dividendList []e.Scalar
 		wg.Add(1)
 		go func(index int) {
 			defer wg.Done()
-			lagrangeBasisForGivenI(index, fanOut, dividendList, degreeComb, &lagrangeBasisList)
+			lagrangeBasisForGivenI(index, fanOut, divisorList, degreeComb, &lagrangeBasisList)
 		}(i)
 		//numGoroutines := runtime.NumGoroutine()
 		//fmt.Println("Number of active goroutines:", numGoroutines)
 
-		//lagrangeBasisList = append(lagrangeBasisList, lagrangeBasisForGivenI(i, fanOut, dividentList, degreeComb, &lagrangeBasisList))
+		//lagrangeBasisList = append(lagrangeBasisList, lagrangeBasisForGivenI(i, fanOut, divisorList, degreeComb, &lagrangeBasisList))
 	}
 	wg.Wait()
 	//fmt.Println("LAGRANGEBASISLIST:", lagrangeBasisList)
 	return lagrangeBasisList
 }
 
-// This translates the input vector into a polynomial which can be used for KZG commitment. It takes the scalar vector as input, unique combinations and dividentlist.
+// This translates the input vector into a polynomial which can be used for KZG commitment. It takes the scalar vector as input, unique combinations and divisorlist.
 // It returns the polynomial of the vector, f(i)=scalarVect[i].
 func realVectorToPoly(scalarVect []e.Scalar, lagrangeBasisList [][]e.Scalar) poly {
 	//Prepares variable for the polynomial.
@@ -223,7 +223,7 @@ func realVectorToPoly(scalarVect []e.Scalar, lagrangeBasisList [][]e.Scalar) pol
 	coefs := make([]e.Scalar, len(scalarVect))
 	coefs[0] = scalarVect[0] // first value in list of points, this is a constant coefficient in the polynomial (aka the first coefficient if a0 + a1x + a2x^2 + ...)
 	var coefToBe e.Scalar
-	//lagrangeBasisList := lagrangeBasisCalc(len(scalarVect), degreeComb, dividentList)
+	//lagrangeBasisList := lagrangeBasisCalc(len(scalarVect), degreeComb, divisorList)
 	for i, y := range scalarVect {
 		for j, eScalar := range lagrangeBasisList[i] {
 			coefToBe = eScalar
